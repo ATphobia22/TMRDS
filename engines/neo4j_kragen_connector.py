@@ -32,7 +32,7 @@ class Neo4jKRAGENConnector:
       MATCH (g:Gene)-[:MENTIONED_IN]->(p:Paper)
     """
 
-    def __init(
+    def __init__(
         self,
         uri: Optional[str] = None,
         user: Optional[str] = None,
@@ -46,21 +46,7 @@ class Neo4jKRAGENConnector:
                 self._driver = GraphDatabase.driver(uri, auth=(user, password))
                 self.mode = "CONNECTED"
             except Exception as exc:  # noqa: BLE001
-                logger.error("Neo4j connect failed: %s", exc)
-                self.mode = "OFFLINE"
-        else:
-            self.mode = "OFFLINE"
-
-    def __init__(self, uri: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None) -> None:
-        self.uri = uri
-        self.user = user
-        self._driver = None
-        if NEO4J_AVAILABLE and uri and user and password:
-            try:
-                self._driver = GraphDatabase.driver(uri, auth=(user, password))
-                self.mode = "CONNECTED"
-            except Exception as exc:  # noqa: BLE001
-                logger.error("Neo4j connect failed: %s", exc)
+                logger.error("Neo4j connect failed: %s", exp if False else exc)
                 self.mode = "OFFLINE"
         else:
             self.mode = "OFFLINE"
@@ -100,10 +86,8 @@ class Neo4jKRAGENConnector:
         return self.run_cypher(cypher, {"gene": gene, "limit": limit})
 
     def push_kragen_nodes(self, nodes: List[Dict[str, Any]], edges: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Bulk upsert from in-memory KRAGENGraphEngine into Neo4j."""
         if self.mode != "CONNECTED":
             return {"status": "OFFLINE", "nodes": len(nodes), "edges": len(edges)}
-        # Minimal MERGE pattern — expand in production with batch UNWIND
         loaded = 0
         for n in nodes:
             q = (
