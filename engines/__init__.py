@@ -51,6 +51,7 @@ from .evidence_graph_service import EvidenceGraphService
 from .evidence_conflict_engine import EvidenceConflictEngine
 from .governed_evidence_ingestion import GovernedEvidenceIngestion
 from .neo4j_evidence_projection import Neo4jEvidenceProjection
+from .ai_governance import AIGovernanceRegistry, EvidenceEnvelope, GovernanceStatus, ResearchGenerationDecision
 
 __all__ = [
     "SimulationComputeMesh", "MONAIVisionNode", "PrecisionMedicineEngine", "IntegratedEHRBridge",
@@ -64,5 +65,6 @@ __all__ = [
     "ESMFoldStructureNode", "EpistemicParallelRouter", "CDCDataPipeline", "OpenNeuroPipeline", "ClinicalTrialsPipeline",
     "OpenFDAPipeline", "NLMResearchPipeline", "EuropePMCPipeline", "CanonicalEntity", "EvidenceAssertion",
     "ConflictGroup", "SourceRecord", "EvidenceSourceRegistry", "EvidenceGraphRepository", "EvidenceGraphService",
-    "EvidenceConflictEngine", "GovernedEvidenceIngestion", "Neo4jEvidenceProjection",
+    "EvidenceConflictEngine", "GovernedEvidenceIngestion", "Neo4jEvidenceProjection", "AIGovernanceRegistry",
+    "EvidenceEnvelope", "GovernanceStatus", "ResearchGenerationDecision",
 ]
