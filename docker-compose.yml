@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-tmrds}
       POSTGRES_USER: ${POSTGRES_USER:-tmrds}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
     volumes:
       - tmrds-postgres-data:/var/lib/postgresql/data
       - ./migrations:/docker-entrypoint-initdb.d:ro
@@ -17,7 +17,7 @@ services:
   tmrds-neo4j:
     image: neo4j:5-community
     environment:
-      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/change-me}
+      NEO4J_AUTH: ${NEO4J_AUTH:?Set NEO4J_AUTH as neo4j/<strong-password>}
     ports:
       - "7474:7474"
       - "7687:7687"
@@ -42,10 +42,10 @@ services:
       - TMRDS_SESSION_TIMEOUT_MIN=15
       - TMRDS_AUDIT_LOG=/app/data/audit/access.jsonl
       - TMRDS_FHIR_VERSION=R4
-      - TMRDS_DATABASE_URL=postgresql://${POSTGRES_USER:-tmrds}:${POSTGRES_PASSWORD:-change-me}@tmrds-postgres:5432/${POSTGRES_DB:-tmrds}
+      - TMRDS_DATABASE_URL=postgresql://${POSTGRES_USER:-tmrds}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@tmrds-postgres:5432/${POSTGRES_DB:-tmrds}
       - TMRDS_NEO4J_URI=bolt://tmrds-neo4j:7687
       - TMRDS_NEO4J_USER=${NEO4J_USER:-neo4j}
-      - TMRDS_NEO4J_PASSWORD=${NEO4J_PASSWORD:-change-me}
+      - TMRDS_NEO4J_PASSWORD=${NEO4J_PASSWORD:?Set NEO4J_PASSWORD}
     ports:
       - "8000:8000"
     depends_on:
