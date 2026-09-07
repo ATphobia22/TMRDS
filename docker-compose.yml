@@ -17,7 +17,7 @@ services:
   tmrds-neo4j:
     image: neo4j:5-community
     environment:
-      NEO4J_AUTH: ${NEO4J_AUTH:?Set NEO4J_AUTH as neo4j/<strong-password>}
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:?Set NEO4J_PASSWORD}
     ports:
       - "7474:7474"
       - "7687:7687"
