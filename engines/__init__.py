@@ -22,6 +22,9 @@ from .universal_clinical_ingest import UniversalClinicalIngest
 from .pubmed_literature_bridge import PubMedLiteratureBridge
 from .neo4j_kragen_connector import Neo4jKRAGENConnector
 from .qrce_cure_orchestrator import QRCECureOrchestrator
+from .fhir_us_core_mapper import FHIRUSCoreMapper
+from .omop_cdm_bridge import OMOPCDMBridge
+from .specialty_care_router import SpecialtyCareRouter
 
 __all__ = [
     "SimulationComputeMesh",
@@ -47,4 +50,7 @@ __all__ = [
     "PubMedLiteratureBridge",
     "Neo4jKRAGENConnector",
     "QRCECureOrchestrator",
+    "FHIRUSCoreMapper",
+    "OMOPCDMBridge",
+    "SpecialtyCareRouter",
 ]
