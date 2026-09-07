@@ -7,5 +7,6 @@ redis>=5.0.0
 numpy>=1.26.0
 asyncpg>=0.29.0
 neo4j>=5.26.0
+requests>=2.32.0
 pytest>=8.3.0
 pytest-asyncio>=0.24.0
