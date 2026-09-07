@@ -1,6 +1,6 @@
 services:
   tmrds-postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-tmrds}
       POSTGRES_USER: ${POSTGRES_USER:-tmrds}
