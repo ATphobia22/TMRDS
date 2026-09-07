@@ -1,7 +1,5 @@
 from datetime import datetime, timezone
 
-import pytest
-
 from engines.biomedical_canonicalization import canonicalize_label, canonicalize_record
 from engines.biomedical_evidence_models import Directness, EntityType, EvidenceAssertion, EvidenceType, ReplicationState
 from engines.evidence_conflict_engine import EvidenceConflictEngine
@@ -49,13 +47,13 @@ def _assertion(assertion_id: str, direction: str, grade: str) -> EvidenceAsserti
 
 
 def test_conflict_engine_preserves_opposite_effects():
-    conflicts = EvidenceConflictEngine().detect([_assertion("a1", "positive", "moderate"), _assertion("a2", "negative", "moderate")])
+    conflicts = EvidenceConflictEngine().detect([_assertion("a01", "positive", "moderate"), _assertion("a02", "negative", "moderate")])
     assert len(conflicts) == 1
-    assert conflicts[0].assertion_ids == ["a1", "a2"]
+    assert conflicts[0].assertion_ids == ["a01", "a02"]
     assert conflicts[0].state.value == "HUMAN_REVIEW_REQUIRED"
 
 
 def test_conflict_engine_does_not_compare_different_populations():
-    left = _assertion("a1", "positive", "moderate").model_copy(update={"population_context": "adults"})
-    right = _assertion("a2", "negative", "moderate").model_copy(update={"population_context": "children"})
+    left = _assertion("a01", "positive", "moderate").model_copy(update={"population_context": "adults"})
+    right = _assertion("a02", "negative", "moderate").model_copy(update={"population_context": "children"})
     assert EvidenceConflictEngine().detect([left, right]) == []
