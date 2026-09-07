@@ -6,6 +6,7 @@ from .integrated_ehr_bridge import IntegratedEHRBridge
 from .medicalnet_backbone import MedicalNetBackbone
 from .comprehend_fhir_bridge import ComprehendFHIRBridge
 from .clinical_llm_router import ClinicalLLMRouter
+from .alphafold3_node import AlphaFold3Node
 
 __all__ = [
     "SimulationComputeMesh",
@@ -15,4 +16,5 @@ __all__ = [
     "MedicalNetBackbone",
     "ComprehendFHIRBridge",
     "ClinicalLLMRouter",
+    "AlphaFold3Node",
 ]
