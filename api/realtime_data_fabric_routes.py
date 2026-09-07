@@ -1,6 +1,7 @@
 """Read-only operational API for the TMRDS real-world data fabric."""
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -47,7 +48,7 @@ async def source_status(source_id: str) -> dict[str, Any]:
 
 @router.get("/health")
 async def fabric_health() -> dict[str, Any]:
-    return envelope([item.__dict__ for item in health_snapshot(fabric)])
+    return envelope([asdict(item) for item in health_snapshot(fabric)])
 
 
 @router.post("/sync/{source_id}")
