@@ -167,8 +167,6 @@ async def federated_search(query: str = Query(..., min_length=2), limit: int = Q
     return research_envelope({"query": query, "results": data, "upstream_errors": errors}, "TMRDS Federated Public Biomedical Research Gateway")
 
 
-# ---- Governed evidence graph -------------------------------------------------
-
 @app.get("/api/v1/evidence/entities/{entity_id}")
 async def evidence_entity(entity_id: str) -> dict[str, Any]:
     try:
@@ -183,8 +181,7 @@ async def evidence_entity(entity_id: str) -> dict[str, Any]:
 @app.get("/api/v1/evidence/entities/{entity_id}/assertions")
 async def evidence_entity_assertions(entity_id: str, limit: int = Query(default=100, ge=1, le=500)) -> dict[str, Any]:
     try:
-        result = await evidence_service.assertions(entity_id, limit)
-        return research_envelope(result, "TMRDS Governed Evidence Graph")
+        return research_envelope(await evidence_service.assertions(entity_id, limit), "TMRDS Governed Evidence Graph")
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Evidence database unavailable: {exc}") from exc
 
@@ -253,3 +250,7 @@ async def evidence_ingestion_status() -> dict[str, Any]:
         return research_envelope(await evidence_service.ingestion_status(), "TMRDS Evidence Ingestion")
     except Exception as exc:
         raise HTTPException(status_code=503, detail=f"Evidence database unavailable: {exc}") from exc
+
+
+from api.evidence_ingestion_routes import router as evidence_ingestion_router
+app.include_router(evidence_ingestion_router)
