@@ -9,11 +9,12 @@ import httpx
 class OpenNeuroPipeline:
     """Read-only client for OpenNeuro public neuroimaging metadata."""
 
-    GRAPHQL_URL = "https://openneuro.org/crg/graphql"
+    GRAPHQL_URL = "https://openneuro.org/crn/graphql"
     QUERY = """
-    query getDatasets($search: String, $first: Int) {
-      datasets(search: $search, first: $first) {
+    query advancedSearchDatasets($query: DatasetSearchInput!, $first: Int!) {
+      datasets: advancedSearch(query: $query, first: $first) {
         edges {
+          id
           node {
             id
             created
@@ -25,6 +26,11 @@ class OpenNeuroPipeline:
             }
           }
         }
+        pageInfo {
+          hasNextPage
+          endCursor
+          count
+        }
       }
     }
     """
@@ -33,7 +39,10 @@ class OpenNeuroPipeline:
         """Fetch live public neuroimaging dataset metadata."""
         if not query_term.strip():
             raise ValueError("query_term must not be empty")
-        variables = {"search": query_term.strip(), "first": max(1, min(limit, 50))}
+        variables = {
+            "query": {"keywords": [query_term.strip()]},
+            "first": max(1, min(limit, 50)),
+        }
         async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
             response = await client.post(
                 self.GRAPHQL_URL,
