@@ -1,6 +1,6 @@
 # TMRDS — Tucker Medical Research and Development System
 
-Integrated multi-omics, imaging, PDE simulation, FHIR clinical bridge, and medical LLMs for precision medicine R&D — built to assist every clinician.
+Integrated multi-omics, imaging, PDE simulation, FHIR clinical bridge, medical LLMs, and structure prediction for precision medicine R&D — built to assist every clinician.
 
 ## Core Engines
 
@@ -8,23 +8,38 @@ Integrated multi-omics, imaging, PDE simulation, FHIR clinical bridge, and medic
 |--------|------|----------------|
 | **SimulationComputeMesh** | `engines/simulation_compute_mesh.py` | DeepXDE PINN (Fisher-KPP) for disease progression |
 | **MONAIVisionNode** | `engines/monai_vision_node.py` | 3-D DICOM load + diffusion denoising/segmentation |
-| **MedicalNetBackbone** | `engines/medicalnet_backbone.py` | Tencent MedicalNet 3D-ResNet transfer learning |
+| **MedicalNetBackbone** | `engines/medicalnet_backbone.py` | Real MedicalNet 3D-ResNet weights via MONAI / HF |
 | **PrecisionMedicineEngine** | `engines/precision_medicine_engine.py` | VCF parse + patent Freedom-to-Operate screening |
 | **IntegratedEHRBridge** | `engines/integrated_ehr_bridge.py` | HL7 FHIR R4/R5 Bundle → flattened clinical structure |
-| **ComprehendFHIRBridge** | `engines/comprehend_fhir_bridge.py` | Unstructured note → clinical entities → FHIR resources |
-| **ClinicalLLMRouter** | `engines/clinical_llm_router.py` | Meditron / Doctor-Dignity medical LLM interface |
+| **ComprehendFHIRBridge** | `engines/comprehend_fhir_bridge.py` | AWS DetectEntitiesV2 + InferICD10CM → FHIR |
+| **ClinicalLLMRouter** | `engines/clinical_llm_router.py` | vLLM / HF backends for Meditron-7B & Doctor-Dignity |
+| **AlphaFold3Node** | `engines/alphafold3_node.py` | Structure prediction + structure-guided ligand ranking |
 | **QuantumRubiksCureEngine** | `engines/quantum_cure_engine.py` | Hybrid quantum-classical VQE biomedical optimizer |
 
-## Integrated External Capabilities
+## Weight Download Guide
 
-| Source | Contribution to TMRDS |
-|--------|-----------------------|
-| **Tencent/MedicalNet** | Pre-trained 3D-ResNet (Med3D) backbone — accelerates CT/MRI segmentation & classification |
-| **amazon-comprehend-medical-fhir-integration** | NLP entity extraction → FHIR MedicationStatement / Condition mapping |
-| **Meditron (EPFL)** | Domain-adapted medical LLM (7B/70B) for differential support & guideline grounding |
-| **Doctor-Dignity** | On-device medical dialogue model (privacy-preserving, offline capable) |
-| **Awesome-AI4Med** | Curated catalog of medical LLMs, MLLMs, datasets, and benchmarks for continuous upgrade path |
-| **AlphaFold / AlphaFold3** | Protein structure prediction (future molecular docking node) |
+See **[docs/WEIGHTS_DOWNLOAD.md](docs/WEIGHTS_DOWNLOAD.md)** for exact Hugging Face / CLI commands for MedicalNet, Meditron, and AlphaFold3 parameters.
+
+## Production Backends
+
+| Capability | Production Path | Offline Fallback |
+|------------|-----------------|------------------|
+| 3D imaging backbone | MONAI `resnet*` + HF `TencentMedicalNet` | Feature-extractor stub |
+| Clinical NLP | AWS Comprehend Medical DetectEntitiesV2 + InferICD10CM | Curated regex |
+| Medical LLM | vLLM or HuggingFace transformers (Meditron-7B) | Mock clinical response |
+| Structure prediction | AlphaFold Server / OpenFold3 / local AF3 | Deterministic mock metrics |
+
+## AlphaFold3 Molecular Docking Notes
+
+- AF3 co-folding predicts protein–ligand complexes directly from sequence + SMILES/CCD.
+- Best used as **screening engine** or **post-docking filter**; complement with physics-based docking (AutoDock Vina, DOCK3).
+- Confidence metrics (pLDDT, ipTM) guide pose selection; experimental validation remains mandatory.
+
+## MONAI Imaging Stack
+
+- Transforms, sliding-window inference, diffusion models, SegResNet / U-Net.
+- MedicalNet pre-trained weights (10–200 layers) raise Dice 15–40 pts on small hospital cohorts.
+- Auto3DSeg and nnU-Net runners available for full segmentation pipelines.
 
 ## Quick Start
 
@@ -33,22 +48,9 @@ chmod +x deploy.sh && ./deploy.sh
 python tests/run_integration_test.py
 ```
 
-## Physics-Informed Neural Networks (PINNs)
-
-`SimulationComputeMesh` embeds the Fisher-KPP residual directly into the network loss for mesh-free lesion/pathogen spread simulation.
-
-## MONAI + MedicalNet Imaging Stack
-
-- MONAI handles transforms, sliding-window inference, and diffusion models.
-- MedicalNet supplies strong 3D-ResNet initializations (10–200 layers) proven to raise Dice 15–40 pts on small medical datasets.
-
-## Clinical NLP → FHIR
-
-`ComprehendFHIRBridge` turns free-text notes into structured FHIR resources so every doctor can keep unstructured documentation while feeding analytics and decision support.
-
 ## Safety Notice
 
-All LLM and decision-support outputs carry an explicit research-only disclaimer. They are **not** a substitute for licensed clinical judgment.
+All LLM, structure, and decision-support outputs carry an explicit research-only disclaimer. They are **not** a substitute for licensed clinical judgment.
 
 ---
 **Status**: Private | Active development  
