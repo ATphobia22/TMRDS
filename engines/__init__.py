@@ -30,6 +30,9 @@ from .omop_phenotype_engine import OMOPPhenotypeEngine
 from .drive_thru_ingestion import DriveThruIngestion
 from .overlooked_blessings import OverlookedBlessings
 from .open_source_medical_core import OpenSourceMedicalCore
+from .us_core_omop_concept_map import USCoreOMOPConceptMap
+from .ohdsi_atlas_cohort import OHDSIAtlasCohortAdapter
+from .nlm_gov_clinical_tables import NLMGovClinicalTables
 
 __all__ = [
     "SimulationComputeMesh",
@@ -63,4 +66,7 @@ __all__ = [
     "DriveThruIngestion",
     "OverlookedBlessings",
     "OpenSourceMedicalCore",
+    "USCoreOMOPConceptMap",
+    "OHDSIAtlasCohortAdapter",
+    "NLMGovClinicalTables",
 ]
