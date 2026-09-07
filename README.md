@@ -1,6 +1,6 @@
 # TMRDS — Tucker Medical Research and Development System
 
-Integrated multi-omics, imaging, PDE simulation, FHIR clinical bridge, medical LLMs, and structure prediction for precision medicine R&D — built to assist every clinician.
+Integrated multi-omics, imaging, PDE simulation, FHIR, medical LLMs, structure prediction, molecular property screening, and quantum chemistry for precision medicine R&D — built to assist every clinician.
 
 ## Core Engines
 
@@ -14,11 +14,15 @@ Integrated multi-omics, imaging, PDE simulation, FHIR clinical bridge, medical L
 | **ComprehendFHIRBridge** | `engines/comprehend_fhir_bridge.py` | AWS DetectEntitiesV2 + InferICD10CM → FHIR |
 | **ClinicalLLMRouter** | `engines/clinical_llm_router.py` | vLLM / HF backends for Meditron-7B & Doctor-Dignity |
 | **AlphaFold3Node** | `engines/alphafold3_node.py` | Structure prediction + structure-guided ligand ranking |
+| **GROVERMolecularNode** | `engines/grover_molecular_node.py` | Molecular graph transformer ADMET / toxicity / BBBP |
+| **RDKitChemistryNode** | `engines/rdkit_chemistry_node.py` | Descriptors, conformers, Lipinski drug-likeness filter |
+| **QiskitNatureBridge** | `engines/qiskit_nature_bridge.py` | Molecular Hamiltonian → VQE (feeds QuantumRubiksCureEngine) |
+| **BioCoderAssistant** | `engines/biocoder_assistant.py` | Bioinformatics code-generation prompts for LLMs |
 | **QuantumRubiksCureEngine** | `engines/quantum_cure_engine.py` | Hybrid quantum-classical VQE biomedical optimizer |
 
 ## Weight Download Guide
 
-See **[docs/WEIGHTS_DOWNLOAD.md](docs/WEIGHTS_DOWNLOAD.md)** for exact Hugging Face / CLI commands for MedicalNet, Meditron, and AlphaFold3 parameters.
+See **[docs/WEIGHTS_DOWNLOAD.md](docs/WEIGHTS_DOWNLOAD.md)** for MedicalNet, Meditron, and AlphaFold3 parameters.
 
 ## Production Backends
 
@@ -28,29 +32,33 @@ See **[docs/WEIGHTS_DOWNLOAD.md](docs/WEIGHTS_DOWNLOAD.md)** for exact Hugging F
 | Clinical NLP | AWS Comprehend Medical DetectEntitiesV2 + InferICD10CM | Curated regex |
 | Medical LLM | vLLM or HuggingFace transformers (Meditron-7B) | Mock clinical response |
 | Structure prediction | AlphaFold Server / OpenFold3 / local AF3 | Deterministic mock metrics |
+| Molecular properties | GROVER checkpoint + RDKit | RDKit Lipinski heuristics |
+| Quantum chemistry | qiskit-nature + PySCF | Mock H₂ STO-3G Hamiltonian |
 
-## AlphaFold3 Molecular Docking Notes
+## Molecular & Quantum Pipeline
 
-- AF3 co-folding predicts protein–ligand complexes directly from sequence + SMILES/CCD.
-- Best used as **screening engine** or **post-docking filter**; complement with physics-based docking (AutoDock Vina, DOCK3).
-- Confidence metrics (pLDDT, ipTM) guide pose selection; experimental validation remains mandatory.
-
-## MONAI Imaging Stack
-
-- Transforms, sliding-window inference, diffusion models, SegResNet / U-Net.
-- MedicalNet pre-trained weights (10–200 layers) raise Dice 15–40 pts on small hospital cohorts.
-- Auto3DSeg and nnU-Net runners available for full segmentation pipelines.
-
-## Quick Start
-
-```bash
-chmod +x deploy.sh && ./deploy.sh
-python tests/run_integration_test.py
 ```
+SMILES → RDKitChemistryNode (descriptors / conformers / Lipinski)
+      → GROVERMolecularNode (ADMET / toxicity / BBBP)
+      → AlphaFold3Node (structure-guided ranking)
+      → QiskitNatureBridge (Hamiltonian)
+      → QuantumRubiksCureEngine (VQE optimization)
+```
+
+## Integrated External Sources
+
+| Source | Contribution |
+|--------|--------------|
+| **Tencent GROVER** | Graph-transformer molecular property prediction |
+| **qiskit-nature** | Electronic-structure Hamiltonians for VQE |
+| **quantum-chem-skills** | RDKit / PySCF patterns for chemistry workflows |
+| **BioCoder** | Bioinformatics code-generation prompt discipline |
+| **awesome-quantum-software** | Quantum stack catalog for continuous upgrades |
+| **MedicalNet / MONAI / Meditron / AlphaFold3** | Imaging + LLM + structure (prior integrations) |
 
 ## Safety Notice
 
-All LLM, structure, and decision-support outputs carry an explicit research-only disclaimer. They are **not** a substitute for licensed clinical judgment.
+All LLM, structure, quantum, and decision-support outputs carry an explicit research-only disclaimer. They are **not** a substitute for licensed clinical judgment.
 
 ---
 **Status**: Private | Active development  
