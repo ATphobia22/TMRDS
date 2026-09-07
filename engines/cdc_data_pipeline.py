@@ -7,9 +7,9 @@ import httpx
 
 
 class CDCDataPipeline:
-    """Read-only client for the CDC Chronic Disease Indicators SODA API."""
+    """Read-only client for the current CDC Chronic Disease Indicators SODA API."""
 
-    BASE_URL = "https://data.cdc.gov/resource/a8ys-9fjs.json"
+    BASE_URL = "https://data.cdc.gov/resource/hksd-2xuw.json"
 
     async def fetch_indicators(self, limit: int = 100) -> list[dict[str, Any]]:
         """Retrieve current public CDC chronic-disease indicator records."""
