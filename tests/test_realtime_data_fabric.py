@@ -45,10 +45,22 @@ def test_fabric_deduplicates_observations_by_content_identity() -> None:
     assert len(fabric.observations()) == 1
 
 
-def test_default_fabric_contains_authoritative_public_realtime_sources() -> None:
+def test_default_fabric_contains_authoritative_public_sources_across_tmrds() -> None:
     fabric = build_default_fabric()
     source_ids = {source.source_id for source in fabric.sources()}
-    assert {"usgs_water", "noaa_weather", "nws_alerts", "fema_disasters"}.issubset(source_ids)
+    assert {
+        "usgs_water",
+        "usgs_earthquakes",
+        "noaa_weather",
+        "nws_alerts",
+        "fema_disasters",
+        "cdc_cdi",
+        "clinicaltrials_gov",
+        "openfda",
+        "pubmed",
+        "europe_pmc",
+        "nlm_clinical_tables",
+    }.issubset(source_ids)
 
 
 def test_fabric_quarantines_invalid_payload() -> None:
