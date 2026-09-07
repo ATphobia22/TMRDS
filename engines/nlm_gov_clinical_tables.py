@@ -5,12 +5,11 @@ Verified public services (National Library of Medicine / NIH):
   - Clinical Table Search Service (ICD-10-CM, HPO, RxTerms, HCPCS, NPI, …)
     https://clinicaltables.nlm.nih.gov/
   - MedlinePlus Connect / Web Service
-  - RxNorm API (lhncbc.nlm.nih.gov)
-  - PubMed E-utilities (already in PubMedLiteratureBridge)
+  - RxNorm API (rxnav.nlm.nih.gov)
+  - PubMed E-utilities (PubMedLiteratureBridge)
   - ClinicalTrials.gov API v2
 
-For medical-professional inspection: these are official U.S. government
-terminology and patient-education endpoints — not scraped content.
+Official U.S. government terminology and patient-education endpoints — not scraped.
 """
 from __future__ import annotations
 
@@ -18,7 +17,7 @@ import json
 import logging
 import urllib.parse
 import urllib.request
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 logger = logging.getLogger("TMRDS.NLMGov")
 
@@ -49,15 +48,10 @@ class NLMGovClinicalTables:
             except json.JSONDecodeError:
                 return body
         except Exception as exc:  # noqa: BLE001
-            logger.warning("NLM request failed: %s", exp if False else exc)
+            logger.warning("NLM request failed: %s", exc)
             return {"error": str(exc), "url": url}
 
     def search_table(self, table: str, terms: str, max_list: int = 15) -> Dict[str, Any]:
-        """
-        Clinical Table Search Service.
-        Example: table=icd10cm, terms=heart failure
-        Response shape: [total, codes, extra, display strings, …] (NLM format)
-        """
         key = self.TABLES.get(table, table)
         q = urllib.parse.quote(terms)
         url = f"{CLINICAL_TABLES}/{key}/v3/search?terms={q}&maxList={max(1, min(max_list, 50))}"
