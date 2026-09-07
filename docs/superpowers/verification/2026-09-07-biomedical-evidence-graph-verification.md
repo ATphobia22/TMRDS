@@ -2,40 +2,49 @@
 
 ## Implementation state
 
-The approved evidence-graph architecture has been implemented on `main` with:
+The approved TMRDS evidence/provenance/interoperability/graph/AI-governance backbone is implemented on `main` with:
 
 - typed biomedical evidence models
 - governed source registry
-- PostgreSQL schema and repository
-- immutable source observations/content hashes
+- PostgreSQL evidence authority and append-oriented observations
 - deterministic entity canonicalization
 - evidence assertions and assessments
 - conservative conflict detection
-- live ClinicalTrials.gov and OpenNeuro ingestion adapters
-- ClinicalTrials condition/intervention/publication relationships
-- Neo4j rebuildable projection
+- live public-source adapters already present in the repository
+- Neo4j rebuildable graph projection
 - provenance-aware graph query API
 - live ingestion API routes
-- operational observability primitives
+- FHIR R4 / US Core and OMOP CDM v5.4 integration modules already present in the repository
+- new PostgreSQL migration for AI governance, vector retrieval, FHIR resource observations, and OMOP research tables
+- pgvector-backed evidence embeddings and cosine semantic retrieval
+- provider-neutral AI model/prompt/dataset/evaluation/generation governance contracts
+- provenance-required AI generation validation with mandatory human authority
+- terminology/chemistry source governance entries for LOINC, MONDO, HGNC, and ChEMBL
+- LOINC access explicitly modeled as credentialed rather than public
+- GitHub Actions CI workflow for Python test execution
 - security/operations/data-dictionary documentation
-- live integration-test suites with no upstream mocks
 
 ## Verification limitations
 
-The current agent runtime cannot resolve `github.com` from the container, so the repository could not be cloned and the Python/Docker test suite could not be executed locally in this turn. The GitHub connector successfully committed the implementation files, but that is not equivalent to a passing runtime test.
+The current agent runtime cannot resolve `github.com` from the container, so the repository could not be cloned and the Python/Docker test suite could not be executed locally in this turn. GitHub connector writes succeeded, but repository mutation is not equivalent to a passing runtime test.
 
-Live upstream documentation was independently checked for current contracts. ClinicalTrials.gov documents the modern `/api/v2/studies` API, `protocolSection.conditionsModule.conditions`, `protocolSection.referencesModule.references`, and `/api/v2/version` `dataTimestamp`; OpenFDA documents `/drug/shortages.json`; OpenNeuro documents its public GraphQL API. These checks support the implemented source contract, but they do not replace execution of the live tests.
+The GitHub commit status for the latest `main` commit is currently `pending` with no completed status checks reported yet. Therefore **no claim of passing CI is made here**.
+
+Current implementation should be validated in a network-enabled repository runner with PostgreSQL/pgvector and Neo4j available.
 
 ## Required execution environment
-
-Run with network access and Docker:
 
 ```bash
 export POSTGRES_PASSWORD='<strong-password>'
 export NEO4J_PASSWORD='<strong-password>'
 docker compose up -d
-pytest -m integration -v
-pytest -v
+python -m pytest -v
+```
+
+For the live integration suite, also run:
+
+```bash
+python -m pytest -m integration -v
 ```
 
 Then exercise:
@@ -44,6 +53,9 @@ Then exercise:
 GET /api/v1/research/health
 GET /api/v1/evidence/sources
 GET /api/v1/evidence/ingestion/status
+GET /api/v1/governance/ai/status
+POST /api/v1/governance/ai/validate
+POST /api/v1/evidence/semantic-search
 POST /api/v1/evidence/ingest/clinical-trials?query=cancer&limit=5
 POST /api/v1/evidence/ingest/openneuro?query=MRI&limit=5
 ```
