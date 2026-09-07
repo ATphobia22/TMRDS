@@ -6,64 +6,54 @@
 
 **Steward:** Anthony John Tucker · Mount Vernon, Indiana 47620
 
-## Sovereignty & Governance Engines
+## On-the-Spot Treatment Starting Points (QRCE)
 
-| Module | Path | Responsibility |
-|--------|------|----------------|
-| **SovereignEdge** | `engines/sovereign_edge.py` | Offline sync queue — clinics operate without internet |
-| **EvidenceLedger** | `engines/evidence_ledger.py` | Immutable `content_hash` provenance |
-| **DoctorDignityEthics** | `engines/doctor_dignity_ethics.py` | Bias neutralization matrix |
-| **OpenMedEngine** | `engines/openmed_nlp.py` | HIPAA PII scrub + Medical NER |
-| **TurboVecIndex** | `engines/turbovec_index.py` | Clinical embedding search |
-| **KRAGENGraphEngine** | `engines/kragen_graph_engine.py` | Multi-layer KG + Graph-of-Thoughts RAG |
-| **IHIEBridge** | `engines/ihie_bridge.py` | Indiana HIE / INPC FHIR interoperability |
+```
+Labs / scans / genome / sequencing / notes
+  → UniversalClinicalIngest
+  → DoctorDignityEthics
+  → PubMedLiteratureBridge (verifiable journals)
+  → KRAGENGraphEngine (+ Neo4j GraphRAG when connected)
+  → QRCECureOrchestrator
+  → EvidenceLedger
+  → Ranked advisory starting points for clinician review
+```
+
+| Module | Path | Role |
+|--------|------|------|
+| **UniversalClinicalIngest** | `engines/universal_clinical_ingest.py` | Labs, imaging, VCF/genomic, sequencing, notes |
+| **PubMedLiteratureBridge** | `engines/pubmed_literature_bridge.py` | NCBI E-utilities — searchable medical literature |
+| **Neo4jKRAGENConnector** | `engines/neo4j_kragen_connector.py` | Production Cypher GraphRAG store |
+| **QRCECureOrchestrator** | `engines/qrce_cure_orchestrator.py` | End-to-end advisory treatment search |
+
+**All outputs are research-advisory only** — not diagnoses, prescriptions, or cure claims.
+
+## Sovereignty & Graph
+
+| Module | Path |
+|--------|------|
+| SovereignEdge | `engines/sovereign_edge.py` |
+| EvidenceLedger | `engines/evidence_ledger.py` |
+| DoctorDignityEthics | `engines/doctor_dignity_ethics.py` |
+| OpenMedEngine | `engines/openmed_nlp.py` |
+| TurboVecIndex | `engines/turbovec_index.py` |
+| KRAGENGraphEngine | `engines/kragen_graph_engine.py` |
+| IHIEBridge | `engines/ihie_bridge.py` |
 
 ## Clinical & Research Engines
 
-| Module | Path | Responsibility |
-|--------|------|----------------|
-| **SimulationComputeMesh** | `engines/simulation_compute_mesh.py` | DeepXDE PINN disease progression |
-| **MONAIVisionNode** | `engines/monai_vision_node.py` | 3-D DICOM + diffusion segmentation |
-| **MedicalNetBackbone** | `engines/medicalnet_backbone.py` | Tencent MedicalNet 3D-ResNet |
-| **PrecisionMedicineEngine** | `engines/precision_medicine_engine.py` | VCF + Freedom-to-Operate |
-| **IntegratedEHRBridge** | `engines/integrated_ehr_bridge.py` | FHIR R4/R5 parser |
-| **ComprehendFHIRBridge** | `engines/comprehend_fhir_bridge.py` | AWS DetectEntitiesV2 → FHIR |
-| **ClinicalLLMRouter** | `engines/clinical_llm_router.py` | vLLM / HF Meditron-7B |
-| **AlphaFold3Node** | `engines/alphafold3_node.py` | Structure + ligand ranking |
-| **GROVERMolecularNode** | `engines/grover_molecular_node.py` | ADMET / toxicity / BBBP |
-| **RDKitChemistryNode** | `engines/rdkit_chemistry_node.py` | Descriptors, conformers, Lipinski |
-| **QiskitNatureBridge** | `engines/qiskit_nature_bridge.py` | Molecular Hamiltonian → VQE |
-| **BioCoderAssistant** | `engines/biocoder_assistant.py` | Bioinformatics code generation |
-| **QuantumRubiksCureEngine** | `engines/quantum_cure_engine.py` | Hybrid quantum-classical VQE |
+MONAIVision · MedicalNet · DeepXDE Simulation · PrecisionMedicine · FHIR bridges · ClinicalLLMRouter · AlphaFold3 · GROVER · RDKit · QiskitNature · BioCoder · QuantumRubiksCureEngine
 
-## Architecture Docs
+## Docs
 
-- **[docs/ARCHITECTURE_SOVEREIGNTY.md](docs/ARCHITECTURE_SOVEREIGNTY.md)** — Sovereignty, KRAGEN, IHIE, autonomy ladder
-- **[docs/WEIGHTS_DOWNLOAD.md](docs/WEIGHTS_DOWNLOAD.md)** — Model weight download instructions
-
-## Clinical Pipeline (Sovereign)
-
-```
-Clinical text → OpenMedEngine (PII scrub + NER)
-             → DoctorDignityEthics (bias gate)
-             → EvidenceLedger (content_hash)
-             → KRAGENGraphEngine (pathology/molecular/quantum links)
-             → SovereignEdge queue / IHIEBridge (sync or HIE pull)
-             → FHIR / LLM / imaging / molecular engines
-```
+- [ARCHITECTURE_SOVEREIGNTY.md](docs/ARCHITECTURE_SOVEREIGNTY.md)
+- [NEO4J_REGENSTRIEF.md](docs/NEO4J_REGENSTRIEF.md) — Neo4j GraphRAG + Regenstrief INPC methods
+- [WEIGHTS_DOWNLOAD.md](docs/WEIGHTS_DOWNLOAD.md)
 
 ## Indiana Ecosystem
 
-- Indiana Department of Health (IDOH)
-- Indiana Medicaid
-- **Indiana Health Information Exchange (IHIE)** — Indiana Network for Patient Care (INPC)
-- Regenstrief Institute (Bulk FHIR research access pattern)
-
-Live IHIE/INPC access requires institutional BAA/DUA and applicable IRB.
-
-## Safety Notice
-
-All LLM, structure, quantum, and decision-support outputs are **research-advisory only**. They are not a substitute for licensed clinical judgment.
+IDOH · Indiana Medicaid · **IHIE / INPC** · Regenstrief Data Services (Bulk FHIR, LOINC, OMOP ATLAS)  
+Live HIE access requires BAA/DUA + IRB.
 
 ---
 **Status**: Private | Active development  
