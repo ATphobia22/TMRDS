@@ -28,9 +28,11 @@ class LiveEvidenceIngestionService:
     async def ingest_trials(self, query: str, limit: int = 10) -> dict[str, Any]:
         source = self.registry.get("clinicaltrials_gov")
         await self.repository.upsert_source(source)
+        version = await self.trials.version()
         response = await self.trials.search(query, limit)
         created = await ClinicalTrialsEvidenceAdapter(self.ingestion).ingest(response)
-        return {"source_id": source.source_id, "query": query, "records_seen": len(response.get("studies", [])), "assertions_created": created}
+        data_timestamp = version.get("dataTimestamp")
+        return {"source_id": source.source_id, "query": query, "source_version": data_timestamp, "records_seen": len(response.get("studies", [])), "assertions_created": created}
 
     async def ingest_openneuro(self, query: str = "MRI", limit: int = 10) -> dict[str, Any]:
         source = self.registry.get("openneuro")
