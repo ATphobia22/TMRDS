@@ -18,6 +18,10 @@ from .evidence_ledger import EvidenceLedger
 from .sovereign_edge import SovereignEdge
 from .kragen_graph_engine import KRAGENGraphEngine
 from .ihie_bridge import IHIEBridge
+from .universal_clinical_ingest import UniversalClinicalIngest
+from .pubmed_literature_bridge import PubMedLiteratureBridge
+from .neo4j_kragen_connector import Neo4jKRAGENConnector
+from .qrce_cure_orchestrator import QRCECureOrchestrator
 
 __all__ = [
     "SimulationComputeMesh",
@@ -39,4 +43,8 @@ __all__ = [
     "SovereignEdge",
     "KRAGENGraphEngine",
     "IHIEBridge",
+    "UniversalClinicalIngest",
+    "PubMedLiteratureBridge",
+    "Neo4jKRAGENConnector",
+    "QRCECureOrchestrator",
 ]
