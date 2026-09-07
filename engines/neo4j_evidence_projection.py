@@ -1,6 +1,7 @@
 """Rebuildable Neo4j projection for the governed TMRDS evidence graph."""
 from __future__ import annotations
 
+import json
 import os
 from typing import Any, Iterable
 
@@ -10,15 +11,12 @@ from engines.biomedical_evidence_models import CanonicalEntity, ConflictGroup, E
 
 
 class Neo4jEvidenceProjection:
-    def __init__(
-        self,
-        uri: str | None = None,
-        user: str | None = None,
-        password: str | None = None,
-    ) -> None:
+    def __init__(self, uri: str | None = None, user: str | None = None, password: str | None = None) -> None:
         self.uri = uri or os.getenv("TMRDS_NEO4J_URI", "bolt://localhost:7687")
         self.user = user or os.getenv("TMRDS_NEO4J_USER", "neo4j")
         self.password = password or os.getenv("TMRDS_NEO4J_PASSWORD", "")
+        if not self.password:
+            raise ValueError("TMRDS_NEO4J_PASSWORD is required")
         self.driver = AsyncGraphDatabase.driver(self.uri, auth=(self.user, self.password))
 
     async def close(self) -> None:
@@ -51,15 +49,19 @@ class Neo4jEvidenceProjection:
 
     @staticmethod
     async def _merge_entity(tx: Any, entity: dict[str, Any]) -> None:
+        identifiers = [{"namespace": ns, "identifier": value} for ns, value in entity.get("identifiers", {}).items()]
+        params = dict(entity)
+        params["properties_json"] = json.dumps(entity.get("properties", {}), sort_keys=True)
+        params["identifiers"] = identifiers
         await tx.run(
             """MERGE (e:BiomedicalEntity {entity_id: $entity_id})
             SET e.entity_type=$entity_type, e.label=$label, e.normalized_label=$normalized_label,
-                e.synonyms=$synonyms, e.properties=$properties, e.updated_at=$updated_at
+                e.synonyms=$synonyms, e.properties_json=$properties_json, e.updated_at=$updated_at
             WITH e
-            UNWIND keys($identifiers) AS namespace
-            MERGE (i:Identifier {namespace: namespace, identifier: $identifiers[namespace]})
+            UNWIND $identifiers AS identifier
+            MERGE (i:Identifier {namespace: identifier.namespace, identifier: identifier.identifier})
             MERGE (e)-[:HAS_IDENTIFIER]->(i)""",
-            **entity,
+            **params,
         )
 
     @staticmethod
@@ -70,12 +72,10 @@ class Neo4jEvidenceProjection:
             MERGE (s)-[r:EVIDENCE_ASSERTION {assertion_id:$assertion_id}]->(o)
             SET r.predicate=$predicate, r.source_id=$source_id, r.source_record_id=$source_record_id,
                 r.source_uri=$source_uri, r.published_at=$published_at, r.retrieved_at=$retrieved_at,
-                r.source_version=$source_version, r.evidence_type=$evidence_type,
-                r.evidence_grade=$evidence_grade, r.directness=$directness,
-                r.replication_state=$replication_state, r.effect_direction=$effect_direction,
-                r.effect_measure=$effect_measure, r.effect_units=$effect_units,
-                r.population_context=$population_context, r.methodology=$methodology,
-                r.content_hash=$content_hash, r.conflict_group_id=$conflict_group_id,
+                r.source_version=$source_version, r.evidence_type=$evidence_type, r.evidence_grade=$evidence_grade,
+                r.directness=$directness, r.replication_state=$replication_state, r.effect_direction=$effect_direction,
+                r.effect_measure=$effect_measure, r.effect_units=$effect_units, r.population_context=$population_context,
+                r.methodology=$methodology, r.content_hash=$content_hash, r.conflict_group_id=$conflict_group_id,
                 r.human_review_state=$human_review_state""",
             **assertion,
         )
@@ -84,8 +84,8 @@ class Neo4jEvidenceProjection:
     async def _merge_conflict(tx: Any, conflict: dict[str, Any]) -> None:
         await tx.run(
             """MERGE (c:ConflictGroup {conflict_group_id:$conflict_group_id})
-            SET c.conflict_type=$conflict_type, c.state=$state,
-                c.detected_at=$detected_at, c.comparison_basis=$comparison_basis
+            SET c.conflict_type=$conflict_type, c.state=$state, c.detected_at=$detected_at,
+                c.comparison_basis=$comparison_basis
             WITH c
             UNWIND $assertion_ids AS assertion_id
             MATCH ()-[r:EVIDENCE_ASSERTION {assertion_id:assertion_id}]->()
