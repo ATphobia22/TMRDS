@@ -6,6 +6,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 
 from engines.live_evidence_ingestion_service import LiveEvidenceIngestionService
+from api.realtime_data_fabric_routes import router as data_fabric_router
 
 router = APIRouter(prefix="/api/v1/evidence/ingest", tags=["governed-evidence-ingestion"])
 service = LiveEvidenceIngestionService()
@@ -30,3 +31,8 @@ async def ingest_openneuro(query: str = Query(default="MRI", min_length=1), limi
         return envelope(await service.ingest_openneuro(query, limit))
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"OpenNeuro ingestion failed: {exc}") from exc
+
+
+# The data fabric is mounted through the existing ingestion router so the
+# current api/main.py remains backward-compatible and requires no route surgery.
+router.include_router(data_fabric_router)
