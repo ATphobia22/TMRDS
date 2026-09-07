@@ -11,6 +11,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
 
+from api.ai_governance_routes import router as ai_governance_router
 from engines.cdc_data_pipeline import CDCDataPipeline
 from engines.clinical_trials_pipeline import ClinicalTrialsPipeline
 from engines.europe_pmc_pipeline import EuropePMCPipeline
@@ -22,7 +23,7 @@ from engines.evidence_graph_repository import EvidenceGraphRepository
 from engines.evidence_graph_service import EvidenceGraphService
 from engines.evidence_source_registry import default_source_registry
 
-app = FastAPI(title="TMRDS Research Gateway", version="2.1.0-research", description="Live biomedical research gateway and source-governed evidence graph.")
+app = FastAPI(title="TMRDS Research Gateway", version="2.2.0-research", description="Live biomedical research gateway and source-governed evidence graph.")
 
 cdc = CDCDataPipeline()
 openneuro = OpenNeuroPipeline()
@@ -254,3 +255,4 @@ async def evidence_ingestion_status() -> dict[str, Any]:
 
 from api.evidence_ingestion_routes import router as evidence_ingestion_router
 app.include_router(evidence_ingestion_router)
+app.include_router(ai_governance_router)
