@@ -4,15 +4,19 @@
 
 > Technology informs people; it does not silently govern people. Human authority remains final.
 
+**Steward:** Anthony John Tucker · Mount Vernon, Indiana 47620
+
 ## Sovereignty & Governance Engines
 
 | Module | Path | Responsibility |
 |--------|------|----------------|
 | **SovereignEdge** | `engines/sovereign_edge.py` | Offline sync queue — clinics operate without internet |
-| **EvidenceLedger** | `engines/evidence_ledger.py` | Immutable `content_hash` provenance (evidence before inference) |
-| **DoctorDignityEthics** | `engines/doctor_dignity_ethics.py` | Bias neutralization matrix (socioeconomic / geographic / technical) |
-| **OpenMedEngine** | `engines/openmed_nlp.py` | HIPAA PII scrub + Medical NER (offline-first) |
-| **TurboVecIndex** | `engines/turbovec_index.py` | Memory-optimized clinical embedding search |
+| **EvidenceLedger** | `engines/evidence_ledger.py` | Immutable `content_hash` provenance |
+| **DoctorDignityEthics** | `engines/doctor_dignity_ethics.py` | Bias neutralization matrix |
+| **OpenMedEngine** | `engines/openmed_nlp.py` | HIPAA PII scrub + Medical NER |
+| **TurboVecIndex** | `engines/turbovec_index.py` | Clinical embedding search |
+| **KRAGENGraphEngine** | `engines/kragen_graph_engine.py` | Multi-layer KG + Graph-of-Thoughts RAG |
+| **IHIEBridge** | `engines/ihie_bridge.py` | Indiana HIE / INPC FHIR interoperability |
 
 ## Clinical & Research Engines
 
@@ -20,7 +24,7 @@
 |--------|------|----------------|
 | **SimulationComputeMesh** | `engines/simulation_compute_mesh.py` | DeepXDE PINN disease progression |
 | **MONAIVisionNode** | `engines/monai_vision_node.py` | 3-D DICOM + diffusion segmentation |
-| **MedicalNetBackbone** | `engines/medicalnet_backbone.py` | Tencent MedicalNet 3D-ResNet weights |
+| **MedicalNetBackbone** | `engines/medicalnet_backbone.py` | Tencent MedicalNet 3D-ResNet |
 | **PrecisionMedicineEngine** | `engines/precision_medicine_engine.py` | VCF + Freedom-to-Operate |
 | **IntegratedEHRBridge** | `engines/integrated_ehr_bridge.py` | FHIR R4/R5 parser |
 | **ComprehendFHIRBridge** | `engines/comprehend_fhir_bridge.py` | AWS DetectEntitiesV2 → FHIR |
@@ -34,8 +38,8 @@
 
 ## Architecture Docs
 
-- **[docs/ARCHITECTURE_SOVEREIGNTY.md](docs/ARCHITECTURE_SOVEREIGNTY.md)** — Zero-Latency Sovereignty, Tri-State data plane, SaMD posture, autonomy ladder
-- **[docs/WEIGHTS_DOWNLOAD.md](docs/WEIGHTS_DOWNLOAD.md)** — MedicalNet, Meditron, AlphaFold3 weights
+- **[docs/ARCHITECTURE_SOVEREIGNTY.md](docs/ARCHITECTURE_SOVEREIGNTY.md)** — Sovereignty, KRAGEN, IHIE, autonomy ladder
+- **[docs/WEIGHTS_DOWNLOAD.md](docs/WEIGHTS_DOWNLOAD.md)** — Model weight download instructions
 
 ## Clinical Pipeline (Sovereign)
 
@@ -43,22 +47,25 @@
 Clinical text → OpenMedEngine (PII scrub + NER)
              → DoctorDignityEthics (bias gate)
              → EvidenceLedger (content_hash)
-             → SovereignEdge queue (offline sync)
+             → KRAGENGraphEngine (pathology/molecular/quantum links)
+             → SovereignEdge queue / IHIEBridge (sync or HIE pull)
              → FHIR / LLM / imaging / molecular engines
 ```
 
-## Indiana Ecosystem Targets
+## Indiana Ecosystem
 
 - Indiana Department of Health (IDOH)
-- Indiana Medicaid (50,000+ providers)
-- Indiana Health Information Exchange (IHIE)
+- Indiana Medicaid
+- **Indiana Health Information Exchange (IHIE)** — Indiana Network for Patient Care (INPC)
+- Regenstrief Institute (Bulk FHIR research access pattern)
 
-**Root Authority:** 13101 Bonebank Road, Mount Vernon, Indiana 47620
+Live IHIE/INPC access requires institutional BAA/DUA and applicable IRB.
 
 ## Safety Notice
 
-All LLM, structure, quantum, and decision-support outputs are **research-advisory only**. They are not a substitute for licensed clinical judgment. SaMD Class II–III compliance (IEC 62304 / ISO 14971) is an explicit design target.
+All LLM, structure, quantum, and decision-support outputs are **research-advisory only**. They are not a substitute for licensed clinical judgment.
 
 ---
 **Status**: Private | Active development  
+**Steward**: Anthony John Tucker · Mount Vernon, Indiana 47620  
 **Doctrine**: Evidence before inference · Human authority final
