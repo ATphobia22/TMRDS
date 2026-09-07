@@ -37,6 +37,11 @@ TMRDS downstream research/data products
 | `nws_alerts` | NOAA/NWS | Active public alerts | near-real-time |
 | `fema_disasters` | FEMA | Disaster declarations | source-defined |
 | `cdc_cdi` | CDC | Chronic Disease Indicators | source-defined |
+| `clinicaltrials_gov` | NIH/NLM | ClinicalTrials.gov API v2 | daily/source-defined |
+| `openfda` | FDA | Drug labels | source-defined |
+| `pubmed` | NCBI/NLM | PubMed E-utilities | source-defined |
+| `europe_pmc` | EMBL-EBI | Europe PMC search | source-defined |
+| `nlm_clinical_tables` | NLM | Clinical Tables conditions | source-defined |
 
 The catalog is deliberately bounded. API-key or licensed feeds must be explicitly registered and credentialed rather than silently enabled.
 
