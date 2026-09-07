@@ -44,21 +44,25 @@ from .clinical_trials_pipeline import ClinicalTrialsPipeline
 from .openfda_pipeline import OpenFDAPipeline
 from .nlm_research_pipeline import NLMResearchPipeline
 from .europe_pmc_pipeline import EuropePMCPipeline
+from .biomedical_evidence_models import CanonicalEntity, EvidenceAssertion, ConflictGroup, SourceRecord
+from .evidence_source_registry import EvidenceSourceRegistry
+from .evidence_graph_repository import EvidenceGraphRepository
+from .evidence_graph_service import EvidenceGraphService
+from .evidence_conflict_engine import EvidenceConflictEngine
+from .governed_evidence_ingestion import GovernedEvidenceIngestion
+from .neo4j_evidence_projection import Neo4jEvidenceProjection
 
 __all__ = [
-    "SimulationComputeMesh", "MONAIVisionNode", "PrecisionMedicineEngine",
-    "IntegratedEHRBridge", "MedicalNetBackbone", "ComprehendFHIRBridge",
-    "ClinicalLLMRouter", "AlphaFold3Node", "GROVERMolecularNode",
-    "QiskitNatureBridge", "RDKitChemistryNode", "BioCoderAssistant",
-    "DoctorDignityEthics", "OpenMedEngine", "TurboVecIndex", "EvidenceLedger",
-    "SovereignEdge", "KRAGENGraphEngine", "IHIEBridge", "UniversalClinicalIngest",
-    "PubMedLiteratureBridge", "Neo4jKRAGENConnector", "QRCECureOrchestrator",
-    "FHIRUSCoreMapper", "OMOPCDMBridge", "SpecialtyCareRouter",
-    "SpecialtyFHIRProfileRegistry", "OMOPPhenotypeEngine", "DriveThruIngestion",
-    "OverlookedBlessings", "OpenSourceMedicalCore", "USCoreOMOPConceptMap",
-    "OHDSIAtlasCohortAdapter", "NLMGovClinicalTables", "ClinicalSwarmOrchestrator",
-    "IEEE11073PHDBridge", "DualTierMemory", "ESMFoldStructureNode",
-    "EpistemicParallelRouter", "CDCDataPipeline", "OpenNeuroPipeline",
-    "ClinicalTrialsPipeline", "OpenFDAPipeline", "NLMResearchPipeline",
-    "EuropePMCPipeline",
+    "SimulationComputeMesh", "MONAIVisionNode", "PrecisionMedicineEngine", "IntegratedEHRBridge",
+    "MedicalNetBackbone", "ComprehendFHIRBridge", "ClinicalLLMRouter", "AlphaFold3Node", "GROVERMolecularNode",
+    "QiskitNatureBridge", "RDKitChemistryNode", "BioCoderAssistant", "DoctorDignityEthics", "OpenMedEngine",
+    "TurboVecIndex", "EvidenceLedger", "SovereignEdge", "KRAGENGraphEngine", "IHIEBridge", "UniversalClinicalIngest",
+    "PubMedLiteratureBridge", "Neo4jKRAGENConnector", "QRCECureOrchestrator", "FHIRUSCoreMapper", "OMOPCDMBridge",
+    "SpecialtyCareRouter", "SpecialtyFHIRProfileRegistry", "OMOPPhenotypeEngine", "DriveThruIngestion",
+    "OverlookedBlessings", "OpenSourceMedicalCore", "USCoreOMOPConceptMap", "OHDSIAtlasCohortAdapter",
+    "NLMGovClinicalTables", "ClinicalSwarmOrchestrator", "IEEE11073PHDBridge", "DualTierMemory",
+    "ESMFoldStructureNode", "EpistemicParallelRouter", "CDCDataPipeline", "OpenNeuroPipeline", "ClinicalTrialsPipeline",
+    "OpenFDAPipeline", "NLMResearchPipeline", "EuropePMCPipeline", "CanonicalEntity", "EvidenceAssertion",
+    "ConflictGroup", "SourceRecord", "EvidenceSourceRegistry", "EvidenceGraphRepository", "EvidenceGraphService",
+    "EvidenceConflictEngine", "GovernedEvidenceIngestion", "Neo4jEvidenceProjection",
 ]
