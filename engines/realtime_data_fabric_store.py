@@ -1,6 +1,7 @@
 """PostgreSQL persistence adapter for real-time data-fabric observations."""
 from __future__ import annotations
 
+import json
 import os
 from typing import Iterable
 
@@ -46,7 +47,7 @@ class PostgresDataFabricStore:
                         source.source_id, source.provider, source.name, source.endpoint,
                         source.format, source.authority_class, source.update_frequency,
                         source.requires_api_key, source.enabled,
-                        __import__("json").dumps(source.default_params, sort_keys=True),
+                        json.dumps(source.default_params, sort_keys=True),
                     )
                     await connection.execute(
                         "INSERT INTO data_fabric_source_state (source_id) VALUES ($1) ON CONFLICT DO NOTHING",
@@ -67,12 +68,11 @@ class PostgresDataFabricStore:
                 ON CONFLICT (source_id, record_id, payload_hash) DO NOTHING
                 """,
                 observation.source_id, observation.record_id, observation.observed_at,
-                observation.retrieved_at,
-                __import__("json").dumps(observation.payload, sort_keys=True),
+                observation.retrieved_at, json.dumps(observation.payload, sort_keys=True),
                 observation.payload_hash, observation.source_version, observation.source_uri,
                 observation.etag, observation.last_modified, observation.provenance_status,
                 observation.fabric_version,
             )
-            return result.endswith("1")
+            return result == "INSERT 0 1"
         finally:
             await connection.close()
