@@ -22,6 +22,12 @@ def test_source_registry_contains_live_public_sources():
     assert {"cdc_cdi", "openneuro", "clinicaltrials_gov", "openfda", "nlm_clinical_tables", "pubmed", "europe_pmc"} <= ids
 
 
+def test_source_registry_contains_terminology_and_chemistry_sources():
+    registry = default_source_registry()
+    ids = {source.source_id for source in registry.list()}
+    assert {"loinc", "mondo", "hgnc", "chembl"} <= ids
+
+
 def _assertion(assertion_id: str, direction: str, grade: str) -> EvidenceAssertion:
     return EvidenceAssertion(
         assertion_id=assertion_id,
