@@ -202,8 +202,16 @@ python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-python -m pytest -q
+python -m pytest -q -m "not integration"
 ```
+
+The normal test command intentionally excludes live integration tests because those tests require external upstream availability and/or running PostgreSQL/Neo4j services. To run the live integration suite explicitly:
+
+```bash
+python -m pytest -q -m integration
+```
+
+The integration suite is therefore a separate operational check, not a prerequisite for the deterministic unit/API CI gate.
 
 Start the API with:
 
@@ -235,13 +243,13 @@ The API is exposed on port `8000`; Neo4j exposes ports `7474` and `7687`.
 
 ## Testing and CI
 
-GitHub Actions runs the Python test suite with Python 3.11:
+GitHub Actions runs the deterministic Python test gate with Python 3.11:
 
 ```bash
-python -m pytest -q
+python -m pytest -q -m "not integration"
 ```
 
-The CI dependency set includes `requests` because the integration test suite uses it, while optional scientific dependencies remain outside the core requirements unless required by a specific test or deployment profile.
+Live-source and PostgreSQL/Neo4j tests are explicitly marked `integration` and are not included in the default CI gate. The dependency set includes `requests` because the integration suite uses it, while optional scientific dependencies remain outside the core requirements unless required by a specific test or deployment profile.
 
 ## Security and regulated-boundary posture
 
