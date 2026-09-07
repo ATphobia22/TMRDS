@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Mapping
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx
@@ -226,7 +226,7 @@ def build_default_fabric() -> DataFabric:
             endpoint="https://waterservices.usgs.gov/nwis/iv/",
             format="json",
             update_frequency="real-time",
-            default_params={"format": "json", "sites": "", "parameterCd": "00060", "siteStatus": "all"},
+            default_params={"format": "json", "stateCd": "IN", "parameterCd": "00060", "siteStatus": "all"},
         ),
         SourceDefinition(
             source_id="usgs_earthquakes",
@@ -240,7 +240,7 @@ def build_default_fabric() -> DataFabric:
             source_id="noaa_weather",
             provider="NOAA/NWS",
             name="National Weather Service API",
-            endpoint="https://api.weather.gov/points/39.1001,-84.5120",
+            endpoint="https://api.weather.gov/points/37.9748,-87.5558",
             format="json",
             update_frequency="source-defined",
         ),
@@ -260,6 +260,7 @@ def build_default_fabric() -> DataFabric:
             endpoint="https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries",
             format="json",
             update_frequency="source-defined",
+            default_params={"$top": "1000"},
         ),
         SourceDefinition(
             source_id="cdc_cdi",
@@ -268,6 +269,7 @@ def build_default_fabric() -> DataFabric:
             endpoint="https://data.cdc.gov/resource/a8ys-9fjs.json",
             format="json",
             update_frequency="source-defined",
+            default_params={"$limit": "500"},
         ),
     ])
 
