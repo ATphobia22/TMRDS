@@ -44,12 +44,13 @@ class PubMedLiteratureBridge:
         """ESearch — return PMIDs and count for a scientific query."""
         if not query or not query.strip():
             raise ValueError("query required")
-        url = f"{EUTILS}/esearch.fcgi?{self._params({
-            'db': 'pubmed',
-            'term': query,
-            'retmax': max(1, min(max_results, 100)),
-            'sort': sort,
-        })}"
+        query_params = self._params({
+            "db": "pubmed",
+            "term": query,
+            "retmax": max(1, min(max_results, 100)),
+            "sort": sort,
+        })
+        url = f"{EUTILS}/esearch.fcgi?{query_params}"
         try:
             with urllib.request.urlopen(url, timeout=20) as resp:
                 data = json.loads(resp.read().decode())
@@ -77,7 +78,8 @@ class PubMedLiteratureBridge:
         if not pmids:
             return {"articles": [], "status": "EMPTY"}
         ids = ",".join(pmids[:50])
-        url = f"{EUTILS}/esummary.fcgi?{self._params({'db': 'pubmed', 'id': ids})}"
+        query_params = self._params({"db": "pubmed", "id": ids})
+        url = f"{EUTILS}/esummary.fcgi?{query_params}"
         try:
             with urllib.request.urlopen(url, timeout=25) as resp:
                 data = json.loads(resp.read().decode())
