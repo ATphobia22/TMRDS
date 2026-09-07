@@ -25,6 +25,11 @@ from .qrce_cure_orchestrator import QRCECureOrchestrator
 from .fhir_us_core_mapper import FHIRUSCoreMapper
 from .omop_cdm_bridge import OMOPCDMBridge
 from .specialty_care_router import SpecialtyCareRouter
+from .specialty_fhir_profiles import SpecialtyFHIRProfileRegistry
+from .omop_phenotype_engine import OMOPPhenotypeEngine
+from .drive_thru_ingestion import DriveThruIngestion
+from .overlooked_blessings import OverlookedBlessings
+from .open_source_medical_core import OpenSourceMedicalCore
 
 __all__ = [
     "SimulationComputeMesh",
@@ -53,4 +58,9 @@ __all__ = [
     "FHIRUSCoreMapper",
     "OMOPCDMBridge",
     "SpecialtyCareRouter",
+    "SpecialtyFHIRProfileRegistry",
+    "OMOPPhenotypeEngine",
+    "DriveThruIngestion",
+    "OverlookedBlessings",
+    "OpenSourceMedicalCore",
 ]
