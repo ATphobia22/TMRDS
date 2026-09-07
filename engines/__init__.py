@@ -38,45 +38,27 @@ from .ieee11073_phd_bridge import IEEE11073PHDBridge
 from .dual_tier_memory import DualTierMemory
 from .esmfold_structure_node import ESMFoldStructureNode
 from .epistemic_parallel_router import EpistemicParallelRouter
+from .cdc_data_pipeline import CDCDataPipeline
+from .openneuro_pipeline import OpenNeuroPipeline
+from .clinical_trials_pipeline import ClinicalTrialsPipeline
+from .openfda_pipeline import OpenFDAPipeline
+from .nlm_research_pipeline import NLMResearchPipeline
+from .europe_pmc_pipeline import EuropePMCPipeline
 
 __all__ = [
-    "SimulationComputeMesh",
-    "MONAIVisionNode",
-    "PrecisionMedicineEngine",
-    "IntegratedEHRBridge",
-    "MedicalNetBackbone",
-    "ComprehendFHIRBridge",
-    "ClinicalLLMRouter",
-    "AlphaFold3Node",
-    "GROVERMolecularNode",
-    "QiskitNatureBridge",
-    "RDKitChemistryNode",
-    "BioCoderAssistant",
-    "DoctorDignityEthics",
-    "OpenMedEngine",
-    "TurboVecIndex",
-    "EvidenceLedger",
-    "SovereignEdge",
-    "KRAGENGraphEngine",
-    "IHIEBridge",
-    "UniversalClinicalIngest",
-    "PubMedLiteratureBridge",
-    "Neo4jKRAGENConnector",
-    "QRCECureOrchestrator",
-    "FHIRUSCoreMapper",
-    "OMOPCDMBridge",
-    "SpecialtyCareRouter",
-    "SpecialtyFHIRProfileRegistry",
-    "OMOPPhenotypeEngine",
-    "DriveThruIngestion",
-    "OverlookedBlessings",
-    "OpenSourceMedicalCore",
-    "USCoreOMOPConceptMap",
-    "OHDSIAtlasCohortAdapter",
-    "NLMGovClinicalTables",
-    "ClinicalSwarmOrchestrator",
-    "IEEE11073PHDBridge",
-    "DualTierMemory",
-    "ESMFoldStructureNode",
-    "EpistemicParallelRouter",
+    "SimulationComputeMesh", "MONAIVisionNode", "PrecisionMedicineEngine",
+    "IntegratedEHRBridge", "MedicalNetBackbone", "ComprehendFHIRBridge",
+    "ClinicalLLMRouter", "AlphaFold3Node", "GROVERMolecularNode",
+    "QiskitNatureBridge", "RDKitChemistryNode", "BioCoderAssistant",
+    "DoctorDignityEthics", "OpenMedEngine", "TurboVecIndex", "EvidenceLedger",
+    "SovereignEdge", "KRAGENGraphEngine", "IHIEBridge", "UniversalClinicalIngest",
+    "PubMedLiteratureBridge", "Neo4jKRAGENConnector", "QRCECureOrchestrator",
+    "FHIRUSCoreMapper", "OMOPCDMBridge", "SpecialtyCareRouter",
+    "SpecialtyFHIRProfileRegistry", "OMOPPhenotypeEngine", "DriveThruIngestion",
+    "OverlookedBlessings", "OpenSourceMedicalCore", "USCoreOMOPConceptMap",
+    "OHDSIAtlasCohortAdapter", "NLMGovClinicalTables", "ClinicalSwarmOrchestrator",
+    "IEEE11073PHDBridge", "DualTierMemory", "ESMFoldStructureNode",
+    "EpistemicParallelRouter", "CDCDataPipeline", "OpenNeuroPipeline",
+    "ClinicalTrialsPipeline", "OpenFDAPipeline", "NLMResearchPipeline",
+    "EuropePMCPipeline",
 ]
