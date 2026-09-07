@@ -7,6 +7,10 @@ from .medicalnet_backbone import MedicalNetBackbone
 from .comprehend_fhir_bridge import ComprehendFHIRBridge
 from .clinical_llm_router import ClinicalLLMRouter
 from .alphafold3_node import AlphaFold3Node
+from .grover_molecular_node import GROVERMolecularNode
+from .qiskit_nature_bridge import QiskitNatureBridge
+from .rdkit_chemistry_node import RDKitChemistryNode
+from .biocoder_assistant import BioCoderAssistant
 
 __all__ = [
     "SimulationComputeMesh",
@@ -17,4 +21,8 @@ __all__ = [
     "ComprehendFHIRBridge",
     "ClinicalLLMRouter",
     "AlphaFold3Node",
+    "GROVERMolecularNode",
+    "QiskitNatureBridge",
+    "RDKitChemistryNode",
+    "BioCoderAssistant",
 ]
