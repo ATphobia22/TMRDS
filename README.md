@@ -1,213 +1,287 @@
-# TMRDS: Transparent Medical Research Decision Support
+# TMRDS — Transparent Medical Research Decision Support
 
-**Research-Advisory Clinical Information Gateway**
+**Research-advisory biomedical evidence gateway with governed provenance, interoperability, and AI governance.**
 
-| Field | Value |
-|-------|--------|
-| **Version** | 1.0.0-research |
-| **Steward** | Anthony John Tucker, Mount Vernon, Indiana 47620 |
-| **Regulatory posture** | Research-advisory only. **Not** FDA-cleared Software as a Medical Device (SaMD). Human clinical authority is final. |
-| **Governance** | [GodFirst LLM/ML Protocol (G1P)](https://github.com/ATphobia22/godfirst-llm-ml-protocol) — child protection, anti-deception, audit transparency, human dignity |
-| **Primary standards** | FHIR R4 US Core (default); OMOP CDM v5.4; HIPAA Security Rule technical controls (45 CFR 164.312) |
+> **Status:** Research software. TMRDS is not FDA-cleared Software as a Medical Device (SaMD), does not replace clinical judgment, and is not a diagnostic or prescribing system.
 
----
+## What TMRDS is
 
-## 1. Abstract
+TMRDS is a Python/FastAPI research platform for connecting public biomedical evidence to a governed evidence model. The current implementation combines:
 
-TMRDS is a dual-track software system that (1) provides clinicians and biomedical researchers with **read-only access** to public medical terminologies, OMOP vocabulary concepts, literature-oriented research workflows, and **bounded** quantum-algorithm simulations; and (2) maintains empty regulatory scaffolds aligned with current FDA guidance for a possible future SaMD pathway. The system does **not** generate diagnoses, prescriptions, or treatment recommendations. Every public API response carries explicit research-advisory flags.
+- **Public biomedical source adapters** for CDC, OpenNeuro, ClinicalTrials.gov, openFDA, NLM Clinical Tables, Europe PMC, and PubMed.
+- **Evidence governance** with registered sources, provenance-bearing entities/assertions, conflict handling, ingestion state, and audit-oriented evidence records.
+- **FHIR / OMOP interoperability** for separating clinical interoperability concerns from research normalization.
+- **PostgreSQL** as the authoritative evidence store, with **pgvector** support for derived semantic retrieval.
+- **Neo4j** as a governed graph projection for relationship-oriented research and graph analytics.
+- **AI governance** that records model/prompt/dataset provenance and evidence envelopes and keeps generated outputs research-advisory.
+- **Optional research engines** that are isolated from the core import path so heavy scientific dependencies do not prevent the API and evidence stack from starting.
 
-The design prioritizes **equity of access**: rural and low- and middle-income country (LMIC) practitioners are treated as first-class users of the research surface. Integration points reference open science and global-health drug-discovery resources (dd4gh, DNDi open initiatives, REWARD, OHDSI/DARWIN EU) so that computational assistance is not gated by institutional wealth or geography.
+The design principle is:
 
----
+**Evidence → Provenance → Interoperability → Graph → AI Governance**
 
-## 2. Dual-Track Architecture
+## Current architecture
 
-| Track | Purpose | Status |
-|-------|---------|--------|
-| **Research prototype** | Terminology lookup, OMOP concept resolution, quantum research simulations with mandatory error bounds, workflow orchestration | Implemented |
-| **Future SaMD pathway** | Predetermined Change Control Plan (PCCP) templates; SaMD checklist mapped to QMSR, IEC 62304, ISO 14971, FDA cybersecurity and AI lifecycle guidance | Scaffold only — no marketing submission |
+```text
+                         ┌─────────────────────────┐
+                         │     FastAPI Gateway      │
+                         │       api/main.py       │
+                         └────────────┬────────────┘
+                                      │
+              ┌───────────────────────┼────────────────────────┐
+              │                       │                        │
+              ▼                       ▼                        ▼
+     Public Source Adapters   Evidence Governance       AI Governance
+     CDC / NLM / PubMed       entities / assertions     model + prompt +
+     Europe PMC / FDA         provenance / conflicts    dataset + evidence
+     ClinicalTrials.gov       ingestion state           envelopes
+     OpenNeuro
+              │                       │                        │
+              └───────────────────────┼────────────────────────┘
+                                      ▼
+                         ┌─────────────────────────┐
+                         │      PostgreSQL          │
+                         │  authoritative evidence  │
+                         │  + pgvector projection   │
+                         └────────────┬────────────┘
+                                      │
+                                      ▼
+                         ┌─────────────────────────┐
+                         │        Neo4j             │
+                         │ governed graph projection│
+                         └─────────────────────────┘
 
-No component on the research track may assert clinical decision support. No component on the SaMD track may claim clearance.
-
----
-
-## 3. Implemented Components
-
-### 3.1 API Gateway (`api/main.py`)
-
-FastAPI application wiring engines to a clinician-facing frontend. Session control, audit logging, and integrity seals follow HIPAA Security Rule technical safeguards (45 CFR 164.312). FHIR interoperability defaults to **R4 US Core**; R5 is available as an optional research layer.
-
-### 3.2 Terminology & Data Model Bridges
-
-| Module | Role | Source authority |
-|--------|------|------------------|
-| `engines/nlm_clinical_tables.py` | Thin client for NLM Clinical Table Search Service (ICD-11, ICD-10-CM, HCPCS, HPO) | [clinicaltables.nlm.nih.gov](https://clinicaltables.nlm.nih.gov/) |
-| `engines/omop_cdm_bridge.py` | OMOP concept search / ID lookup (no record fabrication) | OHDSI; DARWIN EU and FDA Sentinel standardize on OMOP |
-| `engines/omop_cdm_v54_schema.py` | Structural reference for OMOP CDM **v5.4** clinical tables (PERSON, VISIT_OCCURRENCE, CONDITION_OCCURRENCE, DRUG_EXPOSURE, MEASUREMENT, etc.) | [ohdsi.github.io/CommonDataModel/cdm54.html](https://ohdsi.github.io/CommonDataModel/cdm54.html) |
-
-**Note on Athena:** OHDSI Athena does not expose an official public REST API. Production research deployments should load the vocabulary zip locally or use community SDKs (athena-client, OMOPHub) under appropriate licenses.
-
-### 3.3 Quantum Research Layer
-
-| Module | Role |
-|--------|------|
-| `engines/quantum_research_prototype.py` | Classical state-vector / matrix simulation by default; optional PennyLane device. **Every public method returns an explicit `error_bound` and research-advisory envelope.** |
-| `engines/quantum_medical_research_catalog.py` | Literature-backed catalog of quantum medical technology domains (VQE, CVaR-VQE, QML classifiers, quantum sensing, quantum-safe cryptography) |
-
-**VQE error mitigation (documented, not claimed as clinical):**
-
-- Zero-Noise Extrapolation (ZNE)
-- Probabilistic Error Cancellation (PEC)
-- Randomized Compiling (RC) combined with ZNE
-- Readout error mitigation (e.g., T-REx)
-- Characterization-based frameworks aiming for lower-overhead unbiased estimates
-
-These techniques improve expectation-value accuracy on NISQ hardware but do **not** guarantee chemical accuracy or clinical utility. Systematic reviews of quantum machine learning in digital health report no consistent empirical advantage over strong classical baselines at present scale.
-
-**Quantum sensing (catalogued for awareness only; out of software runtime scope):**
-
-- Optically pumped magnetometer MEG (OPM-MEG) — wearable, room-temperature; channel counts scaling; regulatory approvals reported in some jurisdictions
-- Nitrogen-vacancy (NV) center / quantum diamond microscopy — nanoscale magnetic imaging
-- Research concepts for quantum-sensing MRI using intrinsic nuclear spins
-- Photon-counting CT, quantum optical coherence tomography, quantum-dot probes
-
-Near-term translational value is generally assessed as higher for sensing hardware than for quantum computing algorithms.
-
-### 3.4 Regulatory Scaffolds
-
-| Artifact | Content |
-|----------|---------|
-| `regulatory/pccp_scaffold.md` | Empty three-section PCCP (Description of Modifications, Modification Protocol, Impact Assessment) per FDA final guidance on AI-enabled device software functions |
-| `regulatory/samd_checklist.py` | Programmatic emission of PCCP template + readiness checklist referencing QMSR (effective 2026), IEC 62304 (Ed. 2 expected), ISO 14971, FDA cybersecurity final guidance (2026), and AI lifecycle draft guidance |
-
-### 3.5 Research Workflows (`engines/research_workflows.py`)
-
-Named, auditable action sequences:
-
-1. `omop_concept_research`
-2. `nlm_terminology_research`
-3. `quantum_research_simulation`
-4. `regulatory_scaffold`
-5. `system_research_health`
-
-### 3.6 Supporting Engines
-
-- `hipaa_security_controls.py` — sessions, audit JSONL, HMAC integrity
-- `fhir_r5_interop.py` — version preference and interop helpers
-- `evidence_ledger.py` — append-only research event log
-- `realtime_analytics.py` — latency and operational metrics
-
----
-
-## 4. Key Public Routes (Research)
-
-```
-GET  /api/v1/research/omop/search
-GET  /api/v1/research/omop/concept/{concept_id}
-GET  /api/v1/research/omop/schema
-GET  /api/v1/research/nlm/icd11
-GET  /api/v1/research/nlm/icd10cm
-GET  /api/v1/research/quantum/health
-GET  /api/v1/research/quantum/vqe-toy
-GET  /api/v1/research/quantum/catalog
-GET  /api/v1/research/workflows
-GET  /api/v1/research/workflows/{workflow_id}
-GET  /api/v1/regulatory/pccp-template
-GET  /api/v1/research/health
+        FHIR R4 / US Core  ←→  clinical interoperability boundary
+        OMOP CDM v5.4      ←→  research normalization boundary
 ```
 
-All responses include:
+## Implemented API surface
+
+The FastAPI application currently exposes research-advisory routes including:
+
+### Public biomedical research
+
+```text
+GET /api/v1/research/health
+GET /api/v1/research/datasets/cdc
+GET /api/v1/research/datasets/openneuro
+GET /api/v1/research/trials
+GET /api/v1/research/drugs/labels
+GET /api/v1/research/drugs/adverse-events
+GET /api/v1/research/drugs/shortages
+GET /api/v1/research/nlm/conditions
+GET /api/v1/research/nlm/hpo
+GET /api/v1/research/nlm/genes
+GET /api/v1/research/nlm/rxterms
+GET /api/v1/research/literature/europe-pmc
+GET /api/v1/research/literature/pubmed
+GET /api/v1/research/federated-search
+```
+
+### Governed evidence graph
+
+```text
+GET /api/v1/evidence/entities/{entity_id}
+GET /api/v1/evidence/entities/{entity_id}/assertions
+GET /api/v1/evidence/assertions/{assertion_id}
+GET /api/v1/evidence/path
+GET /api/v1/evidence/graph
+GET /api/v1/evidence/conflicts
+GET /api/v1/evidence/sources
+GET /api/v1/evidence/sources/{source_id}
+GET /api/v1/evidence/ingestion/status
+```
+
+Additional ingestion, retrieval, and AI-governance routes are registered through the dedicated API routers in `api/`.
+
+Research responses are wrapped with explicit governance metadata, including:
 
 ```json
 {
   "status": "research-advisory",
   "human_authority_final": true,
-  "not_samd": true
+  "not_samd": true,
+  "read_only": true
 }
 ```
 
----
+## Data and evidence model
 
-## 5. Equity and Global-Health Alignment
+TMRDS treats the evidence ledger as authoritative. Derived representations must not silently become sources of truth.
 
-TMRDS does not gate research tooling by geography or institutional resources. Referenced open resources include:
+### PostgreSQL
 
-| Resource | Contribution |
-|----------|--------------|
-| **dd4gh** (Medicines for Malaria Venture + deepmirror; Gates Foundation support) | Free AI-assisted molecule design for malaria, tuberculosis, and neglected tropical diseases, prioritized for LMIC researchers |
-| **DNDi Open Science** / COVID Moonshot / ASAP | Open structural data and licensing models intended to support affordable access |
-| **REWARD** | Open-source framework for drug-repurposing signals on OMOP-mapped real-world data |
-| **OHDSI / Athena / DARWIN EU** | Standardized vocabularies and federated real-world evidence without shipping patient-level data across borders |
-| **NLM Clinical Tables / PubMed / UniProt / AlphaFold DB** | Public terminology, literature, sequence, and structure resources |
+The PostgreSQL layer stores governed evidence and provenance records. Migrations live in `migrations/` and are mounted by the development Docker Compose stack.
 
-Rural open-source stack components planned for real REST/DICOM integration (not quantum-dependent): OpenEMR, Orthanc PACS, OpenELIS, Kiwix WikiMed.
+### pgvector
 
----
+Vector embeddings are a **derived retrieval projection**. They are not authoritative evidence and must remain traceable to the source/evidence records from which they were generated.
 
-## 6. Hard Constraints (Non-Negotiable)
+### Neo4j
 
-1. **No fabricated clinical databases** — no invented disease prevalence, pathway, or molecular seed files presented as medical fact.
-2. **No diagnostic or therapeutic recommendations** from quantum, ML, or retrieval modules.
-3. **Read-only public sources** for terminology and literature ingestion.
-4. **G1P compliance** — anti-deception, transparent audit trails, child protection, right to exit/delete.
-5. **Explicit error bounds** on every quantum research response.
-6. **Human authority final** — software never overrides licensed clinician judgment.
+Neo4j is a governed graph projection used for relationship traversal and graph-oriented computation. It is not an independent authority that can override the evidence ledger.
 
----
+### Evidence semantics
 
-## 7. References (Selected)
+TMRDS distinguishes observed/source-backed assertions from model-derived or hypothesized relationships. Research outputs should retain source identity, retrieval/provenance metadata, and uncertainty rather than presenting predictions as established medical facts.
 
-### Regulatory
+## Interoperability
 
-1. FDA. *Marketing Submission Recommendations for a Predetermined Change Control Plan for Artificial Intelligence-Enabled Device Software Functions.* Final guidance, Dec 2024 (updated Aug 2025).
-2. FDA. *Artificial Intelligence-Enabled Device Software Functions: Lifecycle Management and Marketing Submission Recommendations.* Draft, Jan 2025.
-3. FDA. *Cybersecurity in Medical Devices: Quality Management System Considerations and Content of Premarket Submissions.* Final, Feb 2026.
-4. FDA Quality Management System Regulation (QMSR), 21 CFR Part 820 as amended (effective Feb 2026); harmonization with ISO 13485:2016.
-5. IEC 62304 (medical device software lifecycle); Edition 2 expected to address AI/ML lifecycle phases.
-6. ISO 14971 (application of risk management to medical devices).
-7. 45 CFR 164.312 (HIPAA Security Rule technical safeguards).
+- **FHIR R4 / US Core:** clinical interoperability boundary and resource mapping.
+- **OMOP CDM v5.4:** research normalization boundary.
+- The architecture keeps clinical exchange, research normalization, evidence provenance, semantic retrieval, and graph projection as separable concerns.
 
-### Data Models & Terminologies
+FHIR/OMOP adapters and supporting specifications are documented in `docs/`.
 
-8. OHDSI. *OMOP Common Data Model v5.4 Specification.* https://ohdsi.github.io/CommonDataModel/cdm54.html
-9. U.S. National Library of Medicine. Clinical Table Search Service. https://clinicaltables.nlm.nih.gov/
-10. WHO. International Classification of Diseases, 11th Revision (ICD-11); accessed via NLM ICD-11 Codes API.
-11. EMA / DARWIN EU. Data Analysis and Real World Interrogation Network — OMOP CDM standardization for European RWE partners.
+## AI governance
 
-### Quantum Computing & Sensing (Illustrative)
+The AI governance layer is intentionally restrictive:
 
-12. Systematic and institutional reports on VQE / CVaR-VQE for molecular simulation and mRNA structure (Cleveland Clinic–RIKEN–IBM; IBM–Moderna collaborations, 2024–2026).
-13. Error mitigation literature: zero-noise extrapolation, probabilistic error cancellation, randomized compiling + ZNE, readout mitigation, characterization-based methods (Phys. Rev. A; arXiv utility-scale mitigation studies, 2024–2026).
-14. Quantum sensing reviews: OPM-MEG, NV-center imaging, photon-counting CT, quantum OCT (Frontiers in Physics and related 2025–2026 reviews); first-in-jurisdiction OPM-MEG authorizations reported.
-15. npj Digital Medicine systematic review of quantum machine learning for digital health (2025) — limited evidence of consistent empirical advantage at current scale.
+1. Model identity/version is recorded.
+2. Prompt/policy provenance is recorded where applicable.
+3. Dataset/evaluation metadata can be attached to generations.
+4. Evidence envelopes identify the evidence available to an output.
+5. Uncertainty and human-review requirements are explicit.
+6. Research outputs cannot be promoted implicitly into autonomous clinical authority.
 
-### Global Health & Open Science
+TMRDS therefore implements a **research-advisory architecture**, not an autonomous clinical decision-maker.
 
-16. Medicines for Malaria Venture & deepmirror. *Drug Design for Global Health (dd4gh).* https://dd4gh.ai/
-17. Drugs for Neglected Diseases initiative (DNDi). Open science policy and portfolio (including Moonshot / ASAP lineage).
-18. REWARD open-source framework for identifying medication benefits on OMOP CDM data (JAMIA, 2026).
+## Source registry
 
-### Governance
+The repository contains a governed source registry for biomedical sources such as:
 
-19. Tucker AJ. *GodFirst LLM/ML Protocol (G1P).* https://github.com/ATphobia22/godfirst-llm-ml-protocol
+- CDC
+- OpenNeuro
+- ClinicalTrials.gov
+- openFDA
+- NLM
+- PubMed
+- Europe PMC
+- LOINC
+- MONDO
+- HGNC
+- ChEMBL
 
----
+A source being registered does **not** mean its data are automatically clinical-grade or validated for clinical decision-making. Upstream source limitations remain part of the governance boundary.
 
-## 8. Deployment
+## Optional scientific engines
 
-```bash
-pip install -r requirements.txt
-uvicorn api.main:app --host 0.0.0.0 --port 8000
+The repository contains additional scientific, imaging, simulation, and research engines. Heavy or optional engines are lazy-loaded from `engines/__init__.py` so that an unavailable optional dependency does not break unrelated API or evidence tests.
+
+Do not install heavyweight scientific stacks merely to run the core API unless a specific engine requires them.
+
+## Repository layout
+
+```text
+TMRDS/
+├── api/                 # FastAPI application and route modules
+├── engines/             # Research, evidence, interoperability, and optional engines
+├── migrations/          # PostgreSQL / evidence schema migrations
+├── docs/                # Architecture, security, interoperability, and operations docs
+├── tests/               # Unit, API-contract, and integration tests
+├── frontend/            # Frontend assets/application surface
+├── .github/workflows/   # CI
+├── docker-compose.yml   # PostgreSQL/pgvector + Neo4j + API development stack
+├── deploy.sh            # Deployment helper
+├── requirements.txt     # Python runtime/test dependencies
+└── pytest.ini           # Pytest configuration
 ```
 
-See `docs/DEPLOY_DOCTOR_CONSOLE.md` and `docker-compose.yml`. Default clinician credentials must be rotated before any networked deployment.
+## Requirements
 
----
+Core development/CI currently targets **Python 3.11**. The repository's `requirements.txt` provides the FastAPI, HTTP, database, Neo4j, numerical, and test dependencies required by the current test suite.
 
-## 9. Disclaimer
+Some optional scientific engines have dependencies that are intentionally not part of the core installation.
 
-TMRDS outputs are for **research and educational exploration only**. They are not medical advice, not a diagnosis, not a prescription, and not a substitute for the judgment of a licensed clinician. The steward and contributors accept no liability for clinical decisions made in reliance on this software. Human authority is final.
+## Run locally
 
----
+### Python environment
 
-*End of document.*
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+python -m pytest -q
+```
+
+Start the API with:
+
+```bash
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
+```
+
+Then inspect the FastAPI OpenAPI document at `/docs` or `/openapi.json`.
+
+### Docker Compose
+
+The Compose stack provisions:
+
+- `tmrds-postgres` using `pgvector/pgvector:pg16`
+- `tmrds-neo4j` using Neo4j Community Edition
+- `tmrds-api` using Python 3.11
+
+Set the required database and Neo4j passwords before starting the stack:
+
+```bash
+export POSTGRES_PASSWORD='change-me'
+export NEO4J_PASSWORD='change-me-too'
+docker compose up --build
+```
+
+The API is exposed on port `8000`; Neo4j exposes ports `7474` and `7687`.
+
+**Do not use placeholder passwords or the development Compose configuration as a production security boundary.** Production deployments require secret management, network controls, least privilege, TLS, backups, monitoring, and a documented threat/risk model.
+
+## Testing and CI
+
+GitHub Actions runs the Python test suite with Python 3.11:
+
+```bash
+python -m pytest -q
+```
+
+The CI dependency set includes `requests` because the integration test suite uses it, while optional scientific dependencies remain outside the core requirements unless required by a specific test or deployment profile.
+
+## Security and regulated-boundary posture
+
+TMRDS is designed with security and regulatory boundaries in mind, but repository alignment is **not** equivalent to certification, compliance attestation, FDA clearance, or authorization to process regulated clinical workloads.
+
+Important controls and design documents include:
+
+- `docs/EVIDENCE_GRAPH_SECURITY.md`
+- `docs/EVIDENCE_GRAPH_OPERATIONS.md`
+- `docs/ARCHITECTURE_VERIFICATION.md`
+- `docs/FHIR_OMOP_SPECIALTIES.md`
+- `docs/FHIR_R5_HIPAA.md`
+- `docs/SAMD_IEC62304_ISO14971.md`
+- `engines/hipaa_security_controls.py`
+
+For real PHI/clinical deployment, conduct an independent security assessment, HIPAA risk analysis where applicable, access-control review, privacy analysis, threat modeling, validation, and regulatory determination before use.
+
+## Non-negotiable research constraints
+
+1. **No fabricated medical evidence.**
+2. **No unsupported clinical claims.**
+3. **No autonomous diagnosis or prescribing authority.**
+4. **Source provenance must remain inspectable.**
+5. **Derived vectors/graphs must not silently replace authoritative evidence.**
+6. **Research predictions must be distinguishable from observed/source-backed evidence.**
+7. **Human clinical authority remains outside the software's authority boundary.**
+
+## Documentation
+
+Start with:
+
+- `docs/ARCHITECTURE_SOVEREIGNTY.md`
+- `docs/ARCHITECTURE_VERIFICATION.md`
+- `docs/EVIDENCE_GRAPH_DATA_DICTIONARY.md`
+- `docs/EVIDENCE_GRAPH_OPERATIONS.md`
+- `docs/EVIDENCE_GRAPH_SECURITY.md`
+- `docs/FHIR_OMOP_SPECIALTIES.md`
+- `docs/MEDICAL_PROFESSIONAL_INSPECTION.md`
+- `docs/NEO4J_REGENSTRIEF.md`
+
+## Disclaimer
+
+TMRDS is research software for biomedical evidence exploration and engineering development. It is not medical advice, a diagnosis, a prescription, or a substitute for qualified clinical judgment. No repository documentation should be interpreted as evidence that TMRDS is FDA-cleared, clinically validated, HIPAA-certified, or authorized for a particular regulated use.
