@@ -1,47 +1,54 @@
 # TMRDS — Tucker Medical Research and Development System
 
-**Research-advisory** platform for Tri-State (IN / IL / KY) clinics and precision research.
-
-> Technology informs people; it does not silently govern people. **Human authority remains final.**
+**Research-advisory** clinical platform for Tri-State (IN / IL / KY) care and precision research.
 
 **Steward:** Anthony John Tucker · Mount Vernon, Indiana 47620  
-**Regulatory posture:** Not FDA-cleared SaMD. Advisory outputs only.
+**Not FDA-cleared SaMD.** Human authority remains final.
 
 ---
 
-## Medical professionals — start here
+## Doctor console (start here)
 
-1. **[docs/MEDICAL_PROFESSIONAL_INSPECTION.md](docs/MEDICAL_PROFESSIONAL_INSPECTION.md)** — safety checklist & standards  
-2. **[docs/ARCHITECTURE_VERIFICATION.md](docs/ARCHITECTURE_VERIFICATION.md)** — what was verified, incorporated, or rejected  
-3. **[docs/SAMD_IEC62304_ISO14971.md](docs/SAMD_IEC62304_ISO14971.md)** — process scaffold (not certification)
-
----
-
-## Verified layers (2026-09)
-
-| Layer | Module |
-|-------|--------|
-| Multi-agent advisory swarm | `ClinicalSwarmOrchestrator` |
-| Epistemic parallel branches | `EpistemicParallelRouter` |
-| Dual-tier memory (Redis-ready + long context) | `DualTierMemory` |
-| IEEE 11073 PHD → FHIR | `IEEE11073PHDBridge` |
-| Structure (AF3 + ESMFold interfaces) | `AlphaFold3Node`, `ESMFoldStructureNode` |
-| FHIR / OMOP / Atlas / NLM.gov | existing interop stack |
-| Drive-Thru evidence APIs | `DriveThruIngestion` |
-| Ethics / ledger / sovereign edge | `DoctorDignityEthics`, `EvidenceLedger`, `SovereignEdge` |
-
-**Not claimed:** clinical 6G product network, disease “cures,” 8512 TPS, street-address SSoT, CRISPR care automation, religious seals as clinical validation.
-
----
-
-## Path
-
+```bash
+pip install -r requirements.txt
+chmod +x deploy.sh
+./deploy.sh
+# open http://localhost:8000
+# sign in: clinician / change-me-on-deploy
 ```
-Device (IEEE 11073) / labs / genome
-  → UniversalClinicalIngest + FHIR/OMOP maps
-  → DriveThru + NLM.gov evidence
-  → Swarm / Epistemic routers (advisory)
-  → QRCE + KRAGEN  → EvidenceLedger → clinician
-```
+
+Or: `docker compose up --build`
+
+| Surface | Path |
+|---------|------|
+| Clinician UI | `/` (`frontend/`) |
+| Health | `GET /health` |
+| Login | `POST /api/v1/auth/login` |
+| Clinical search | `POST /api/v1/clinical/search` |
+| Live analytics | `GET /api/v1/analytics/live` |
+| ICD-10 / RxNorm | `/api/v1/terminology/*` |
+| Device (IEEE 11073) | `POST /api/v1/device/observation` |
+| Audit log | `GET /api/v1/audit/recent` |
+
+Default password **must** be changed before any real ePHI environment.
+
+---
+
+## Standards posture
+
+| Topic | TMRDS |
+|-------|-------|
+| FHIR | **R4 US Core production**; R5 optional research (`FHIRR5Interop`) |
+| HIPAA | Technical controls per **45 CFR 164.312** (session, audit, integrity HMAC, emergency access) |
+| OMOP | CDM v5.4 + US Core concept map |
+| Evidence | PubMed, ClinicalTrials.gov, NLM Clinical Tables (API-only) |
+
+Docs: [MEDICAL_PROFESSIONAL_INSPECTION.md](docs/MEDICAL_PROFESSIONAL_INSPECTION.md) · [FHIR_R5_HIPAA.md](docs/FHIR_R5_HIPAA.md) · [ARCHITECTURE_VERIFICATION.md](docs/ARCHITECTURE_VERIFICATION.md)
+
+---
+
+## Removed / not claimed
+
+Religious seals, street-address SSoT, unverified TPS/6G product claims, disease “cure” automation.
 
 **Repo:** https://github.com/ATphobia22/TMRDS
