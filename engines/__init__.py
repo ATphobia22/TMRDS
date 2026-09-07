@@ -16,6 +16,8 @@ from .openmed_nlp import OpenMedEngine
 from .turbovec_index import TurboVecIndex
 from .evidence_ledger import EvidenceLedger
 from .sovereign_edge import SovereignEdge
+from .kragen_graph_engine import KRAGENGraphEngine
+from .ihie_bridge import IHIEBridge
 
 __all__ = [
     "SimulationComputeMesh",
@@ -35,4 +37,6 @@ __all__ = [
     "TurboVecIndex",
     "EvidenceLedger",
     "SovereignEdge",
+    "KRAGENGraphEngine",
+    "IHIEBridge",
 ]
