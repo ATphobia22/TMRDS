@@ -1,7 +1,7 @@
 """
 PubMed Literature Bridge for TMRDS.
 Programmatic access to NCBI PubMed via E-utilities for verifiable medical
-journal evidence. Feeds KRAGEN + QuantumRubiksCureEngine treatment search.
+journal evidence. Feeds governed research evidence workflows.
 
 API: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/
 No key: 3 req/s | With NCBI API key: 10 req/s
@@ -20,7 +20,7 @@ EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
 
 class PubMedLiteratureBridge:
-    """Search and fetch PubMed citations for disease / gene / treatment queries."""
+    """Search and fetch PubMed citations for research queries."""
 
     def __init__(self, api_key: Optional[str] = None, tool: str = "TMRDS", email: Optional[str] = None) -> None:
         self.api_key = api_key
@@ -28,12 +28,12 @@ class PubMedLiteratureBridge:
         self.email = email
 
     def _params(self, extra: Dict[str, Any]) -> str:
-        p = {"retmode": "json", "tool": self.tool, **extra}
+        params = {"retmode": "json", "tool": self.tool, **extra}
         if self.api_key:
-            p["api_key"] = self.api_key
+            params["api_key"] = self.api_key
         if self.email:
-            p["email"] = self.email
-        return urllib.parse.urlencode(p)
+            params["email"] = self.email
+        return urllib.parse.urlencode(params)
 
     def search(
         self,
@@ -41,7 +41,7 @@ class PubMedLiteratureBridge:
         max_results: int = 20,
         sort: str = "relevance",
     ) -> Dict[str, Any]:
-        """ESearch — return PMIDs + count for a clinical/scientific query."""
+        """ESearch — return PMIDs and count for a scientific query."""
         if not query or not query.strip():
             raise ValueError("query required")
         url = f"{EUTILS}/esearch.fcgi?{self._params({
@@ -73,7 +73,7 @@ class PubMedLiteratureBridge:
             }
 
     def summaries(self, pmids: List[str]) -> Dict[str, Any]:
-        """ESummary — title, authors, source, pubdate for PMID list."""
+        """ESummary — title, authors, source, and publication date for PMIDs."""
         if not pmids:
             return {"articles": [], "status": "EMPTY"}
         ids = ",".join(pmids[:50])
@@ -82,15 +82,15 @@ class PubMedLiteratureBridge:
             with urllib.request.urlopen(url, timeout=25) as resp:
                 data = json.loads(resp.read().decode())
             articles = []
-            for uid, rec in data.get("result", {}).items():
+            for uid, record in data.get("result", {}).items():
                 if uid == "uids":
                     continue
                 articles.append({
                     "pmid": uid,
-                    "title": rec.get("title"),
-                    "source": rec.get("source"),
-                    "pubdate": rec.get("pubdate"),
-                    "authors": [a.get("name") for a in rec.get("authors", [])[:8]],
+                    "title": record.get("title"),
+                    "source": record.get("source"),
+                    "pubdate": record.get("pubdate"),
+                    "authors": [author.get("name") for author in record.get("authors", [])[:8]],
                 })
             return {"articles": articles, "status": "OK", "count": len(articles)}
         except Exception as exc:  # noqa: BLE001
@@ -103,15 +103,15 @@ class PubMedLiteratureBridge:
         gene: Optional[str] = None,
         max_results: int = 15,
     ) -> Dict[str, Any]:
-        """Targeted query for treatment / therapy evidence."""
+        """Targeted literature query for treatment-related evidence."""
         parts = [f"({disease})", "(treatment OR therapy OR drug OR clinical trial)"]
         if gene:
             parts.append(f"({gene})")
-        q = " AND ".join(parts)
-        search = self.search(q, max_results=max_results)
+        query = " AND ".join(parts)
+        search = self.search(query, max_results=max_results)
         if search.get("pmids"):
-            sums = self.summaries(search["pmids"])
-            search["articles"] = sums.get("articles", [])
+            summary = self.summaries(search["pmids"])
+            search["articles"] = summary.get("articles", [])
         else:
             search["articles"] = []
         search["intent"] = "treatment_evidence"
