@@ -11,6 +11,11 @@ from .grover_molecular_node import GROVERMolecularNode
 from .qiskit_nature_bridge import QiskitNatureBridge
 from .rdkit_chemistry_node import RDKitChemistryNode
 from .biocoder_assistant import BioCoderAssistant
+from .doctor_dignity_ethics import DoctorDignityEthics
+from .openmed_nlp import OpenMedEngine
+from .turbovec_index import TurboVecIndex
+from .evidence_ledger import EvidenceLedger
+from .sovereign_edge import SovereignEdge
 
 __all__ = [
     "SimulationComputeMesh",
@@ -25,4 +30,9 @@ __all__ = [
     "QiskitNatureBridge",
     "RDKitChemistryNode",
     "BioCoderAssistant",
+    "DoctorDignityEthics",
+    "OpenMedEngine",
+    "TurboVecIndex",
+    "EvidenceLedger",
+    "SovereignEdge",
 ]
