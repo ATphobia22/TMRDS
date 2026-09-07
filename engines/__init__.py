@@ -33,6 +33,11 @@ from .open_source_medical_core import OpenSourceMedicalCore
 from .us_core_omop_concept_map import USCoreOMOPConceptMap
 from .ohdsi_atlas_cohort import OHDSIAtlasCohortAdapter
 from .nlm_gov_clinical_tables import NLMGovClinicalTables
+from .clinical_swarm_orchestrator import ClinicalSwarmOrchestrator
+from .ieee11073_phd_bridge import IEEE11073PHDBridge
+from .dual_tier_memory import DualTierMemory
+from .esmfold_structure_node import ESMFoldStructureNode
+from .epistemic_parallel_router import EpistemicParallelRouter
 
 __all__ = [
     "SimulationComputeMesh",
@@ -69,4 +74,9 @@ __all__ = [
     "USCoreOMOPConceptMap",
     "OHDSIAtlasCohortAdapter",
     "NLMGovClinicalTables",
+    "ClinicalSwarmOrchestrator",
+    "IEEE11073PHDBridge",
+    "DualTierMemory",
+    "ESMFoldStructureNode",
+    "EpistemicParallelRouter",
 ]
