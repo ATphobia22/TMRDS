@@ -2,12 +2,23 @@
 from __future__ import annotations
 
 import json
+import math
 import os
-from typing import Any
+from typing import Any, Sequence
 
 import asyncpg
 
 from engines.biomedical_evidence_models import CanonicalEntity, ConflictGroup, EvidenceAssertion, EvidenceAssessment, SourceRecord
+
+
+def vector_literal(values: Sequence[float]) -> str:
+    """Serialize a finite vector into pgvector's textual input format."""
+    if not values:
+        raise ValueError("vector must not be empty")
+    normalized = [float(value) for value in values]
+    if any(not math.isfinite(value) for value in normalized):
+        raise ValueError("vector values must be finite")
+    return "[" + ",".join(repr(value) for value in normalized) + "]"
 
 
 class EvidenceGraphRepository:
@@ -120,6 +131,28 @@ class EvidenceGraphRepository:
                 conflict.detected_at, conflict.comparison_basis, conflict.state.value, conflict.resolution_provenance)
             for assertion_id in conflict.assertion_ids:
                 await conn.execute("INSERT INTO conflict_members(conflict_group_id, assertion_id) VALUES ($1,$2) ON CONFLICT DO NOTHING", conflict.conflict_group_id, assertion_id)
+
+    async def upsert_embedding(self, assertion_id: str, embedding: Sequence[float], embedding_model: str, embedding_version: str) -> None:
+        literal = vector_literal(embedding)
+        pool = await self._pool()
+        async with pool.acquire() as conn:
+            await conn.execute("""INSERT INTO evidence_embeddings
+                (assertion_id, embedding, embedding_model, embedding_version)
+                VALUES ($1, $2::vector, $3, $4)
+                ON CONFLICT (assertion_id) DO UPDATE SET embedding=EXCLUDED.embedding,
+                embedding_model=EXCLUDED.embedding_model, embedding_version=EXCLUDED.embedding_version,
+                embedded_at=now()""", assertion_id, literal, embedding_model, embedding_version)
+
+    async def semantic_search(self, embedding: Sequence[float], limit: int = 20) -> list[dict[str, Any]]:
+        literal = vector_literal(embedding)
+        pool = await self._pool()
+        async with pool.acquire() as conn:
+            rows = await conn.fetch("""SELECT e.*, 1 - (v.embedding <=> $1::vector) AS similarity
+                FROM evidence_embeddings v
+                JOIN evidence_assertions e ON e.assertion_id = v.assertion_id
+                ORDER BY v.embedding <=> $1::vector
+                LIMIT $2""", literal, max(1, min(limit, 100)))
+        return [dict(row) for row in rows]
 
     async def get_entity(self, entity_id: str) -> dict[str, Any] | None:
         pool = await self._pool()
