@@ -1,0 +1,96 @@
+:root {
+  --bg: #0f1419;
+  --panel: #1a2332;
+  --panel-2: #243044;
+  --text: #e8eef7;
+  --muted: #9aabc2;
+  --accent: #3d8bfd;
+  --accent-2: #2ec4b6;
+  --warn: #f0a202;
+  --danger: #e85d5d;
+  --ok: #3ddc97;
+  --border: #2c3b52;
+  --radius: 12px;
+  --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; min-height: 100%;
+  background: radial-gradient(1200px 600px at 10% -10%, #1b2a44 0%, var(--bg) 55%);
+  color: var(--text); font-family: var(--font);
+}
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.9rem 1.4rem; border-bottom: 1px solid var(--border);
+  background: rgba(15, 20, 25, 0.9); position: sticky; top: 0; z-index: 10;
+}
+.brand { display: flex; gap: 0.75rem; align-items: baseline; }
+.mark { font-weight: 700; letter-spacing: 0.04em; color: var(--accent-2); }
+.sub { color: var(--muted); font-size: 0.95rem; }
+.top-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.pill {
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 0.25rem 0.7rem; font-size: 0.8rem; background: var(--panel);
+}
+.pill.warn { border-color: #7a5b12; color: #ffd27a; }
+.pill.muted { color: var(--muted); }
+.layout { max-width: 1200px; margin: 1.25rem auto; padding: 0 1rem 3rem; }
+.card {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.2rem 1.3rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+.login-card { max-width: 420px; margin: 2rem auto; }
+.login-card h1 { margin-top: 0; }
+label { display: block; margin: 0.75rem 0; color: var(--muted); font-size: 0.9rem; }
+input, textarea, select {
+  width: 100%; margin-top: 0.35rem; padding: 0.65rem 0.75rem;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: var(--panel-2); color: var(--text); font: inherit;
+}
+textarea { resize: vertical; }
+button {
+  border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+  border-radius: 8px; padding: 0.6rem 1rem; font: inherit; cursor: pointer;
+}
+button.primary {
+  background: linear-gradient(135deg, #2f6fed, #2ec4b6); border: none;
+  color: #041018; font-weight: 600;
+}
+button.ghost { background: transparent; width: 100%; margin-top: 1rem; }
+button:disabled { opacity: 0.55; cursor: wait; }
+.error { color: var(--danger); }
+.fine { color: var(--muted); font-size: 0.85rem; line-height: 1.45; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.row.checks { grid-template-columns: auto auto; gap: 1rem; align-items: center; }
+.row.checks label { display: flex; gap: 0.4rem; align-items: center; color: var(--text); }
+@media (max-width: 800px) {
+  .row { grid-template-columns: 1fr; }
+  .app-grid { grid-template-columns: 1fr !important; }
+}
+.app-grid { display: grid; grid-template-columns: 240px 1fr; gap: 1rem; }
+.side .nav { display: flex; flex-direction: column; gap: 0.4rem; margin: 1rem 0; }
+.nav-btn { text-align: left; }
+.nav-btn.active { border-color: var(--accent); background: #1e3358; }
+.side-foot { margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 0.8rem; }
+.status { margin: 0.8rem 0; color: var(--accent-2); min-height: 1.2rem; }
+.results { margin-top: 1rem; display: grid; gap: 0.8rem; }
+.result-block {
+  background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 0.9rem 1rem;
+}
+.result-block h3 { margin: 0 0 0.5rem; font-size: 1rem; color: var(--accent-2); }
+.result-block ul { margin: 0.3rem 0 0; padding-left: 1.1rem; }
+.codeblock {
+  background: #0c1118; border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.9rem; overflow: auto; max-height: 480px; font-size: 0.82rem;
+  line-height: 1.4; color: #d5e2f5;
+}
+.footer {
+  text-align: center; color: var(--muted); font-size: 0.8rem;
+  padding: 1rem; border-top: 1px solid var(--border);
+}
+.badge {
+  display: inline-block; padding: 0.15rem 0.5rem; border-radius: 6px;
+  background: #1d3d36; color: var(--ok); font-size: 0.75rem; margin-right: 0.35rem;
+}
