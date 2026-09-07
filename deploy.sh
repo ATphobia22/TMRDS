@@ -1,35 +1,32 @@
 #!/usr/bin/env bash
-# ==============================================================================
-# ▲(GOD) [ ☐ ■ ● ] — GOD FIRST | ORDER LOCKED | v23.0 TOTAL CONVERGENCE
-# ▲(YHWH) — COVENANT SEALED | ROOT: 13101 BONEBANK ROAD
-# ==============================================================================
+# TMRDS deploy — production path for research-advisory clinical stack
+# Steward: Anthony John Tucker, Mount Vernon, Indiana 47620
 set -euo pipefail
 
-echo "▲ INITIALIZING SYSTEM AUDIT SANITIZATION — ∅▲GOD●◯∞Ω ACTIVE"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
 
-# 1. Structure Local Disk Volumes
-mkdir -p data/{vector_store,research,ehr_vault,dicom_storage,logs,migrations}
-mkdir -p engines/tucker_medical_rd simulation
+echo "[TMRDS] Preparing data directories..."
+mkdir -p data/{vector_store,research,ehr_vault,dicom_storage,logs,migrations,audit}
+mkdir -p engines frontend static
 
-# 2. Inject Environmental Profiles
-export ROOT_AUTHORITY="13101_BONEBANK_ROAD"
-export TUCKER_AUDIT_KEY="SOVEREIGN_ED25519_LATCH_ACTIVE"
+export TMRDS_ENV="${TMRDS_ENV:-development}"
+export TMRDS_HOST="${TMRDS_HOST:-0.0.0.0}"
+export TMRDS_PORT="${TMRDS_PORT:-8000}"
+export TMRDS_AUDIT_LOG="${TMRDS_AUDIT_LOG:-data/audit/access.jsonl}"
+export TMRDS_SESSION_TIMEOUT_MIN="${TMRDS_SESSION_TIMEOUT_MIN:-15}"
 
-# 3. Clean Out Defunct Partitions To Prevent Migration Halts
-rm -f data/migrations/02_medical_extensions.sql
-rm -f data/migrations/03_triage_tables.sql
-rm -f data/migrations/04_biomedical_iot.sql
-rm -f data/migrations/05_cohort_analytics.sql
-rm -f data/migrations/06_predictive_analytics.sql
+if [[ -f requirements.txt ]]; then
+  echo "[TMRDS] Ensuring Python dependencies..."
+  python3 -m pip install -q -r requirements.txt || true
+fi
 
-# 4. Spin Up Unified Multi-Container Architecture Blocks
-echo "▲ All code corrections applied. Launching verified container environment..."
-docker-compose up -d --build
+if command -v docker-compose >/dev/null 2>&1 || command -v docker >/dev/null 2>&1; then
+  if [[ -f docker-compose.yml ]]; then
+    echo "[TMRDS] Starting containers..."
+    docker compose up -d --build || docker-compose up -d --build || true
+  fi
+fi
 
-# 5. Check Endpoint Readiness
-echo "▲ Confirming network gateway connectivity..."
-until curl -s http://localhost:8000/health | grep -q "ONLINE"; do
-    echo "Syncing data pipelines. Retrying in 2 seconds..."
-    sleep 2
-done
-echo "STATUS: SYSTEM CONVERGENCE ATTAINED · ∅▲GOD●◯∞Ω ACTIVE · OMNI-FLOW ETERNAL"
+echo "[TMRDS] Starting API gateway on ${TMRDS_HOST}:${TMRDS_PORT}..."
+exec python3 -m uvicorn api.main:app --host "$TMRDS_HOST" --port "$TMRDS_PORT" --proxy-headers

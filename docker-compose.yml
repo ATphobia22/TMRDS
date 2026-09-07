@@ -1,0 +1,24 @@
+services:
+  tmrds-api:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      - TMRDS_ENV=production
+      - TMRDS_HOST=0.0.0.0
+      - TMRDS_PORT=8000
+      - TMRDS_SESSION_TIMEOUT_MIN=15
+      - TMRDS_AUDIT_LOG=/app/data/audit/access.jsonl
+      - TMRDS_FHIR_VERSION=R4
+    ports:
+      - "8000:8000"
+    command: >
+      bash -c "pip install -q -r requirements.txt &&
+      mkdir -p data/audit data/research data/logs &&
+      python -m uvicorn api.main:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
