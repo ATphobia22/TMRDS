@@ -1,50 +1,42 @@
 # TMRDS — Tucker Medical Research and Development System
 
-**Zero-Latency Sovereignty** for Tri-State clinics and precision research.
+**Zero-Latency Sovereignty** · Tri-State (IN / IL / KY) · Precision research
 
 > Technology informs people; it does not silently govern people. Human authority remains final.
 
 **Steward:** Anthony John Tucker · Mount Vernon, Indiana 47620
 
-## Whole-of-Medicine Path
+## Drive-Thru Evidence Network
 
 ```
-Any specialty problem
-  → SpecialtyCareRouter (17+ domains)
-  → UniversalClinicalIngest (labs / genome / scans / notes)
-  → FHIRUSCoreMapper ⇄ OMOPCDMBridge
-  → PubMed + KRAGEN / Neo4j
-  → QRCECureOrchestrator
-  → EvidenceLedger (human review)
+PubMed · arXiv · OpenAlex · Semantic Scholar · ClinicalTrials.gov
+  → DriveThruIngestion (API-only, no scrape)
+  → Evidence Altar (local index metadata)
+  → KRAGEN / QRCE / Specialty routers
 ```
 
-## Interoperability
+| Module | Role |
+|--------|------|
+| **DriveThruIngestion** | Multi-domain API fan-out |
+| **OverlookedBlessings** | USPTO pre-2006-03-01 pathway search (FTO not legal advice) |
+| **SpecialtyFHIRProfileRegistry** | mCODE, Genomics Reporting, CardX, US Core |
+| **OMOPPhenotypeEngine** | OHDSI phenotype / cohort definition library |
+| **OpenSourceMedicalCore** | OpenEMR · Orthanc · OHIF · OpenELIS · Kiwix WikiMed |
 
-| Module | Path | Role |
-|--------|------|------|
-| **FHIRUSCoreMapper** | `engines/fhir_us_core_mapper.py` | FHIR R4 US Core resources + v2 segment map |
-| **OMOPCDMBridge** | `engines/omop_cdm_bridge.py` | OMOP CDM v5.4 tables + FHIR↔OMOP |
-| **SpecialtyCareRouter** | `engines/specialty_care_router.py` | Cardiology→Rare Disease specialty plans |
-| **IHIEBridge** | `engines/ihie_bridge.py` | Indiana HIE / INPC |
-| **UniversalClinicalIngest** | `engines/universal_clinical_ingest.py` | On-the-spot multi-modal input |
-| **PubMedLiteratureBridge** | `engines/pubmed_literature_bridge.py` | Verifiable journal evidence |
-| **QRCECureOrchestrator** | `engines/qrce_cure_orchestrator.py` | Advisory treatment starting points |
+## Interoperability & Care
+
+FHIRUSCoreMapper · OMOPCDMBridge · SpecialtyCareRouter · UniversalClinicalIngest · PubMedLiteratureBridge · QRCECureOrchestrator · IHIEBridge · KRAGENGraphEngine · Neo4jKRAGENConnector
 
 ## Docs
 
-- [docs/FHIR_OMOP_SPECIALTIES.md](docs/FHIR_OMOP_SPECIALTIES.md) — FHIR mapping, OMOP CDM, specialties
-- [docs/NEO4J_REGENSTRIEF.md](docs/NEO4J_REGENSTRIEF.md) — Neo4j GraphRAG, Regenstrief methods
+- [docs/DRIVE_THRU_EVIDENCE.md](docs/DRIVE_THRU_EVIDENCE.md)
+- [docs/FHIR_OMOP_SPECIALTIES.md](docs/FHIR_OMOP_SPECIALTIES.md)
+- [docs/NEO4J_REGENSTRIEF.md](docs/NEO4J_REGENSTRIEF.md)
 - [docs/ARCHITECTURE_SOVEREIGNTY.md](docs/ARCHITECTURE_SOVEREIGNTY.md)
-- [docs/WEIGHTS_DOWNLOAD.md](docs/WEIGHTS_DOWNLOAD.md)
-
-## Specialties Routed
-
-Cardiology · Oncology · Neurology · Infectious Disease · Endocrinology · Pulmonology · Nephrology · Gastroenterology · Hematology · Rheumatology · Psychiatry · Pediatrics · OB/GYN · Emergency · Primary Care · **Rare Disease** · **Clinical Genetics**
 
 ## Safety
 
-All automated outputs are **research-advisory only**. Not diagnosis, prescription, or cure claims. Licensed clinicians retain final authority.
+Research-advisory only. Not diagnosis, prescription, cure claim, or legal FTO opinion.
 
 ---
-**Status**: Private | Active development  
 **Steward**: Anthony John Tucker · Mount Vernon, Indiana 47620
