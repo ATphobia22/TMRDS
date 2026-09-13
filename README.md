@@ -4,11 +4,18 @@
 
 > **Status:** Research software. TMRDS is not FDA-cleared Software as a Medical Device (SaMD), does not replace clinical judgment, and is not a diagnostic or prescribing system.
 
+## Security baseline
+
+TMRDS does not commit production passwords, API keys, tokens, private keys, or local runtime data. Deployment credentials are supplied through an external secret manager or environment variables. Production authentication requires `TMRDS_CLINICIAN_PASSWORD`, `TMRDS_EMERGENCY_PIN`, and `TMRDS_HMAC_SECRET`; there are no built-in credential fallbacks. Passwords are salted and protected with PBKDF2-HMAC-SHA256. The repository also runs automated secret scanning in `.github/workflows/security.yml`.
+
+**If a credential was ever exposed outside the repository, revoke/rotate it at the issuing provider. Removing a secret from source control does not revoke a previously issued credential.**
+
 ## What TMRDS is
 
 TMRDS is a Python/FastAPI research platform for connecting public biomedical evidence to a governed evidence model. The current implementation combines:
 
 - **Public biomedical source adapters** for CDC, OpenNeuro, ClinicalTrials.gov, openFDA, NLM Clinical Tables, Europe PMC, and PubMed.
+- **Real-world real-time data fabric** for bounded, provenance-first synchronization of authoritative public feeds, including USGS, NOAA/NWS, FEMA, and CDC sources.
 - **Evidence governance** with registered sources, provenance-bearing entities/assertions, conflict handling, ingestion state, and audit-oriented evidence records.
 - **FHIR / OMOP interoperability** for separating clinical interoperability concerns from research normalization.
 - **PostgreSQL** as the authoritative evidence store, with **pgvector** support for derived semantic retrieval.
@@ -35,13 +42,18 @@ The design principle is:
      CDC / NLM / PubMed       entities / assertions     model + prompt +
      Europe PMC / FDA         provenance / conflicts    dataset + evidence
      ClinicalTrials.gov       ingestion state           envelopes
-     OpenNeuro
-              │                       │                        │
-              └───────────────────────┼────────────────────────┘
-                                      ▼
+     OpenNeuro                │
+              │               │
+              └───────────────┼────────────────────────────┐
+                              ▼                            │
+                    Real-Time Data Fabric                 │
+                    USGS / NOAA / FEMA / CDC              │
+                              │                            │
+                              ▼                            ▼
                          ┌─────────────────────────┐
                          │      PostgreSQL          │
                          │  authoritative evidence  │
+                         │  + data-fabric ledger    │
                          │  + pgvector projection   │
                          └────────────┬────────────┘
                                       │
@@ -55,55 +67,31 @@ The design principle is:
         OMOP CDM v5.4      ←→  research normalization boundary
 ```
 
-## Implemented API surface
+## Security and deployment
 
-The FastAPI application currently exposes research-advisory routes including:
+### Required production secrets
 
-### Public biomedical research
-
-```text
-GET /api/v1/research/health
-GET /api/v1/research/datasets/cdc
-GET /api/v1/research/datasets/openneuro
-GET /api/v1/research/trials
-GET /api/v1/research/drugs/labels
-GET /api/v1/research/drugs/adverse-events
-GET /api/v1/research/drugs/shortages
-GET /api/v1/research/nlm/conditions
-GET /api/v1/research/nlm/hpo
-GET /api/v1/research/nlm/genes
-GET /api/v1/research/nlm/rxterms
-GET /api/v1/research/literature/europe-pmc
-GET /api/v1/research/literature/pubmed
-GET /api/v1/research/federated-search
-```
-
-### Governed evidence graph
+Set these through a deployment secret manager; do not commit them to the repository:
 
 ```text
-GET /api/v1/evidence/entities/{entity_id}
-GET /api/v1/evidence/entities/{entity_id}/assertions
-GET /api/v1/evidence/assertions/{assertion_id}
-GET /api/v1/evidence/path
-GET /api/v1/evidence/graph
-GET /api/v1/evidence/conflicts
-GET /api/v1/evidence/sources
-GET /api/v1/evidence/sources/{source_id}
-GET /api/v1/evidence/ingestion/status
+POSTGRES_PASSWORD
+NEO4J_PASSWORD
+TMRDS_HMAC_SECRET
+TMRDS_CLINICIAN_PASSWORD
+TMRDS_EMERGENCY_PIN
 ```
 
-Additional ingestion, retrieval, and AI-governance routes are registered through the dedicated API routers in `api/`.
+`TMRDS_HMAC_SECRET` must be at least 32 characters. The production Docker Compose profile fails closed when required secrets are absent.
 
-Research responses are wrapped with explicit governance metadata, including:
+### Docker Compose
 
-```json
-{
-  "status": "research-advisory",
-  "human_authority_final": true,
-  "not_samd": true,
-  "read_only": true
-}
-```
+The Compose stack provisions PostgreSQL/pgvector, Neo4j, and the API. Supply secrets through the shell environment, CI/CD secret store, or an external secret manager before startup. Never use example/default passwords in production.
+
+### Repository secret hygiene
+
+`.gitignore` excludes `.env` files, private-key/certificate material, credentials directories, and runtime data. Secret scanning runs on pushes, pull requests, scheduled scans, and manual dispatch.
+
+If a real credential has been exposed, **rotate/revoke it first** and then remove the material from the repository/history as appropriate. A source-code cleanup alone does not invalidate an issued credential.
 
 ## Data and evidence model
 
@@ -111,7 +99,7 @@ TMRDS treats the evidence ledger as authoritative. Derived representations must 
 
 ### PostgreSQL
 
-The PostgreSQL layer stores governed evidence and provenance records. Migrations live in `migrations/` and are mounted by the development Docker Compose stack.
+The PostgreSQL layer stores governed evidence, provenance records, and real-time data-fabric observations. Migrations live in `migrations/` and are mounted by the development Docker Compose stack.
 
 ### pgvector
 
@@ -125,13 +113,26 @@ Neo4j is a governed graph projection used for relationship traversal and graph-o
 
 TMRDS distinguishes observed/source-backed assertions from model-derived or hypothesized relationships. Research outputs should retain source identity, retrieval/provenance metadata, and uncertainty rather than presenting predictions as established medical facts.
 
+## Real-world real-time data fabric
+
+The data fabric provides bounded, provenance-first synchronization for authoritative public feeds. It records source identity, retrieval/observation timestamps, ETag/Last-Modified metadata when available, SHA-256 payload identity, provenance state, and durable observation records.
+
+Current catalog includes:
+
+- USGS Water Services
+- USGS Earthquake Hazards feeds
+- NOAA/NWS weather API
+- NWS active alerts
+- FEMA disaster declarations
+- CDC public data
+
+Continuous synchronization is provided by `workers/realtime_data_fabric_worker.py`. See `docs/REALTIME_DATA_FABRIC.md` for operational details.
+
 ## Interoperability
 
 - **FHIR R4 / US Core:** clinical interoperability boundary and resource mapping.
 - **OMOP CDM v5.4:** research normalization boundary.
 - The architecture keeps clinical exchange, research normalization, evidence provenance, semantic retrieval, and graph projection as separable concerns.
-
-FHIR/OMOP adapters and supporting specifications are documented in `docs/`.
 
 ## AI governance
 
@@ -145,24 +146,6 @@ The AI governance layer is intentionally restrictive:
 6. Research outputs cannot be promoted implicitly into autonomous clinical authority.
 
 TMRDS therefore implements a **research-advisory architecture**, not an autonomous clinical decision-maker.
-
-## Source registry
-
-The repository contains a governed source registry for biomedical sources such as:
-
-- CDC
-- OpenNeuro
-- ClinicalTrials.gov
-- openFDA
-- NLM
-- PubMed
-- Europe PMC
-- LOINC
-- MONDO
-- HGNC
-- ChEMBL
-
-A source being registered does **not** mean its data are automatically clinical-grade or validated for clinical decision-making. Upstream source limitations remain part of the governance boundary.
 
 ## Optional scientific engines
 
@@ -180,8 +163,9 @@ TMRDS/
 ├── docs/                # Architecture, security, interoperability, and operations docs
 ├── tests/               # Unit, API-contract, and integration tests
 ├── frontend/            # Frontend assets/application surface
-├── .github/workflows/   # CI
-├── docker-compose.yml   # PostgreSQL/pgvector + Neo4j + API development stack
+├── workers/             # Continuous real-world data synchronization workers
+├── .github/workflows/   # CI and security scanning
+├── docker-compose.yml   # PostgreSQL/pgvector + Neo4j + API stack
 ├── deploy.sh            # Deployment helper
 ├── requirements.txt     # Python runtime/test dependencies
 └── pytest.ini           # Pytest configuration
@@ -189,83 +173,17 @@ TMRDS/
 
 ## Requirements
 
-Core development/CI currently targets **Python 3.11**. The repository's `requirements.txt` provides the FastAPI, HTTP, database, Neo4j, numerical, and test dependencies required by the current test suite.
-
-Some optional scientific engines have dependencies that are intentionally not part of the core installation.
-
-## Run locally
-
-### Python environment
-
-```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-python -m pytest -q -m "not integration"
-```
-
-The normal test command intentionally excludes live integration tests because those tests require external upstream availability and/or running PostgreSQL/Neo4j services. To run the live integration suite explicitly:
-
-```bash
-python -m pytest -q -m integration
-```
-
-The integration suite is therefore a separate operational check, not a prerequisite for the deterministic unit/API CI gate.
-
-Start the API with:
-
-```bash
-python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
-```
-
-Then inspect the FastAPI OpenAPI document at `/docs` or `/openapi.json`.
-
-### Docker Compose
-
-The Compose stack provisions:
-
-- `tmrds-postgres` using `pgvector/pgvector:pg16`
-- `tmrds-neo4j` using Neo4j Community Edition
-- `tmrds-api` using Python 3.11
-
-Set the required database and Neo4j passwords before starting the stack:
-
-```bash
-export POSTGRES_PASSWORD='change-me'
-export NEO4J_PASSWORD='change-me-too'
-docker compose up --build
-```
-
-The API is exposed on port `8000`; Neo4j exposes ports `7474` and `7687`.
-
-**Do not use placeholder passwords or the development Compose configuration as a production security boundary.** Production deployments require secret management, network controls, least privilege, TLS, backups, monitoring, and a documented threat/risk model.
+Core development/CI targets **Python 3.11**. The repository's `requirements.txt` provides the FastAPI, HTTP, database, Neo4j, numerical, and test dependencies required by the current test suite.
 
 ## Testing and CI
 
-GitHub Actions runs the deterministic Python test gate with Python 3.11:
+The deterministic CI gate runs:
 
 ```bash
 python -m pytest -q -m "not integration"
 ```
 
-Live-source and PostgreSQL/Neo4j tests are explicitly marked `integration` and are not included in the default CI gate. The dependency set includes `requests` because the integration suite uses it, while optional scientific dependencies remain outside the core requirements unless required by a specific test or deployment profile.
-
-## Security and regulated-boundary posture
-
-TMRDS is designed with security and regulatory boundaries in mind, but repository alignment is **not** equivalent to certification, compliance attestation, FDA clearance, or authorization to process regulated clinical workloads.
-
-Important controls and design documents include:
-
-- `docs/EVIDENCE_GRAPH_SECURITY.md`
-- `docs/EVIDENCE_GRAPH_OPERATIONS.md`
-- `docs/ARCHITECTURE_VERIFICATION.md`
-- `docs/FHIR_OMOP_SPECIALTIES.md`
-- `docs/FHIR_R5_HIPAA.md`
-- `docs/SAMD_IEC62304_ISO14971.md`
-- `engines/hipaa_security_controls.py`
-
-For real PHI/clinical deployment, conduct an independent security assessment, HIPAA risk analysis where applicable, access-control review, privacy analysis, threat modeling, validation, and regulatory determination before use.
+Live-source and PostgreSQL/Neo4j tests are explicitly marked `integration`. Security scanning is maintained separately in `.github/workflows/security.yml`.
 
 ## Non-negotiable research constraints
 
@@ -276,19 +194,6 @@ For real PHI/clinical deployment, conduct an independent security assessment, HI
 5. **Derived vectors/graphs must not silently replace authoritative evidence.**
 6. **Research predictions must be distinguishable from observed/source-backed evidence.**
 7. **Human clinical authority remains outside the software's authority boundary.**
-
-## Documentation
-
-Start with:
-
-- `docs/ARCHITECTURE_SOVEREIGNTY.md`
-- `docs/ARCHITECTURE_VERIFICATION.md`
-- `docs/EVIDENCE_GRAPH_DATA_DICTIONARY.md`
-- `docs/EVIDENCE_GRAPH_OPERATIONS.md`
-- `docs/EVIDENCE_GRAPH_SECURITY.md`
-- `docs/FHIR_OMOP_SPECIALTIES.md`
-- `docs/MEDICAL_PROFESSIONAL_INSPECTION.md`
-- `docs/NEO4J_REGENSTRIEF.md`
 
 ## Disclaimer
 
