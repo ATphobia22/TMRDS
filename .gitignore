@@ -10,6 +10,8 @@
 *.cer
 secrets/
 credentials/
+.aws/
+.ssh/
 
 # Python
 __pycache__/
@@ -21,6 +23,11 @@ venv/
 # Runtime / local data
 /data/
 *.log
+*.sql.gz
+*.dump
+*.sqlite
+*.sqlite3
+*.db
 
 # IDE / OS
 .vscode/
