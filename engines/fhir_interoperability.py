@@ -14,24 +14,22 @@ FHIR_RESOURCE_TYPES = {
     "CodeSystem", "Communication", "CommunicationRequest", "CompartmentDefinition", "Composition", "ConceptMap",
     "Condition", "Consent", "Contract", "Coverage", "DetectedIssue", "Device", "DeviceDefinition",
     "DeviceMetric", "DeviceRequest", "DeviceUseStatement", "DiagnosticReport", "DocumentManifest", "DocumentReference",
-    "DomainResource", "EffectEvidenceSynthesis", "Encounter", "Endpoint", "EnrollmentRequest", "EnrollmentResponse",
-    "EpisodeOfCare", "EventDefinition", "Evidence", "EvidenceVariable", "ExampleScenario", "ExplanationOfBenefit",
-    "FamilyMemberHistory", "Flag", "Goal", "GraphDefinition", "Group", "GuidanceResponse", "HealthcareService",
-    "ImagingStudy", "Immunization", "ImmunizationEvaluation", "ImmunizationRecommendation", "ImplementationGuide",
-    "InsurancePlan", "Invoice", "Library", "Linkage", "List", "Location", "Measure", "MeasureReport", "Media",
-    "Medication", "MedicationAdministration", "MedicationDispense", "MedicationKnowledge", "MedicationRequest",
-    "MedicationStatement", "MedicinalProduct", "MedicinalProductAuthorization", "MedicinalProductContraindication",
-    "MedicinalProductIndication", "MedicinalProductIngredient", "MedicinalProductInteraction", "MedicinalProductManufactured",
-    "MedicinalProductPackaged", "MedicinalProductPharmaceutical", "MedicinalProductUndesirableEffect", "MessageDefinition",
-    "MessageHeader", "MolecularSequence", "NamingSystem", "NutritionOrder", "Observation", "OperationDefinition",
-    "OperationOutcome", "Organization", "OrganizationAffiliation", "Parameters", "Patient", "PaymentNotice",
-    "PaymentReconciliation", "Person", "PlanDefinition", "Practitioner", "PractitionerRole", "Procedure", "Provenance",
-    "Questionnaire", "QuestionnaireResponse", "RelatedPerson", "RequestGroup", "ResearchDefinition", "ResearchElementDefinition",
-    "ResearchStudy", "ResearchSubject", "RiskAssessment", "RiskEvidenceSynthesis", "Schedule", "SearchParameter",
-    "ServiceRequest", "Slot", "Specimen", "StructureDefinition", "StructureMap", "Subscription", "Substance",
-    "SupplyDelivery", "SupplyRequest", "Task", "TerminologyCapabilities", "TestReport", "TestScript", "ValueSet",
-    "VerificationResult", "VisionPrescription", "MedicationOrder", "MedicationUsage", "CareProvision", "DiagnosticOrder",
-    "ClinicalReasoning", "DocumentReference", "Basic", "Binary", "Bundle",
+    "EffectEvidenceSynthesis", "Encounter", "Endpoint", "EnrollmentRequest", "EnrollmentResponse", "EpisodeOfCare",
+    "EventDefinition", "Evidence", "EvidenceVariable", "ExampleScenario", "ExplanationOfBenefit", "FamilyMemberHistory",
+    "Flag", "Goal", "GraphDefinition", "Group", "GuidanceResponse", "HealthcareService", "ImagingStudy", "Immunization",
+    "ImmunizationEvaluation", "ImmunizationRecommendation", "ImplementationGuide", "InsurancePlan", "Invoice", "Library",
+    "Linkage", "List", "Location", "Measure", "MeasureReport", "Media", "Medication", "MedicationAdministration",
+    "MedicationDispense", "MedicationKnowledge", "MedicationRequest", "MedicationStatement", "MedicinalProduct",
+    "MedicinalProductAuthorization", "MedicinalProductContraindication", "MedicinalProductIndication", "MedicinalProductIngredient",
+    "MedicinalProductInteraction", "MedicinalProductManufactured", "MedicinalProductPackaged", "MedicinalProductPharmaceutical",
+    "MedicinalProductUndesirableEffect", "MessageDefinition", "MessageHeader", "MolecularSequence", "NamingSystem",
+    "NutritionOrder", "Observation", "OperationDefinition", "OperationOutcome", "Organization", "OrganizationAffiliation",
+    "Parameters", "Patient", "PaymentNotice", "PaymentReconciliation", "Person", "PlanDefinition", "Practitioner",
+    "PractitionerRole", "Procedure", "Provenance", "Questionnaire", "QuestionnaireResponse", "RelatedPerson", "RequestGroup",
+    "ResearchDefinition", "ResearchElementDefinition", "ResearchStudy", "ResearchSubject", "RiskAssessment", "RiskEvidenceSynthesis",
+    "Schedule", "SearchParameter", "ServiceRequest", "Slot", "Specimen", "StructureDefinition", "StructureMap", "Subscription",
+    "Substance", "SupplyDelivery", "SupplyRequest", "Task", "TerminologyCapabilities", "TestReport", "TestScript", "ValueSet",
+    "VerificationResult", "VisionPrescription",
 }
 
 
@@ -91,10 +89,9 @@ def _reference(value: str) -> dict[str, str]:
 
 def build_provenance(target_reference: str, agent_reference: str, request_id: str) -> dict[str, object]:
     """Build a minimal R4 Provenance record for an interoperability operation."""
-    now = datetime.now(timezone.utc).isoformat()
     return {
         "resourceType": "Provenance",
-        "recorded": now,
+        "recorded": datetime.now(timezone.utc).isoformat(),
         "target": [_reference(target_reference)],
         "agent": [{"who": _reference(agent_reference)}],
         "entity": [{"role": "source", "what": {"identifier": {"system": "urn:tmrds:request", "value": request_id}}}],
