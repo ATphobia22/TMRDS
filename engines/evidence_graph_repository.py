@@ -25,7 +25,10 @@ class EvidenceGraphRepository:
     """Transactional persistence boundary; PostgreSQL is the evidence authority."""
 
     def __init__(self, dsn: str | None = None) -> None:
-        self.dsn = dsn or os.getenv("TMRDS_DATABASE_URL", "postgresql://tmrds:tmrds@localhost:5432/tmrds")
+        configured_dsn = dsn or os.getenv("TMRDS_DATABASE_URL")
+        if not configured_dsn:
+            raise RuntimeError("TMRDS_DATABASE_URL is required; no built-in database credential is permitted")
+        self.dsn = configured_dsn
         self.pool: asyncpg.Pool | None = None
 
     async def connect(self) -> None:
