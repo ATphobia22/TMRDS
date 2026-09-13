@@ -35,7 +35,7 @@ services:
     working_dir: /app
     volumes:
       - ./:/app:ro
-      - tmrds-audit-data:/app/data/audit
+      - tmrds-runtime-data:/app/data
     environment:
       - TMRDS_ENV=production
       - TMRDS_HOST=0.0.0.0
@@ -72,4 +72,4 @@ volumes:
   tmrds-postgres-data:
   tmrds-neo4j-data:
   tmrds-neo4j-logs:
-  tmrds-audit-data:
+  tmrds-runtime-data:
