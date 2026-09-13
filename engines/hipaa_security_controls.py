@@ -1,5 +1,4 @@
-"""
-HIPAA Security Rule technical controls for TMRDS (45 CFR 164.312).
+"""HIPAA Security Rule technical controls for TMRDS (45 CFR 164.312).
 
 Credentials and integrity secrets are deployment-managed. No built-in password,
 PIN, or deterministic secret is permitted.
@@ -19,7 +18,12 @@ from typing import Any, Dict, List, Optional
 class HIPAASecurityControls:
     """Session, audit, and integrity controls for ePHI-touching surfaces."""
 
-    _PBKDF2_ITERATIONS = 600_000
+    _SCRYPT_N = 2**14
+    _SCRYPT_R = 8
+    _SCRYPT_P = 1
+    _SCRYPT_DKLEN = 32
+    _SCRYPT_SALT_BYTES = 16
+    _PBKDF2_MIN_ITERATIONS = 600_000
 
     def __init__(
         self,
@@ -64,22 +68,49 @@ class HIPAASecurityControls:
 
     @classmethod
     def _hash_password(cls, password: str) -> str:
-        salt = secrets.token_bytes(16)
-        digest = hashlib.pbkdf2_hmac(
-            "sha256", password.encode("utf-8"), salt, cls._PBKDF2_ITERATIONS
+        if not isinstance(password, str) or len(password) < 12:
+            raise ValueError("password must contain at least 12 characters")
+        salt = secrets.token_bytes(cls._SCRYPT_SALT_BYTES)
+        digest = hashlib.scrypt(
+            password.encode("utf-8"),
+            salt=salt,
+            n=cls._SCRYPT_N,
+            r=cls._SCRYPT_R,
+            p=cls._SCRYPT_P,
+            dklen=cls._SCRYPT_DKLEN,
         )
-        return f"pbkdf2_sha256${cls._PBKDF2_ITERATIONS}${salt.hex()}${digest.hex()}"
+        return (
+            f"scrypt${cls._SCRYPT_N}${cls._SCRYPT_R}${cls._SCRYPT_P}"
+            f"${salt.hex()}${digest.hex()}"
+        )
 
     @classmethod
     def _verify_password(cls, password: str, encoded: str) -> bool:
         try:
-            algorithm, iterations, salt_hex, digest_hex = encoded.split("$", 3)
-            if algorithm != "pbkdf2_sha256":
-                return False
-            digest = hashlib.pbkdf2_hmac(
-                "sha256", password.encode("utf-8"), bytes.fromhex(salt_hex), int(iterations)
-            )
-            return hmac.compare_digest(digest.hex(), digest_hex)
+            parts = encoded.split("$")
+            if parts[0] == "scrypt" and len(parts) == 7:
+                _, n, r, p, salt_hex, digest_hex = parts[0:6]
+                salt = bytes.fromhex(salt_hex)
+                expected = bytes.fromhex(digest_hex)
+                actual = hashlib.scrypt(
+                    password.encode("utf-8"),
+                    salt=salt,
+                    n=int(n),
+                    r=int(r),
+                    p=int(p),
+                    dklen=len(expected),
+                )
+                return hmac.compare_digest(actual, expected)
+            if parts[0] == "pbkdf2_sha256" and len(parts) == 4:
+                _, iterations_text, salt_hex, digest_hex = parts
+                iterations = int(iterations_text)
+                if iterations < cls._PBKDF2_MIN_ITERATIONS:
+                    return False
+                digest = hashlib.pbkdf2_hmac(
+                    "sha256", password.encode("utf-8"), bytes.fromhex(salt_hex), iterations
+                )
+                return hmac.compare_digest(digest.hex(), digest_hex)
+            return False
         except (TypeError, ValueError):
             return False
 
@@ -168,6 +199,7 @@ class HIPAASecurityControls:
                 "audit_controls",
                 "integrity_hmac",
                 "person_entity_authentication",
+                "memory_hard_password_kdf",
             ],
             "encryption_note": (
                 "Encryption at rest/transit is addressable; enforce TLS termination "
