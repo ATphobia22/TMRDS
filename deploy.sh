@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# TMRDS deploy — production path for research-advisory clinical stack
-# Steward: Anthony John Tucker, Mount Vernon, Indiana 47620
+# TMRDS deployment helper — research-advisory application stack
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,13 +17,18 @@ export TMRDS_SESSION_TIMEOUT_MIN="${TMRDS_SESSION_TIMEOUT_MIN:-15}"
 
 if [[ -f requirements.txt ]]; then
   echo "[TMRDS] Ensuring Python dependencies..."
-  python3 -m pip install -q -r requirements.txt || true
+  python3 -m pip install -q -r requirements.txt
 fi
 
-if command -v docker-compose >/dev/null 2>&1 || command -v docker >/dev/null 2>&1; then
-  if [[ -f docker-compose.yml ]]; then
+if [[ -f docker-compose.yml ]]; then
+  if command -v docker >/dev/null 2>&1; then
     echo "[TMRDS] Starting containers..."
-    docker compose up -d --build || docker-compose up -d --build || true
+    docker compose up -d --build
+  elif command -v docker-compose >/dev/null 2>&1; then
+    echo "[TMRDS] Starting containers..."
+    docker-compose up -d --build
+  else
+    echo "[TMRDS] Docker not installed; continuing with local API startup."
   fi
 fi
 
