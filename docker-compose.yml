@@ -2,14 +2,14 @@ services:
   tmrds-postgres:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-tmrds}
-      POSTGRES_USER: ${POSTGRES_USER:-tmrds}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
     volumes:
       - tmrds-postgres-data:/var/lib/postgresql/data
       - ./migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tmrds} -d ${POSTGRES_DB:-tmrds}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -17,7 +17,7 @@ services:
   tmrds-neo4j:
     image: neo4j:5-community
     environment:
-      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:?Set NEO4J_PASSWORD}
+      NEO4J_AUTH: ${NEO4J_USER:?Set NEO4J_USER}/${NEO4J_PASSWORD:?Set NEO4J_PASSWORD}
     ports:
       - "7474:7474"
       - "7687:7687"
@@ -34,7 +34,8 @@ services:
     image: python:3.11-slim
     working_dir: /app
     volumes:
-      - ./:/app
+      - ./:/app:ro
+      - tmrds-audit-data:/app/data/audit
     environment:
       - TMRDS_ENV=production
       - TMRDS_HOST=0.0.0.0
@@ -42,13 +43,14 @@ services:
       - TMRDS_SESSION_TIMEOUT_MIN=15
       - TMRDS_AUDIT_LOG=/app/data/audit/access.jsonl
       - TMRDS_FHIR_VERSION=R4
+      - TMRDS_US_CORE_VERSION=${TMRDS_US_CORE_VERSION:?Set TMRDS_US_CORE_VERSION}
       - TMRDS_HMAC_SECRET=${TMRDS_HMAC_SECRET:?Set TMRDS_HMAC_SECRET}
       - TMRDS_CLINICIAN_PASSWORD=${TMRDS_CLINICIAN_PASSWORD:?Set TMRDS_CLINICIAN_PASSWORD}
       - TMRDS_EMERGENCY_PIN=${TMRDS_EMERGENCY_PIN:?Set TMRDS_EMERGENCY_PIN}
-      - TMRDS_DATABASE_URL=postgresql://${POSTGRES_USER:-tmrds}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@tmrds-postgres:5432/${POSTGRES_DB:-tmrds}
-      - TMRDS_NEO4J_URI=bolt://tmrds-neo4j:7687
-      - TMRDS_NEO4J_USER=${NEO4J_USER:-neo4j}
-      - TMRDS_NEO4J_PASSWORD=${NEO4J_PASSWORD:?Set NEO4J_PASSWORD}
+      - TMRDS_DATABASE_URL=${TMRDS_DATABASE_URL:?Set TMRDS_DATABASE_URL}
+      - TMRDS_NEO4J_URI=${TMRDS_NEO4J_URI:?Set TMRDS_NEO4J_URI}
+      - TMRDS_NEO4J_USER=${TMRDS_NEO4J_USER:?Set TMRDS_NEO4J_USER}
+      - TMRDS_NEO4J_PASSWORD=${TMRDS_NEO4J_PASSWORD:?Set TMRDS_NEO4J_PASSWORD}
     ports:
       - "8000:8000"
     depends_on:
@@ -70,3 +72,4 @@ volumes:
   tmrds-postgres-data:
   tmrds-neo4j-data:
   tmrds-neo4j-logs:
+  tmrds-audit-data:
