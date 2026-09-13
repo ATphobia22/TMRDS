@@ -1,16 +1,8 @@
 """
 HIPAA Security Rule technical controls for TMRDS (45 CFR 164.312).
 
-Implements engineering controls aligned to:
-  - Access control (unique user id, emergency access, automatic logoff, encryption)
-  - Audit controls
-  - Integrity
-  - Person or entity authentication
-  - Transmission security
-
-This module supports covered-entity / BA technical practices. It does not
-constitute a complete HIPAA compliance program (policies, BAAs, workforce
-training, and physical safeguards remain organizational responsibilities).
+Credentials and integrity secrets are deployment-managed. No built-in password,
+PIN, or deterministic secret is permitted.
 """
 from __future__ import annotations
 
@@ -27,6 +19,8 @@ from typing import Any, Dict, List, Optional
 class HIPAASecurityControls:
     """Session, audit, and integrity controls for ePHI-touching surfaces."""
 
+    _PBKDF2_ITERATIONS = 600_000
+
     def __init__(
         self,
         audit_path: Optional[str] = None,
@@ -38,42 +32,70 @@ class HIPAASecurityControls:
         )
         self.audit_path.parent.mkdir(parents=True, exist_ok=True)
         self.session_timeout_sec = max(60, int(session_timeout_min) * 60)
-        self._hmac_secret = (
-            hmac_secret or os.environ.get("TMRDS_HMAC_SECRET") or secrets.token_hex(32)
-        ).encode()
+        self._hmac_secret = self._load_hmac_secret(hmac_secret)
         self._sessions: Dict[str, Dict[str, Any]] = {}
-        self._users: Dict[str, Dict[str, Any]] = {
-            "clinician": {
-                "user_id": "clinician",
-                "role": "physician",
-                "display_name": "Attending Clinician",
-                "password_hash": self._hash_password("change-me-on-deploy"),
-            },
-            "emergency": {
-                "user_id": "emergency",
-                "role": "emergency_access",
-                "display_name": "Emergency Access",
-                "password_hash": self._hash_password(
-                    os.environ.get("TMRDS_EMERGENCY_PIN", "911-break-glass")
-                ),
-            },
-        }
+        self._users: Dict[str, Dict[str, Any]] = {}
+        self._load_configured_users()
 
-    def _hash_password(self, password: str) -> str:
-        return hashlib.sha256(password.encode()).hexdigest()
+    @staticmethod
+    def _load_hmac_secret(explicit_secret: Optional[str]) -> bytes:
+        secret = explicit_secret or os.environ.get("TMRDS_HMAC_SECRET")
+        if not secret:
+            if os.environ.get("TMRDS_ENV", "development").casefold() in {"production", "prod"}:
+                raise RuntimeError("TMRDS_HMAC_SECRET is required in production")
+            secret = secrets.token_hex(32)
+        if len(secret) < 32:
+            raise ValueError("TMRDS_HMAC_SECRET must contain at least 32 characters")
+        return secret.encode("utf-8")
+
+    def _load_configured_users(self) -> None:
+        users = (
+            ("clinician", "physician", "Attending Clinician", os.environ.get("TMRDS_CLINICIAN_PASSWORD")),
+            ("emergency", "emergency_access", "Emergency Access", os.environ.get("TMRDS_EMERGENCY_PIN")),
+        )
+        for user_id, role, display_name, password in users:
+            if password:
+                self._users[user_id] = {
+                    "user_id": user_id,
+                    "role": role,
+                    "display_name": display_name,
+                    "password_hash": self._hash_password(password),
+                }
+
+    @classmethod
+    def _hash_password(cls, password: str) -> str:
+        salt = secrets.token_bytes(16)
+        digest = hashlib.pbkdf2_hmac(
+            "sha256", password.encode("utf-8"), salt, cls._PBKDF2_ITERATIONS
+        )
+        return f"pbkdf2_sha256${cls._PBKDF2_ITERATIONS}${salt.hex()}${digest.hex()}"
+
+    @classmethod
+    def _verify_password(cls, password: str, encoded: str) -> bool:
+        try:
+            algorithm, iterations, salt_hex, digest_hex = encoded.split("$", 3)
+            if algorithm != "pbkdf2_sha256":
+                return False
+            digest = hashlib.pbkdf2_hmac(
+                "sha256", password.encode("utf-8"), bytes.fromhex(salt_hex), int(iterations)
+            )
+            return hmac.compare_digest(digest.hex(), digest_hex)
+        except (TypeError, ValueError):
+            return False
 
     def authenticate(self, user_id: str, password: str) -> Dict[str, Any]:
         user = self._users.get(user_id)
-        if not user or user["password_hash"] != self._hash_password(password):
+        if not user or not self._verify_password(password, user["password_hash"]):
             self.audit("AUTH_FAILURE", user_id=user_id, detail="invalid credentials")
             return {"ok": False, "error": "authentication_failed"}
         token = secrets.token_urlsafe(32)
+        now = time.time()
         self._sessions[token] = {
             "user_id": user["user_id"],
             "role": user["role"],
             "display_name": user["display_name"],
-            "issued_at": time.time(),
-            "last_seen": time.time(),
+            "issued_at": now,
+            "last_seen": now,
             "emergency": user["role"] == "emergency_access",
         }
         self.audit("AUTH_SUCCESS", user_id=user["user_id"], detail=f"role={user['role']}")
@@ -91,12 +113,11 @@ class HIPAASecurityControls:
         if not token or token not in self._sessions:
             return None
         sess = self._sessions[token]
-        now = time.time()
-        if now - sess["last_seen"] > self.session_timeout_sec:
+        if time.time() - sess["last_seen"] > self.session_timeout_sec:
             self.audit("SESSION_TIMEOUT", user_id=sess["user_id"])
             del self._sessions[token]
             return None
-        sess["last_seen"] = now
+        sess["last_seen"] = time.time()
         return dict(sess)
 
     def logout(self, token: Optional[str]) -> None:
@@ -153,5 +174,6 @@ class HIPAASecurityControls:
                 "and disk encryption in deployment environment."
             ),
             "active_sessions": len(self._sessions),
+            "configured_users": sorted(self._users),
             "status": "READY",
         }
