@@ -13,6 +13,7 @@ from fastapi import FastAPI, HTTPException, Query
 
 from api.ai_governance_routes import router as ai_governance_router
 from api.evidence_retrieval_routes import router as evidence_retrieval_router
+from api.interoperability_routes import router as interoperability_router
 from engines.cdc_data_pipeline import CDCDataPipeline
 from engines.clinical_trials_pipeline import ClinicalTrialsPipeline
 from engines.europe_pmc_pipeline import EuropePMCPipeline
@@ -258,3 +259,4 @@ from api.evidence_ingestion_routes import router as evidence_ingestion_router
 app.include_router(evidence_ingestion_router)
 app.include_router(ai_governance_router)
 app.include_router(evidence_retrieval_router)
+app.include_router(interoperability_router)
