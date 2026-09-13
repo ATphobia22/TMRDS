@@ -28,7 +28,7 @@ class SmartConfiguration:
             "code_challenge_methods_supported": ["S256"],
             "scopes_supported": ["openid", "fhirUser", "launch", "patient/*.read", "user/*.read"],
             "token_endpoint_auth_methods_supported": ["private_key_jwt"],
-            "capabilities": ["launch-ehr", "client-public", "client-confidential-symmetric", "sso-openid-connect"],
+            "capabilities": ["launch-standalone", "client-public", "client-confidential-asymmetric", "sso-openid-connect"],
         }
 
 
@@ -43,5 +43,8 @@ def validate_pkce(verifier: str, challenge: str) -> bool:
     """Constant-time validation of an S256 PKCE challenge."""
     if not verifier or not challenge:
         return False
-    expected = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest()).rstrip(b"=").decode("ascii")
+    try:
+        expected = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest()).rstrip(b"=").decode("ascii")
+    except UnicodeEncodeError:
+        return False
     return compare_digest(expected, challenge)
