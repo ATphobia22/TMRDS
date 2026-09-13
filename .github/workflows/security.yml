@@ -29,4 +29,11 @@ jobs:
       - name: Compile Python modules
         run: python -m compileall -q api engines scripts tests
       - name: Unit tests
-        run: python -m pytest -q -m "not integration"
+        run: python -m pytest -q -m "not integration" --junitxml=test-results.xml
+      - name: Upload test diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tmrds-test-results
+          path: test-results.xml
+          if-no-files-found: ignore
