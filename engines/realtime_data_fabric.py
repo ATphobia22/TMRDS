@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from engines.secure_http import OutboundRequestPolicy
 
 FABRIC_VERSION = "1.0.0"
 MAX_PAYLOAD_BYTES = 5 * 1024 * 1024
@@ -95,11 +96,12 @@ class SourceState:
 class DataFabric:
     """Bounded in-process fabric used by API workers and deterministic tests."""
 
-    def __init__(self, sources: list[SourceDefinition] | None = None) -> None:
+    def __init__(self, sources: list[SourceDefinition] | None = None, outbound_policy: OutboundRequestPolicy | None = None) -> None:
         self._sources: dict[str, SourceDefinition] = {source.source_id: source for source in sources or []}
         self._states: dict[str, SourceState] = {}
         self._observations: dict[str, CanonicalObservation] = {}
         self._quarantine: list[IngestionResult] = []
+        self._outbound_policy = outbound_policy or OutboundRequestPolicy()
 
     def register(self, source: SourceDefinition) -> None:
         existing = self._sources.get(source.source_id)
@@ -132,51 +134,24 @@ class DataFabric:
         self._observations[identity] = observation
         return True
 
-    def ingest_payload(
-        self,
-        source_id: str,
-        record_id: str,
-        payload: Any,
-        observed_at: datetime,
-        *,
-        source_version: str | None = None,
-        source_uri: str | None = None,
-        etag: str | None = None,
-        last_modified: str | None = None,
-    ) -> IngestionResult:
+    def ingest_payload(self, source_id: str, record_id: str, payload: Any, observed_at: datetime, *, source_version: str | None = None, source_uri: str | None = None, etag: str | None = None, last_modified: str | None = None) -> IngestionResult:
         retrieved_at = utc_now()
         if not isinstance(payload, dict):
             result = IngestionResult(accepted=False, quarantined=True, source_id=source_id, record_id=record_id, reason="payload must be a JSON object", retrieved_at=retrieved_at)
             self._quarantine.append(result)
             return result
         payload_hash = sha256_payload(payload)
-        observation = CanonicalObservation(
-            source_id=source_id,
-            record_id=record_id,
-            observed_at=observed_at,
-            retrieved_at=retrieved_at,
-            payload=payload,
-            payload_hash=payload_hash,
-            source_version=source_version,
-            source_uri=source_uri,
-            etag=etag,
-            last_modified=last_modified,
-        )
+        observation = CanonicalObservation(source_id=source_id, record_id=record_id, observed_at=observed_at, retrieved_at=retrieved_at, payload=payload, payload_hash=payload_hash, source_version=source_version, source_uri=source_uri, etag=etag, last_modified=last_modified)
         accepted = self.accept(observation)
-        return IngestionResult(
-            accepted=accepted,
-            quarantined=False,
-            source_id=source_id,
-            record_id=record_id,
-            reason=None if accepted else "duplicate observation",
-            payload_hash=payload_hash,
-            retrieved_at=retrieved_at,
-        )
+        return IngestionResult(accepted=accepted, quarantined=False, source_id=source_id, record_id=record_id, reason=None if accepted else "duplicate observation", payload_hash=payload_hash, retrieved_at=retrieved_at)
 
     async def fetch(self, source_id: str, *, timeout_seconds: float = 15.0) -> dict[str, Any]:
         source = self.source(source_id)
         if not source.enabled:
             raise RuntimeError(f"source disabled: {source_id}")
+        if not 1.0 <= timeout_seconds <= 30.0:
+            raise ValueError("timeout_seconds must be between 1 and 30")
+        self._outbound_policy.validate_url(source.endpoint)
         headers = {"Accept": "application/json", "User-Agent": "TMRDS-DataFabric/1.0 (+research)"}
         state = self.state(source_id)
         if state.etag:
@@ -184,7 +159,8 @@ class DataFabric:
         if state.last_modified:
             headers["If-Modified-Since"] = state.last_modified
         try:
-            async with httpx.AsyncClient(timeout=timeout_seconds, follow_redirects=False) as client:
+            timeout = httpx.Timeout(connect=min(5.0, timeout_seconds), read=timeout_seconds, write=timeout_seconds, pool=5.0)
+            async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
                 response = await client.get(source.endpoint, params=source.default_params, headers=headers)
             if response.status_code == 304:
                 state.last_success_at = utc_now()
@@ -201,15 +177,7 @@ class DataFabric:
             state.last_success_at = utc_now()
             state.last_error = None
             state.consecutive_failures = 0
-            return {
-                "status": "fetched",
-                "source_id": source_id,
-                "retrieved_at": state.last_success_at.isoformat(),
-                "payload_hash": sha256_payload(payload),
-                "etag": state.etag,
-                "last_modified": state.last_modified,
-                "data": payload,
-            }
+            return {"status": "fetched", "source_id": source_id, "retrieved_at": state.last_success_at.isoformat(), "payload_hash": sha256_payload(payload), "etag": state.etag, "last_modified": state.last_modified, "data": payload}
         except Exception as exc:
             state.last_error = str(exc)[:512]
             state.consecutive_failures += 1
@@ -243,13 +211,4 @@ class FabricHealth:
 
 
 def health_snapshot(fabric: DataFabric) -> list[FabricHealth]:
-    return [
-        FabricHealth(
-            source_id=source.source_id,
-            healthy=fabric.state(source.source_id).consecutive_failures == 0,
-            consecutive_failures=fabric.state(source.source_id).consecutive_failures,
-            last_success_at=fabric.state(source.source_id).last_success_at,
-            last_error=fabric.state(source.source_id).last_error,
-        )
-        for source in fabric.sources()
-    ]
+    return [FabricHealth(source_id=source.source_id, healthy=fabric.state(source.source_id).consecutive_failures == 0, consecutive_failures=fabric.state(source.source_id).consecutive_failures, last_success_at=fabric.state(source.source_id).last_success_at, last_error=fabric.state(source.source_id).last_error) for source in fabric.sources()]
