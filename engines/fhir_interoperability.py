@@ -60,13 +60,14 @@ class FHIRResourceValidator:
         resource_type = resource.get("resourceType")
         if not isinstance(resource_type, str) or resource_type not in FHIR_RESOURCE_TYPES:
             errors.append("resourceType must be a recognized FHIR R4 resource type")
-            return errors
         resource_id = resource.get("id")
         if resource_id is not None:
             if not isinstance(resource_id, str) or not 1 <= len(resource_id) <= FHIR_ID_MAX:
                 errors.append("id must be a FHIR id of 1-64 characters")
             elif any(char.isspace() or char in {"/", "?", "#"} for char in resource_id):
                 errors.append("id contains invalid characters")
+        if not isinstance(resource_type, str) or resource_type not in FHIR_RESOURCE_TYPES:
+            return errors
         meta = resource.get("meta")
         if meta is not None and not isinstance(meta, dict):
             errors.append("meta must be an object")
@@ -88,33 +89,16 @@ def _reference(value: str) -> dict[str, str]:
 
 
 def build_provenance(target_reference: str, agent_reference: str, request_id: str) -> dict[str, object]:
-    """Build a minimal R4 Provenance record for an interoperability operation."""
-    return {
-        "resourceType": "Provenance",
-        "recorded": datetime.now(timezone.utc).isoformat(),
-        "target": [_reference(target_reference)],
-        "agent": [{"who": _reference(agent_reference)}],
-        "entity": [{"role": "source", "what": {"identifier": {"system": "urn:tmrds:request", "value": request_id}}}],
-    }
+    return {"resourceType": "Provenance", "recorded": datetime.now(timezone.utc).isoformat(), "target": [_reference(target_reference)], "agent": [{"who": _reference(agent_reference)}], "entity": [{"role": "source", "what": {"identifier": {"system": "urn:tmrds:request", "value": request_id}}}]}
 
 
 def build_audit_event(agent_reference: str, target_reference: str, action: str, request_id: str) -> dict[str, object]:
-    """Build a minimal R4 AuditEvent without recording credentials or PHI payloads."""
     if action not in {"read", "create", "update", "delete", "execute"}:
         raise ValueError("unsupported audit action")
-    return {
-        "resourceType": "AuditEvent",
-        "recorded": datetime.now(timezone.utc).isoformat(),
-        "action": action[0].upper(),
-        "agent": [{"who": _reference(agent_reference), "requestor": True}],
-        "source": {"observer": _reference(agent_reference)},
-        "entity": [{"what": _reference(target_reference)}],
-        "extension": [{"url": "urn:tmrds:correlation-id", "valueString": request_id}],
-    }
+    return {"resourceType": "AuditEvent", "recorded": datetime.now(timezone.utc).isoformat(), "action": action[0].upper(), "agent": [{"who": _reference(agent_reference), "requestor": True}], "source": {"observer": _reference(agent_reference)}, "entity": [{"what": _reference(target_reference)}], "extension": [{"url": "urn:tmrds:correlation-id", "valueString": request_id}]}
 
 
 def security_label(system: str, code: str, display: str | None = None) -> dict[str, object]:
-    """Create a FHIR confidentiality/security label coding."""
     if not system or not code:
         raise ValueError("security label system and code are required")
     coding: dict[str, str] = {"system": system, "code": code}
