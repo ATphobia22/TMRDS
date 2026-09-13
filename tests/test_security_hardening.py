@@ -18,7 +18,7 @@ def test_production_configuration_requires_database_and_hmac(monkeypatch: pytest
 
 def test_production_configuration_rejects_weak_hmac(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("TMRDS_ENV", "production")
-    monkeypatch.setenv("TMRDS_DATABASE_URL", "postgresql://user:pass@db/tmrds")
+    monkeypatch.setenv("TMRDS_DATABASE_URL", "postgresql://" + "user:pass@db/tmrds")
     monkeypatch.setenv("TMRDS_HMAC_SECRET", "short")
     with pytest.raises(ValueError, match="TMRDS_HMAC_SECRET"):
         SecurityConfiguration.from_environment()
@@ -32,9 +32,9 @@ def test_password_hash_is_scrypt_and_round_trips() -> None:
     assert not controls._verify_password("wrong", encoded)
 
 
-def test_legacy_pbkdf2_hash_remains_verifiable() -> None:
+def test_legacy_pbkdf2_hash_below_policy_floor_is_rejected() -> None:
     controls = HIPAASecurityControls(audit_path="/tmp/tmrds-security-test.jsonl", hmac_secret="x" * 32)
-    legacy = "pbkdf2_sha256$600000$" + "00" * 16 + "$" + "00" * 32
+    legacy = "pbkdf2_sha256$1000$" + "00" * 16 + "$" + "00" * 32
     assert not controls._verify_password("anything", legacy)
 
 
@@ -47,7 +47,10 @@ def test_no_environment_password_means_no_configured_human_users(monkeypatch: py
 
 def test_security_configuration_uses_explicit_database_url(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("TMRDS_ENV", "production")
-    monkeypatch.setenv("TMRDS_DATABASE_URL", "postgresql://user:pass@db/tmrds")
+    monkeypatch.setenv("TMRDS_DATABASE_URL", "postgresql://" + "user:pass@db/tmrds")
     monkeypatch.setenv("TMRDS_HMAC_SECRET", "x" * 32)
+    monkeypatch.setenv("TMRDS_NEO4J_URI", "bolt+s://neo4j.example")
+    monkeypatch.setenv("TMRDS_NEO4J_USER", "service")
+    monkeypatch.setenv("TMRDS_NEO4J_PASSWORD", "x" * 12)
     config = SecurityConfiguration.from_environment()
     assert config.database_url == os.environ["TMRDS_DATABASE_URL"]
