@@ -4,8 +4,9 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from api.security_dependencies import require_service_identity
 from engines.realtime_data_fabric import build_default_fabric, health_snapshot
 
 router = APIRouter(prefix="/api/v1/data-fabric", tags=["real-time-data-fabric"])
@@ -13,13 +14,7 @@ fabric = build_default_fabric()
 
 
 def envelope(data: Any) -> dict[str, Any]:
-    return {
-        "status": "research-advisory",
-        "human_authority_final": True,
-        "read_only": True,
-        "fabric_version": "1.0.0",
-        "data": data,
-    }
+    return {"status": "research-advisory", "human_authority_final": True, "read_only": True, "fabric_version": "1.0.0", "data": data}
 
 
 @router.get("/sources")
@@ -34,16 +29,7 @@ async def source_status(source_id: str) -> dict[str, Any]:
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Data-fabric source not registered") from exc
     state = fabric.state(source_id)
-    return envelope({
-        "source": source.model_dump(mode="json"),
-        "state": {
-            "etag": state.etag,
-            "last_modified": state.last_modified,
-            "last_success_at": state.last_success_at,
-            "last_error": state.last_error,
-            "consecutive_failures": state.consecutive_failures,
-        },
-    })
+    return envelope({"source": source.model_dump(mode="json"), "state": {"etag": state.etag, "last_modified": state.last_modified, "last_success_at": state.last_success_at, "last_error": state.last_error, "consecutive_failures": state.consecutive_failures}})
 
 
 @router.get("/health")
@@ -52,7 +38,11 @@ async def fabric_health() -> dict[str, Any]:
 
 
 @router.post("/sync/{source_id}")
-async def sync_source(source_id: str, timeout_seconds: float = Query(default=15.0, ge=1.0, le=30.0)) -> dict[str, Any]:
+async def sync_source(
+    source_id: str,
+    timeout_seconds: float = Query(default=15.0, ge=1.0, le=30.0),
+    _service_identity: dict[str, object] | None = Depends(require_service_identity),
+) -> dict[str, Any]:
     try:
         result = await fabric.fetch(source_id, timeout_seconds=timeout_seconds)
     except KeyError as exc:
