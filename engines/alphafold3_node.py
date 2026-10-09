@@ -72,24 +72,18 @@ class AlphaFold3Node:
         ligand_smiles: Optional[str],
         job_name: str,
     ) -> Dict[str, Any]:
+        """Return a schema-shaped placeholder without fabricating scientific results."""
         return {
             "job_name": job_name,
             "backend": "mock",
-            "status": "COMPLETED",
+            "status": "MOCK_ONLY",
             "sequence_length": len(sequence),
             "ligand_provided": ligand_smiles is not None,
-            "metrics": {
-                "plddt_mean": 87.4,
-                "ptm": 0.81,
-                "iptm": 0.76 if ligand_smiles else None,
-            },
-            "structure_format": "mmCIF",
-            "structure_uri": f"mock://structures/{job_name}.cif",
-            "docking_context": {
-                "mode": "co-folding" if ligand_smiles else "monomer",
-                "note": "AF3 co-folding can serve as screening engine or post-docking filter. "
-                        "Complement with physics-based docking (Vina/DOCK3) for production campaigns.",
-            },
+            "metrics": None,
+            "structure_format": None,
+            "structure_uri": None,
+            "docking_context": None,
+            "message": "Mock mode does not run AlphaFold, generate a structure, or calculate confidence metrics.",
             "safety_note": self.safety_note,
         }
 
@@ -101,20 +95,15 @@ class AlphaFold3Node:
     ) -> Dict[str, Any]:
         if not candidate_smiles:
             raise ValueError("candidate_smiles must be non-empty")
-        ranked = []
-        for i, smi in enumerate(candidate_smiles[:top_k]):
-            ranked.append({
-                "rank": i + 1,
-                "smiles": smi,
-                "confidence": round(0.92 - i * 0.07, 3),
-                "predicted_rmsd_proxy": round(1.2 + i * 0.4, 2),
-            })
+        if top_k < 1:
+            raise ValueError("top_k must be at least 1")
         return {
             "target_length": len(sequence),
             "candidates_evaluated": len(candidate_smiles),
-            "top_k": ranked,
-            "method": "AF3-style co-fold ranking (mock)",
-            "recommendation": "Re-score top hits with experimental or high-fidelity docking",
+            "top_k": [],
+            "method": "mock_unavailable",
+            "status": "NO_RANKING_PERFORMED",
+            "message": "Mock mode does not score, rank, or predict properties for compounds.",
             "safety_note": self.safety_note,
         }
 
