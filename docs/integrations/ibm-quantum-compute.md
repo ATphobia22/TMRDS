@@ -107,3 +107,49 @@ Recommended state machine:
 Do not assume the IBM service supports idempotency keys unless the current API
 contract explicitly documents that behavior. A local correlation key helps
 reconciliation but does not make remote job creation idempotent.
+
+
+## Durable ledger implementation
+
+The initial PostgreSQL ledger migration is
+`migrations/004_quantum_job_ledger.sql`; the implementation is
+`engines/ibm_quantum_job_ledger.py`. It uses the existing
+`TMRDS_DATABASE_URL` PostgreSQL configuration rather than creating a second
+persistence system.
+
+Hardware submission is fail-closed. Both conditions are required:
+- `TMRDS_IBM_QUANTUM_SUBMISSION_ENABLED=true` in the trusted runtime.
+- The caller passes `explicitly_authorized=True` after application-level
+  authorization and budget/consent policy checks.
+
+The service persists a `PREPARED` record and atomically claims
+`SUBMITTING` before issuing a single submission request. Ambiguous network
+failures become `SUBMISSION_UNKNOWN`, not an automatic retry. Reusing an
+idempotency key for a different workload is rejected. Local idempotency does
+not imply remote IBM idempotency.
+
+The ledger records an input SHA-256 and immutable artifact URI; callers are
+responsible for placing the circuit artifact in an approved immutable store.
+Never put patient identifiers or protected health information in the idempotency
+key, artifact URI, backend tag, or metadata. Do not persist API keys, bearer
+tokens, or raw circuit source in this ledger. Apply your retention and access
+controls to the ledger because backend, timing, and workload metadata can still
+be sensitive.
+
+The ledger's reconciliation query surfaces `SUBMISSION_UNKNOWN`,
+`SUBMITTING`, `SUBMITTED`, and `RUNNING` records. An operator/reconciler must
+match uncertain records to IBM job history before resolving them; the query
+does not guess a match or resubmit automatically. Terminal job polling, result
+retrieval, cancellation, automated quota enforcement, and a background worker
+are intentionally not claimed as implemented by this submission-only layer.
+
+Run local tests with:
+
+```bash
+python -m pytest -q tests/test_ibm_quantum_compute.py tests/test_ibm_quantum_job_ledger.py
+```
+
+For an existing PostgreSQL volume, apply `migrations/004_quantum_job_ledger.sql`
+through the repository's controlled migration process. Docker's
+`/docker-entrypoint-initdb.d` scripts only initialize a fresh database volume;
+restarting an already initialized container will not apply this migration.
