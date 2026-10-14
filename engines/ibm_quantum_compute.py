@@ -27,6 +27,16 @@ class IBMQuantumConfig:
     api_version: str = "2026-04-15"
     timeout_seconds: float = 20.0
 
+    def __post_init__(self) -> None:
+        if not self.api_key.strip() or not self.instance_crn.strip():
+            raise ValueError("IBM API key and instance CRN are required.")
+        if self.region not in {"us", "eu-de"}:
+            raise ValueError("IBM_QUANTUM_REGION must be 'us' or 'eu-de'.")
+        if not self.api_version or len(self.api_version) > 32:
+            raise ValueError("IBM_QUANTUM_API_VERSION is invalid.")
+        if not 0 < self.timeout_seconds <= 300:
+            raise ValueError("Timeout must be greater than 0 and at most 300 seconds.")
+
     @classmethod
     def from_environment(cls) -> "IBMQuantumConfig":
         api_key = os.getenv("IBM_QUANTUM_API_KEY", "").strip()
@@ -37,16 +47,6 @@ class IBMQuantumConfig:
             timeout = float(os.getenv("IBM_QUANTUM_TIMEOUT_SECONDS", "20"))
         except ValueError as exc:
             raise ValueError("IBM_QUANTUM_TIMEOUT_SECONDS must be numeric.") from exc
-        if not api_key or not instance_crn:
-            raise ValueError(
-                "IBM_QUANTUM_API_KEY and IBM_QUANTUM_INSTANCE_CRN are required."
-            )
-        if region not in {"us", "eu-de"}:
-            raise ValueError("IBM_QUANTUM_REGION must be 'us' or 'eu-de'.")
-        if not api_version or len(api_version) > 32:
-            raise ValueError("IBM_QUANTUM_API_VERSION is invalid.")
-        if timeout <= 0 or timeout > 300:
-            raise ValueError("Timeout must be greater than 0 and at most 300 seconds.")
         return cls(api_key, instance_crn, region, api_version, timeout)
 
     @property
@@ -136,24 +136,15 @@ class IBMQuantumComputeClient:
             headers["Content-Type"] = "application/json"
         try:
             response = self._session.request(
-                method.upper(),
-                url,
-                headers=headers,
-                params=params,
-                json=body,
-                timeout=self._config.timeout_seconds,
-                allow_redirects=False,
+                method.upper(), url, headers=headers, params=params, json=body,
+                timeout=self._config.timeout_seconds, allow_redirects=False,
             )
-            # Safe retry: only GET, and only once, after refreshing an expired token.
             if response.status_code == 401 and method.upper() == "GET":
                 response.close()
                 headers["Authorization"] = f"Bearer {self._get_token(force_refresh=True)}"
                 response = self._session.get(
-                    url,
-                    headers=headers,
-                    params=params,
-                    timeout=self._config.timeout_seconds,
-                    allow_redirects=False,
+                    url, headers=headers, params=params,
+                    timeout=self._config.timeout_seconds, allow_redirects=False,
                 )
             if not 200 <= response.status_code < 300:
                 raise IBMQuantumError(
@@ -178,30 +169,25 @@ class IBMQuantumComputeClient:
         return self._request("GET", f"backends/{quote(backend, safe='')}/status")
 
     def submit_sampler(
-        self,
-        *,
-        backend: str,
-        qasm_circuits: list[str],
-        shots: int | None = None,
-        tags: list[str] | None = None,
+        self, *, backend: str, qasm_circuits: list[str],
+        shots: int | None = None, tags: list[str] | None = None,
     ) -> dict[str, Any] | list[Any]:
         """Submit OpenQASM 3 circuits; submission is never automatically retried."""
         if not backend or len(backend) > 200:
             raise ValueError("Backend identifier is invalid.")
         if not qasm_circuits or any(not isinstance(q, str) or not q.strip() for q in qasm_circuits):
             raise ValueError("At least one non-empty OpenQASM circuit is required.")
-        if shots is not None and (isinstance(shots, bool) or shots < 1 or shots > 10_000_000):
+        if shots is not None and (
+            isinstance(shots, bool) or not isinstance(shots, int)
+            or shots < 1 or shots > 10_000_000
+        ):
             raise ValueError("shots must be an integer between 1 and 10000000.")
         params: dict[str, Any] = {
             "pubs": [[qasm] if shots is None else [qasm, None, shots] for qasm in qasm_circuits],
             "options": {},
             "version": 2,
         }
-        body: dict[str, Any] = {
-            "program_id": "sampler",
-            "backend": backend,
-            "params": params,
-        }
+        body: dict[str, Any] = {"program_id": "sampler", "backend": backend, "params": params}
         if tags:
             if len(tags) > 20 or any(not tag or len(tag) > 128 for tag in tags):
                 raise ValueError("Tags must contain 1-20 non-empty strings of at most 128 characters.")
@@ -218,7 +204,9 @@ class IBMQuantumComputeClient:
             raise ValueError("Job identifier is invalid.")
         return self._request("GET", f"jobs/{quote(job_id, safe='')}/results")
 
-    def list_jobs(self, *, limit: int = 50, offset: int = 0, pending: bool | None = None) -> dict[str, Any] | list[Any]:
+    def list_jobs(
+        self, *, limit: int = 50, offset: int = 0, pending: bool | None = None
+    ) -> dict[str, Any] | list[Any]:
         if not 1 <= limit <= 200 or offset < 0:
             raise ValueError("limit must be 1-200 and offset must be non-negative.")
         params: dict[str, str | int | bool] = {"limit": limit, "offset": offset}
