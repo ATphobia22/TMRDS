@@ -118,5 +118,23 @@ class IBMQuantumTests(unittest.TestCase):
         self.assertEqual(self.client._session.get.call_args.kwargs["headers"]["Authorization"], "Bearer fresh-token")
 
 
+
+    def test_request_uses_cloud_compute_api_contract_headers(self):
+        from unittest.mock import Mock
+
+        self.client._get_token = Mock(return_value="test-token")
+        response = Mock(status_code=200)
+        response.json.return_value = {"ok": True}
+        response.close = Mock()
+        self.client._session.request = Mock(return_value=response)
+
+        self.assertEqual(self.client.get_instance_details(), {"ok": True})
+        args, kwargs = self.client._session.request.call_args
+        self.assertEqual(args[:2], ("GET", "https://quantum.cloud.ibm.com/api/v1/instance"))
+        self.assertEqual(kwargs["headers"]["Authorization"], "Bearer test-token")
+        self.assertEqual(kwargs["headers"]["Service-CRN"], "crn:test")
+        self.assertEqual(kwargs["headers"]["IBM-API-Version"], "2026-04-15")
+        self.assertFalse(kwargs["allow_redirects"])
+
 if __name__ == "__main__":
     unittest.main()
