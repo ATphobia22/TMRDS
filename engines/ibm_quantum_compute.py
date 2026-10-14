@@ -99,6 +99,9 @@ class IBMQuantumComputeClient:
                 data = response.json()
             except (requests.RequestException, ValueError) as exc:
                 raise IBMQuantumError("IBM IAM token acquisition failed.") from exc
+            finally:
+                if "response" in locals():
+                    response.close()
             token = data.get("access_token") if isinstance(data, dict) else None
             expires_in = data.get("expires_in") if isinstance(data, dict) else None
             if (
@@ -159,6 +162,13 @@ class IBMQuantumComputeClient:
             return payload
         except requests.RequestException as exc:
             raise IBMQuantumError("IBM Quantum transport request failed.") from exc
+        finally:
+            if "response" in locals():
+                response.close()
+
+    def get_instance_details(self) -> dict[str, Any] | list[Any]:
+        """Return the selected instance details without exposing credentials."""
+        return self._request("GET", "instance")
 
     def list_backends(self) -> dict[str, Any] | list[Any]:
         return self._request("GET", "backends")
@@ -188,9 +198,11 @@ class IBMQuantumComputeClient:
             "version": 2,
         }
         body: dict[str, Any] = {"program_id": "sampler", "backend": backend, "params": params}
-        if tags:
-            if len(tags) > 20 or any(not tag or len(tag) > 128 for tag in tags):
-                raise ValueError("Tags must contain 1-20 non-empty strings of at most 128 characters.")
+        if tags is not None:
+            if len(tags) > 8 or any(
+                not isinstance(tag, str) or not tag or len(tag) > 86 for tag in tags
+            ):
+                raise ValueError("IBM Quantum accepts at most 8 non-empty tags of at most 86 characters.")
             body["tags"] = tags
         return self._request("POST", "jobs", body=body)
 
