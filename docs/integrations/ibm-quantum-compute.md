@@ -55,17 +55,55 @@ after a 401 response.
 ## Read-only smoke test
 
 With credentials and the instance CRN configured in the environment, first
-check instance access and backend visibility. These calls do not submit a job:
+check instance access and backend visibility. The script requires an explicit
+opt-in flag, prints only response structure (not payload values), and never
+submits a job:
 
-```python
-from engines.ibm_quantum_compute import IBMQuantumComputeClient
-
-with IBMQuantumComputeClient.from_environment() as client:
-    print(client.get_instance_details())
-    print(client.list_backends())
+```bash
+IBM_QUANTUM_LIVE_SMOKE=1 python scripts/ibm_quantum_readonly_smoke.py
 ```
+
+The smoke test is intentionally not run automatically in CI because CI should
+not require production IBM credentials. Run it manually in a trusted environment
+with a least-privilege API key and an authorized instance.
 
 If either request returns HTTP 401, verify the API key and IAM token access. For
 HTTP 403, verify the instance CRN, IAM role assignments, and plan entitlements.
 Do not paste API keys, bearer tokens, or full credential-bearing environment
 output into logs or issue reports.
+
+
+## Submission durability and reconciliation
+
+The REST adapter is a transport client, not a durable scheduler. Before wiring
+it into an automated TMRDS pipeline, implement a persistent job ledger in the
+application's existing database (do not keep authoritative job state only in
+memory). Each record should include an application-generated submission ID,
+idempotency/correlation key, canonical input hash, immutable circuit/artifact
+reference, backend, shots, API version, creation timestamp, submission state,
+IBM job ID (when known), and terminal status/result artifact hash.
+
+Recommended state machine:
+
+1. Persist `PREPARED` and the immutable input metadata transactionally before
+   making a network request.
+2. Transition to `SUBMITTING`, then call `submit_sampler` exactly once.
+3. On a confirmed response, persist the IBM job ID and transition to
+   `SUBMITTED`.
+4. On a timeout or transport failure during POST, transition to
+   `SUBMISSION_UNKNOWN`; **do not automatically submit again**.
+5. Reconcile uncertain submissions with bounded, rate-limited job-list queries
+   and available tags/time/backend metadata. If a match cannot be established,
+   keep the record unresolved and require an explicit operator decision rather
+   than risking duplicate billable execution.
+6. Poll job status with bounded exponential backoff and jitter; persist every
+   state transition. Fetch results only after the API reports a result-ready
+   state, then store immutable results and a content hash.
+7. Make the reconciler restart-safe and safe for concurrent workers using
+   database uniqueness constraints, leases/row locks, and compare-and-set state
+   transitions. Redact credentials and avoid storing raw sensitive payloads in
+   routine logs.
+
+Do not assume the IBM service supports idempotency keys unless the current API
+contract explicitly documents that behavior. A local correlation key helps
+reconciliation but does not make remote job creation idempotent.
