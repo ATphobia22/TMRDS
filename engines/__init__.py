@@ -19,6 +19,7 @@ _EXPORTS: dict[str, tuple[str, str]] = {
     "AlphaFold3Node": ("alphafold3_node", "AlphaFold3Node"),
     "GROVERMolecularNode": ("grover_molecular_node", "GROVERMolecularNode"),
     "QiskitNatureBridge": ("qiskit_nature_bridge", "QiskitNatureBridge"),
+    "IBMQuantumComputeClient": ("ibm_quantum_compute", "IBMQuantumComputeClient"),
     "RDKitChemistryNode": ("rdkit_chemistry_node", "RDKitChemistryNode"),
     "BioCoderAssistant": ("biocoder_assistant", "BioCoderAssistant"),
     "DoctorDignityEthics": ("doctor_dignity_ethics", "DoctorDignityEthics"),
