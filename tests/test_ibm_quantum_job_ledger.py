@@ -156,3 +156,11 @@ async def test_submission_refuses_remote_post_when_atomic_rate_limit_claim_fails
 
     client.submit_sampler.assert_not_called()
     ledger.transition.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_local_submission_limit_cannot_exceed_ibm_contract(monkeypatch):
+    monkeypatch.setenv("TMRDS_IBM_QUANTUM_SUBMISSION_LIMIT_PER_MINUTE", "6")
+    ledger = QuantumJobLedger(dsn=None)
+    with pytest.raises(QuantumJobLedgerError, match="between 1 and 5"):
+        await ledger.claim_for_submission(uuid.uuid4())
