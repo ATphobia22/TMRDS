@@ -124,7 +124,7 @@ async def status() -> int:
                 raise MigrationError(f"checksum/name drift detected for migration {migration.version}")
             state = "applied" if recorded else "pending"
             print(f"{migration.version:03d} {state} {migration.name}")
-        if not exists and any([await _table_exists(conn, name) for name in BASELINE_SENTINELS.values()]):
+        if not applied and any([await _table_exists(conn, name) for name in BASELINE_SENTINELS.values()]):
             print("baseline_required: existing schema detected without a migration ledger")
         return 0
     finally:
