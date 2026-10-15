@@ -153,3 +153,34 @@ For an existing PostgreSQL volume, apply `migrations/004_quantum_job_ledger.sql`
 through the repository's controlled migration process. Docker's
 `/docker-entrypoint-initdb.d` scripts only initialize a fresh database volume;
 restarting an already initialized container will not apply this migration.
+
+
+## Bounded reconciliation command
+
+The repository includes an opt-in, single-pass reconciler in
+`engines/ibm_quantum_reconciler.py` and
+`scripts/ibm_quantum_reconcile_once.py`. It never creates or cancels remote
+jobs. It polls only ledger records that already have a known IBM job ID; an
+ambiguous submission without a job ID remains unresolved and is not matched by
+guessing from timestamps or backend names.
+
+The command stores successful result payloads in a content-addressed local
+artifact directory (default: `/app/data/quantum-results`) using exclusive
+creation, restrictive file permissions, canonical JSON, and a SHA-256 digest.
+The ledger records the result hash and artifact URI before a job can be marked
+complete. The artifact volume must be backed up, access-controlled, and covered
+by an explicit retention policy.
+
+Run one bounded pass from a trusted runtime after credentials and database
+access have been configured:
+
+```bash
+TMRDS_IBM_QUANTUM_RECONCILER_ENABLED=true python scripts/ibm_quantum_reconcile_once.py --limit 25
+```
+
+The reconciler is **not** automatically started by the API or Compose stack.
+Schedule it only after validating database state transitions, artifact backup
+and retention, operator alerts, account entitlements, and a single-worker
+operating procedure. Until distributed worker leases are implemented and
+verified, do not run multiple reconciler instances concurrently. This command
+performs read-only IBM job/status/result calls; it does not submit new jobs.
