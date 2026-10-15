@@ -8,7 +8,7 @@ from api.error_responses import safe_upstream_error
 
 
 def test_safe_upstream_error_uses_stable_public_contract() -> None:
-    secret_detail = "Authorization: Bearer extremely-sensitive-token"
+    secret_detail = "authorization header contained a private credential placeholder"
     error = safe_upstream_error("CDC", secret_detail)
 
     assert isinstance(error, HTTPException)
