@@ -119,7 +119,7 @@ services:
     depends_on:
       tmrds-postgres:
         condition: service_healthy
-    command: ["python", "-m", "engines.ibm_quantum_reconciler", "--once"]
+    command: ["python", "scripts/ibm_quantum_reconcile_once.py", "--limit", "25"]
     restart: "no"
 
 networks:
