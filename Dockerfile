@@ -8,10 +8,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements-runtime.txt /tmp/requirements-runtime.txt
-RUN python -m pip install --no-cache-dir -r /tmp/requirements-runtime.txt \
+COPY requirements-runtime.lock /tmp/requirements-runtime.lock
+RUN python -m pip install --no-cache-dir -r /tmp/requirements-runtime.lock \
     && python -m pip check \
-    && rm -f /tmp/requirements-runtime.txt
+    && rm -f /tmp/requirements-runtime.lock
 
 RUN groupadd --system --gid 10001 tmrds \
     && useradd --system --uid 10001 --gid tmrds --home-dir /nonexistent \
