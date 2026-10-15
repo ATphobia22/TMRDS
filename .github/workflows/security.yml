@@ -28,6 +28,8 @@ jobs:
         run: python scripts/security_scan.py .
       - name: Compile Python modules
         run: python -m compileall -q api engines scripts tests
+      - name: Audit API route and declared-auth inventory
+        run: python scripts/audit_api_routes.py --output api-route-inventory.json
       - name: Unit tests
         run: python -m pytest -q -m "not integration" --junitxml=test-results.xml
       - name: Upload test diagnostics
@@ -35,5 +37,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tmrds-test-results
-          path: test-results.xml
+          path: |
+            test-results.xml
+            api-route-inventory.json
           if-no-files-found: ignore
