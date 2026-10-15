@@ -228,7 +228,6 @@ The current remediation work adds checksummed explicit migrations, request-corre
 TMRDS/
 ├── api/                 # FastAPI application and route modules
 ├── engines/             # Research, evidence, interoperability, and security engines
-├── migrations/          # PostgreSQL / evidence schema migrations
 ├── docs/                # Architecture, security, interoperability, and operations docs
 ├── migrations/          # Ordered PostgreSQL schema changes and audit tables
 ├── scripts/             # Security scans, route audit, and bounded operator commands
