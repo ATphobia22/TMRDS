@@ -145,6 +145,29 @@ No live institutional EHR/INPC/IHIE exchange is enabled by this repository confi
 
 See `docs/INTEROPERABILITY_COMPLIANCE_MATRIX.md` for the technical-control matrix and regulatory limitations.
 
+## Optional IBM Quantum integration
+
+TMRDS includes an opt-in adapter for the **IBM Quantum Compute Service REST API**. This integration is for research workloads only and is not required to run the core API, PostgreSQL evidence store, or Neo4j projection.
+
+- **Account access:** a regular IBM Quantum account does not by itself guarantee access to a Quantum Compute instance, backend, or job submission. Configure an eligible instance CRN and the appropriate IAM permissions first.
+- **Credentials:** supply `IBM_QUANTUM_API_KEY` and `IBM_QUANTUM_INSTANCE_CRN` through a secret manager or an untracked local environment. Optional settings include `IBM_QUANTUM_REGION`, `IBM_QUANTUM_API_VERSION`, and `IBM_QUANTUM_TIMEOUT_SECONDS`. Never commit real credentials.
+- **Default safety:** remote job submission remains disabled unless explicitly enabled with `TMRDS_IBM_QUANTUM_SUBMISSION_ENABLED=true`, and the calling code must also provide explicit authorization. Do not enable it merely to test connectivity.
+- **Rate limits:** the database-backed local limiter defaults to four submissions per rolling minute and accepts only a configured ceiling from one through five per minute.
+- **Ambiguous requests:** an uncertain submission is recorded as `SUBMISSION_UNKNOWN`. TMRDS does not automatically resubmit it or infer a matching remote job from timestamps or backend metadata.
+- **Reconciliation:** the optional one-pass worker only polls jobs with known IBM job IDs, is bounded by batch/runtime limits, and can persist completed results to the configured private artifact directory. It does not create or cancel remote jobs. Run only one worker instance at a time.
+- **Operator resolution:** resolving an ambiguous submission requires the explicit `TMRDS_QUANTUM_OPERATOR_RESOLUTION_ENABLED=true` opt-in plus a confirmed IBM job ID, operator identifier, and evidence reference. Resolution attempts are recorded in the operator audit ledger.
+- **Not performed:** repository CI does not submit jobs to live IBM hardware, create IBM resources, or incur quantum execution charges.
+
+For configuration, state transitions, recovery steps, and limitations, see [IBM Quantum integration](docs/integrations/ibm-quantum-compute.md) and the [operations runbook](docs/operations/tmrds-operations-runbook.md).
+
+A bounded reconciliation pass can be run only after the IBM credentials, instance, database migrations, and operator policy have been configured:
+
+```bash
+TMRDS_IBM_QUANTUM_RECONCILER_ENABLED=true python scripts/ibm_quantum_reconcile_once.py --limit 25
+```
+
+Keep the reconciliation opt-in disabled until the deployment has been reviewed. Store result artifacts in a private, access-controlled location and include that location in backup/retention controls.
+
 ## Data and evidence model
 
 TMRDS treats the evidence ledger as authoritative. Derived representations must not silently become sources of truth.
@@ -182,17 +205,22 @@ The AI governance layer is intentionally restrictive:
 
 TMRDS therefore implements a **research-advisory architecture**, not an autonomous clinical decision-maker.
 
-## Testing and CI
+## Testing, CI, and API audit
 
-Core development/CI targets **Python 3.11**.
+Core development/CI targets **Python 3.11**. From the repository root, run:
 
 ```bash
 python -m pytest -q -m "not integration"
 python scripts/security_scan.py .
 python -m compileall -q api engines scripts tests
+python scripts/audit_api_routes.py --output api-route-inventory.json
 ```
 
-Live-source and PostgreSQL/Neo4j tests are explicitly marked `integration` and require their external services/configuration. The CI security workflow intentionally runs deterministic unit/security checks without requiring live PHI or institutional systems.
+The route audit emits a JSON inventory of FastAPI routes, source locations, declared dependencies, and write routes without a recognized declared authentication dependency. It is a static review aid—not proof that authorization is correct or that a route is exploitable. Review every flagged route and the runtime proxy/configuration context.
+
+Live-source and PostgreSQL/Neo4j tests are explicitly marked `integration` and require their external services/configuration. CI does not require live PHI, institutional EHR access, or IBM Quantum hardware. A read-only [Postman smoke collection](postman/TMRDS-API-smoke.postman_collection.json) covers liveness, readiness, and research-advisory metadata; import it into Postman and set `baseUrl` to the local API address.
+
+The current remediation work adds checksummed explicit migrations, request-correlation/error handling, hardened container defaults, dependency locks, health probes, route inventory output, and bounded IBM Quantum recovery controls. These controls still require environment-specific operational validation before a production release.
 
 ## Repository layout
 
@@ -202,6 +230,9 @@ TMRDS/
 ├── engines/             # Research, evidence, interoperability, and security engines
 ├── migrations/          # PostgreSQL / evidence schema migrations
 ├── docs/                # Architecture, security, interoperability, and operations docs
+├── migrations/          # Ordered PostgreSQL schema changes and audit tables
+├── scripts/             # Security scans, route audit, and bounded operator commands
+├── postman/             # Read-only API smoke-test collection
 ├── tests/               # Unit, API-contract, and integration tests
 ├── frontend/            # Frontend assets/application surface
 ├── workers/             # Continuous real-world data synchronization workers
