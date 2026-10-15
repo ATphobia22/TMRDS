@@ -7,71 +7,89 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
     volumes:
       - tmrds-postgres-data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d:ro
+    networks:
+      - backend
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
   tmrds-neo4j:
     image: neo4j:5-community
     environment:
       NEO4J_AUTH: ${NEO4J_USER:?Set NEO4J_USER}/${NEO4J_PASSWORD:?Set NEO4J_PASSWORD}
-    ports:
-      - "7474:7474"
-      - "7687:7687"
     volumes:
       - tmrds-neo4j-data:/data
       - tmrds-neo4j-logs:/logs
+    networks:
+      - backend
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:7474 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 12
+    restart: unless-stopped
 
   tmrds-api:
-    image: python:3.11-slim
-    working_dir: /app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tmrds-api:local
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
     volumes:
-      - ./:/app:ro
-      - tmrds-runtime-data:/app/data
+      - tmrds-runtime-data:/data
     environment:
-      - TMRDS_ENV=production
-      - TMRDS_HOST=0.0.0.0
-      - TMRDS_PORT=8000
-      - TMRDS_BASE_URL=${TMRDS_BASE_URL:?Set TMRDS_BASE_URL}
-      - TMRDS_SESSION_TIMEOUT_MIN=15
-      - TMRDS_AUDIT_LOG=/app/data/audit/access.jsonl
-      - TMRDS_FHIR_VERSION=R4
-      - TMRDS_US_CORE_VERSION=${TMRDS_US_CORE_VERSION:?Set TMRDS_US_CORE_VERSION}
-      - TMRDS_HMAC_SECRET=${TMRDS_HMAC_SECRET:?Set TMRDS_HMAC_SECRET}
-      - TMRDS_CLINICIAN_PASSWORD=${TMRDS_CLINICIAN_PASSWORD:?Set TMRDS_CLINICIAN_PASSWORD}
-      - TMRDS_EMERGENCY_PIN=${TMRDS_EMERGENCY_PIN:?Set TMRDS_EMERGENCY_PIN}
-      - TMRDS_DATABASE_URL=${TMRDS_DATABASE_URL:?Set TMRDS_DATABASE_URL}
-      - TMRDS_NEO4J_URI=${TMRDS_NEO4J_URI:?Set TMRDS_NEO4J_URI}
-      - TMRDS_NEO4J_USER=${TMRDS_NEO4J_USER:?Set TMRDS_NEO4J_USER}
-      - TMRDS_NEO4J_PASSWORD=${TMRDS_NEO4J_PASSWORD:?Set NEO4J_PASSWORD}
-      - TMRDS_SERVICE_AUTH_REQUIRED=${TMRDS_SERVICE_AUTH_REQUIRED:-true}
-      - TMRDS_SERVICE_ISSUER=${TMRDS_SERVICE_ISSUER:?Set TMRDS_SERVICE_ISSUER}
-      - TMRDS_SERVICE_AUDIENCE=${TMRDS_SERVICE_AUDIENCE:?Set TMRDS_SERVICE_AUDIENCE}
-      - TMRDS_SERVICE_JWKS_JSON=${TMRDS_SERVICE_JWKS_JSON:?Set TMRDS_SERVICE_JWKS_JSON}
+      TMRDS_ENV: ${TMRDS_ENV:-production}
+      TMRDS_HOST: 0.0.0.0
+      TMRDS_PORT: "8000"
+      TMRDS_BASE_URL: ${TMRDS_BASE_URL:?Set TMRDS_BASE_URL}
+      TMRDS_SESSION_TIMEOUT_MIN: "15"
+      TMRDS_AUDIT_LOG: /data/audit/access.jsonl
+      TMRDS_FHIR_VERSION: R4
+      TMRDS_US_CORE_VERSION: ${TMRDS_US_CORE_VERSION:?Set TMRDS_US_CORE_VERSION}
+      TMRDS_HMAC_SECRET: ${TMRDS_HMAC_SECRET:?Set TMRDS_HMAC_SECRET}
+      TMRDS_CLINICIAN_PASSWORD: ${TMRDS_CLINICIAN_PASSWORD:?Set TMRDS_CLINICIAN_PASSWORD}
+      TMRDS_EMERGENCY_PIN: ${TMRDS_EMERGENCY_PIN:?Set TMRDS_EMERGENCY_PIN}
+      TMRDS_DATABASE_URL: ${TMRDS_DATABASE_URL:?Set TMRDS_DATABASE_URL}
+      TMRDS_NEO4J_URI: ${TMRDS_NEO4J_URI:?Set TMRDS_NEO4J_URI}
+      TMRDS_NEO4J_USER: ${TMRDS_NEO4J_USER:?Set TMRDS_NEO4J_USER}
+      TMRDS_NEO4J_PASSWORD: ${TMRDS_NEO4J_PASSWORD:?Set TMRDS_NEO4J_PASSWORD}
+      TMRDS_SERVICE_AUTH_REQUIRED: ${TMRDS_SERVICE_AUTH_REQUIRED:-true}
+      TMRDS_SERVICE_ISSUER: ${TMRDS_SERVICE_ISSUER:?Set TMRDS_SERVICE_ISSUER}
+      TMRDS_SERVICE_AUDIENCE: ${TMRDS_SERVICE_AUDIENCE:?Set TMRDS_SERVICE_AUDIENCE}
+      TMRDS_SERVICE_JWKS_JSON: ${TMRDS_SERVICE_JWKS_JSON:?Set TMRDS_SERVICE_JWKS_JSON}
+      TMRDS_IBM_QUANTUM_SUBMISSION_ENABLED: "false"
     ports:
-      - "8000:8000"
+      - "${TMRDS_API_BIND:-127.0.0.1}:${TMRDS_API_HOST_PORT:-8000}:8000"
+    networks:
+      - backend
+      - outbound
     depends_on:
       tmrds-postgres:
         condition: service_healthy
       tmrds-neo4j:
         condition: service_healthy
-    command: >
-      bash -c "pip install -q -r requirements.txt &&
-      mkdir -p data/audit data/research data/logs &&
-      python -m uvicorn api.main:app --host 0.0.0.0 --port 8000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/research/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/research/health', timeout=3)"]
       interval: 15s
       timeout: 5s
       retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+networks:
+  backend:
+    internal: true
+  outbound: {}
 
 volumes:
   tmrds-postgres-data:
