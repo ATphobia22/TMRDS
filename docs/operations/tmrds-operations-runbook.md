@@ -72,12 +72,12 @@ For a read-only reconciliation pass, configure in a trusted environment:
 - `IBM_QUANTUM_API_KEY` and `IBM_QUANTUM_INSTANCE_CRN` for an existing eligible Compute Service instance.
 - `TMRDS_DATABASE_URL` pointing to the TMRDS PostgreSQL ledger.
 - `TMRDS_IBM_QUANTUM_RECONCILER_ENABLED=true`.
-- `TMRDS_QUANTUM_RESULT_DIR` pointing to a private, durable directory backed up under the operator's policy.
+- `TMRDS_QUANTUM_ARTIFACT_DIR` optionally pointing to a private, durable directory; the default is `/app/data/quantum-results` in Compose. Back up this directory under the operator's policy.
 
 Then run a single bounded pass:
 
 ```bash
-python -m engines.ibm_quantum_reconciler --once
+python scripts/ibm_quantum_reconcile_once.py --limit 25
 ```
 
 The reconciler performs read-only job/status/result requests, processes a bounded page, stores result JSON as private immutable artifacts, and persists a SHA-256 hash and artifact URI. It does not submit or cancel jobs. If an accepted remote job has no known job ID, it remains unresolved; do not infer a match from timestamps, backend, or input content. Resolve such records only through a reviewed operator workflow with evidence and an audit entry.
@@ -93,7 +93,7 @@ TMRDS_IBM_QUANTUM_RECONCILER_ENABLED=true docker compose --profile quantum-recon
 For an ambiguous record, first verify the remote job ID in IBM's authenticated job history and preserve evidence in a durable, access-controlled artifact or incident record. Then run the privileged command from an administrative shell:
 
 ```bash
-TMRDS_QUANTUM_OPERATOR_RESOLUTION_ENABLED=true python -m engines.ibm_quantum_reconciler \\
+TMRDS_QUANTUM_OPERATOR_RESOLUTION_ENABLED=true python scripts/ibm_quantum_reconcile_once.py \\
   --resolve-unknown <submission-uuid> \\
   --ibm-job-id <confirmed-ibm-job-id> \\
   --operator-id <operator-audit-id> \\
