@@ -107,6 +107,7 @@ class QuantumJobLedger:
         ibm_job_id: str | None = None,
         error_code: str | None = None,
         result_sha256: str | None = None,
+        result_artifact_uri: str | None = None,
     ) -> bool:
         allowed = {
             "PREPARED": {"SUBMITTING"},
@@ -126,10 +127,13 @@ class QuantumJobLedger:
                    result_sha256=COALESCE($6, result_sha256),
                    updated_at=now(),
                    submitted_at=CASE WHEN $3='SUBMITTED' THEN now() ELSE submitted_at END,
-                   completed_at=CASE WHEN $3 IN ('COMPLETED','FAILED','CANCELLED') THEN now() ELSE completed_at END
+                   completed_at=CASE WHEN $3 IN ('COMPLETED','FAILED','CANCELLED') THEN now() ELSE completed_at END,
+                   metadata=CASE WHEN $7 IS NULL THEN metadata
+                                 ELSE metadata || jsonb_build_object('result_artifact_uri', $7) END
                WHERE submission_id=$1 AND state=$2
                RETURNING submission_id""",
             submission_id, expected_state, new_state, ibm_job_id, error_code, result_sha256,
+            result_artifact_uri,
         )
         return row is not None
 
