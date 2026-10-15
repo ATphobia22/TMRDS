@@ -84,4 +84,4 @@ class LocalQuantumResultStore:
                     temp_path.unlink(missing_ok=True)
                 except OSError:
                     pass
-        return f"artifact://quantum-results/{destination.name}?sha256={payload_hash}"
+        return f"artifact://quantum-results/{destination.name}"
