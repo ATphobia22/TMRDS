@@ -6,7 +6,6 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any
 
 
 class QuantumArtifactStoreError(RuntimeError):
@@ -16,7 +15,7 @@ class QuantumArtifactStoreError(RuntimeError):
 class LocalQuantumArtifactStore:
     """Persist canonical JSON with exclusive creation and content verification."""
 
-    _SAFE_JOB_ID = re.compile(r"[A-Za-z0-9_-]{1,200}\\Z")
+    _SAFE_JOB_ID = re.compile(r"[A-Za-z0-9_-]{1,200}\Z")
 
     def __init__(self, root: Path | str | None = None, *, max_bytes: int = 10 * 1024 * 1024) -> None:
         if not 1024 <= max_bytes <= 100 * 1024 * 1024:
