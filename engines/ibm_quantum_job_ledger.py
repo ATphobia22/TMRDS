@@ -62,7 +62,7 @@ class QuantumJobLedger:
         assert self.pool is not None
         return self.pool
 
-    async def prepare(self, submission: QuantumSubmission) -> None:
+    async def prepare(self, submission: QuantumSubmission) -> uuid.UUID:
         pool = await self._pool()
         async with pool.acquire() as conn:
             await conn.execute(
@@ -97,6 +97,7 @@ class QuantumJobLedger:
             raise QuantumJobLedgerError(
                 f"Submission already exists in state {row['state']}; refusing duplicate remote submission."
             )
+        return uuid.UUID(str(row["submission_id"]))
 
     async def claim_for_submission(self, submission_id: uuid.UUID) -> bool:
         """Atomically enforce a per-minute remote submission ceiling and claim one row."""
@@ -315,8 +316,8 @@ class IBMQuantumSubmissionService:
             api_version=config.api_version,
             region=config.region,
         )
-        await self.ledger.prepare(submission)
-        claimed = await self.ledger.claim_for_submission(submission.submission_id)
+        submission_id = await self.ledger.prepare(submission)
+        claimed = await self.ledger.claim_for_submission(submission_id)
         if not claimed:
             raise QuantumJobLedgerError(
                 "Submission state changed concurrently or rate limit or concurrent state blocked the claim; refusing remote submission."
@@ -329,7 +330,7 @@ class IBMQuantumSubmissionService:
         except Exception as exc:
             # A failure after request initiation cannot prove the remote job was not created.
             await self.ledger.transition(
-                submission.submission_id, "SUBMITTING", "SUBMISSION_UNKNOWN",
+                submission_id, "SUBMITTING", "SUBMISSION_UNKNOWN",
                 error_code=type(exc).__name__[:80],
             )
             raise QuantumJobLedgerError(
@@ -346,14 +347,14 @@ class IBMQuantumSubmissionService:
                 "IBM response did not contain a job ID; submission requires reconciliation."
             )
         saved = await self.ledger.transition(
-            submission.submission_id, "SUBMITTING", "SUBMITTED", ibm_job_id=job_id
+            submission_id, "SUBMITTING", "SUBMITTED", ibm_job_id=job_id
         )
         if not saved:
             raise QuantumJobLedgerError(
                 "IBM accepted the job but the ledger update did not complete; reconcile before any resubmission."
             )
         return {
-            "submission_id": str(submission.submission_id),
+            "submission_id": str(submission_id),
             "ibm_job_id": job_id,
             "state": "SUBMITTED",
             "input_sha256": submission.input_sha256,
