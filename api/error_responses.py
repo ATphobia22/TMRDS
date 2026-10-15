@@ -47,10 +47,14 @@ class RequestCorrelationMiddleware:
         headers = dict(scope.get("headers", []))
         supplied = headers.get(b"x-request-id", b"").decode("ascii", errors="ignore")
         request_id = supplied if _SAFE_REQUEST_ID.fullmatch(supplied) else str(uuid.uuid4())
+        scope.setdefault("state", {})["request_id"] = request_id
 
         async def send_with_request_id(message: dict[str, Any]) -> None:
             if message.get("type") == "http.response.start":
-                response_headers = list(message.get("headers", []))
+                response_headers = [
+                    (name, value) for name, value in message.get("headers", [])
+                    if name.lower() != b"x-request-id"
+                ]
                 response_headers.append((b"x-request-id", request_id.encode("ascii")))
                 message = {**message, "headers": response_headers}
             await send(message)
