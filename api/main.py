@@ -46,6 +46,30 @@ def research_envelope(data: Any, source: str) -> dict[str, Any]:
     return {"status": "research-advisory", "human_authority_final": True, "not_samd": True, "read_only": True, "source": source, "retrieved_at": datetime.now(timezone.utc).isoformat(), "data": data}
 
 
+@app.get("/health/live")
+async def liveness() -> dict[str, str]:
+    """Process liveness only; external dependencies do not affect this result."""
+    return {"status": "alive"}
+
+
+@app.get("/health/ready")
+async def readiness() -> dict[str, str]:
+    """Readiness requires the authoritative PostgreSQL evidence schema."""
+    try:
+        pool = await evidence_repository._pool()
+        async with pool.acquire() as conn:
+            schema_ready = await conn.fetchval(
+                "SELECT to_regclass('public.evidence_sources') IS NOT NULL"
+            )
+        if not schema_ready:
+            raise safe_upstream_error("PostgreSQL evidence schema", status_code=503)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise safe_upstream_error("PostgreSQL", exc, status_code=503) from exc
+    return {"status": "ready"}
+
+
 @app.get("/api/v1/research/health")
 async def research_health() -> dict[str, Any]:
     return research_envelope({"cdc": "configured", "openneuro": "configured", "clinicaltrials": "configured", "openfda": "configured", "nlm": "configured", "europepmc": "configured", "pubmed": pubmed.status()}, "TMRDS")
