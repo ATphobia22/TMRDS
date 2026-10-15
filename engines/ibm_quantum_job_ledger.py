@@ -98,6 +98,39 @@ class QuantumJobLedger:
                 f"Submission already exists in state {row['state']}; refusing duplicate remote submission."
             )
 
+    async def claim_for_submission(self, submission_id: uuid.UUID) -> bool:
+        """Atomically enforce a per-minute remote submission ceiling and claim one row."""
+        try:
+            limit_per_minute = int(os.getenv("TMRDS_IBM_QUANTUM_SUBMISSION_LIMIT_PER_MINUTE", "4"))
+        except ValueError as exc:
+            raise QuantumJobLedgerError("IBM Quantum submission rate limit must be an integer.") from exc
+        if not 1 <= limit_per_minute <= 5:
+            raise QuantumJobLedgerError("IBM Quantum submission rate limit must be between 1 and 5 per minute.")
+
+        pool = await self._pool()
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                # A transaction-scoped lock serializes the count-and-claim operation.
+                await conn.execute("SELECT pg_advisory_xact_lock($1)", 7_419_220_262)
+                recent_count = await conn.fetchval(
+                    """SELECT count(*)
+                       FROM quantum_job_submissions
+                       WHERE created_at > now() - interval '60 seconds'
+                         AND state <> 'PREPARED'"""
+                )
+                if int(recent_count or 0) >= limit_per_minute:
+                    raise QuantumJobLedgerError(
+                        "IBM Quantum local submission rate limit reached; wait for the rolling window."
+                    )
+                row = await conn.fetchrow(
+                    """UPDATE quantum_job_submissions
+                       SET state='SUBMITTING', updated_at=now()
+                       WHERE submission_id=$1 AND state='PREPARED'
+                       RETURNING submission_id""",
+                    submission_id,
+                )
+                return row is not None
+
     async def transition(
         self,
         submission_id: uuid.UUID,
@@ -283,11 +316,11 @@ class IBMQuantumSubmissionService:
             region=config.region,
         )
         await self.ledger.prepare(submission)
-        claimed = await self.ledger.transition(
-            submission.submission_id, "PREPARED", "SUBMITTING"
-        )
+        claimed = await self.ledger.claim_for_submission(submission.submission_id)
         if not claimed:
-            raise QuantumJobLedgerError("Submission state changed concurrently; refusing remote submission.")
+            raise QuantumJobLedgerError(
+                "Submission state changed concurrently or rate limit or concurrent state blocked the claim; refusing remote submission."
+            )
 
         try:
             response = await _run_blocking_submission(
