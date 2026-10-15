@@ -11,6 +11,8 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
 
+from api.error_responses import RequestCorrelationMiddleware, safe_upstream_error
+
 from api.ai_governance_routes import router as ai_governance_router
 from api.evidence_retrieval_routes import router as evidence_retrieval_router
 from api.interoperability_routes import router as interoperability_router
@@ -26,6 +28,7 @@ from engines.evidence_graph_service import EvidenceGraphService
 from engines.evidence_source_registry import default_source_registry
 
 app = FastAPI(title="TMRDS Research Gateway", version="2.2.0-research", description="Live biomedical research gateway and source-governed evidence graph.")
+app.add_middleware(RequestCorrelationMiddleware)
 
 cdc = CDCDataPipeline()
 openneuro = OpenNeuroPipeline()
@@ -54,7 +57,7 @@ async def get_cdc_disease_data(limit: int = Query(default=50, ge=1, le=500), que
         data = await cdc.search_indicators(query, limit) if query else await cdc.fetch_indicators(limit)
         return research_envelope(data, "CDC Chronic Disease Indicators")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"CDC upstream error: {exc}") from exc
+        raise safe_upstream_error("CDC", exc) from exc
 
 
 @app.get("/api/v1/research/datasets/openneuro")
@@ -62,7 +65,7 @@ async def get_openneuro_data(query: str = Query(default="MRI", min_length=1), li
     try:
         return research_envelope(await openneuro.search_datasets(query, limit), "OpenNeuro")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"OpenNeuro upstream error: {exc}") from exc
+        raise safe_upstream_error("OpenNeuro", exc) from exc
 
 
 @app.get("/api/v1/research/trials")
@@ -70,7 +73,7 @@ async def search_trials(query: str = Query(..., min_length=1), limit: int = Quer
     try:
         return research_envelope(await trials.search(query, limit), "ClinicalTrials.gov API v2")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"ClinicalTrials.gov upstream error: {exc}") from exc
+        raise safe_upstream_error("ClinicalTrials.gov", exc) from exc
 
 
 @app.get("/api/v1/research/drugs/labels")
@@ -78,7 +81,7 @@ async def search_drug_labels(query: str | None = Query(default=None), limit: int
     try:
         return research_envelope(await openfda.drug_labels(query, limit), "openFDA drug labeling")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"openFDA upstream error: {exc}") from exc
+        raise safe_upstream_error("openFDA", exc) from exc
 
 
 @app.get("/api/v1/research/drugs/adverse-events")
@@ -86,7 +89,7 @@ async def search_drug_adverse_events(query: str | None = Query(default=None), li
     try:
         return research_envelope(await openfda.adverse_events(query, limit), "openFDA drug adverse events")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"openFDA upstream error: {exc}") from exc
+        raise safe_upstream_error("openFDA", exc) from exc
 
 
 @app.get("/api/v1/research/drugs/shortages")
@@ -94,7 +97,7 @@ async def search_drug_shortages(query: str | None = Query(default=None), limit: 
     try:
         return research_envelope(await openfda.drug_shortages(query, limit), "openFDA drug shortages")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"openFDA upstream error: {exc}") from exc
+        raise safe_upstream_error("openFDA", exc) from exc
 
 
 @app.get("/api/v1/research/nlm/conditions")
@@ -102,7 +105,7 @@ async def search_conditions(terms: str = Query(..., min_length=1), limit: int = 
     try:
         return research_envelope(await nlm.search_conditions(terms, limit), "NLM Clinical Tables")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"NLM upstream error: {exc}") from exc
+        raise safe_upstream_error("NLM", exc) from exc
 
 
 @app.get("/api/v1/research/nlm/hpo")
@@ -110,7 +113,7 @@ async def search_hpo(terms: str = Query(..., min_length=1), limit: int = Query(d
     try:
         return research_envelope(await nlm.search_hpo(terms, limit), "NLM Human Phenotype Ontology table")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"NLM upstream error: {exc}") from exc
+        raise safe_upstream_error("NLM", exc) from exc
 
 
 @app.get("/api/v1/research/nlm/genes")
@@ -118,7 +121,7 @@ async def search_genes(terms: str = Query(..., min_length=1), limit: int = Query
     try:
         return research_envelope(await nlm.search_genes(terms, limit), "NLM Clinical Tables genes")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"NLM upstream error: {exc}") from exc
+        raise safe_upstream_error("NLM", exc) from exc
 
 
 @app.get("/api/v1/research/nlm/rxterms")
@@ -126,7 +129,7 @@ async def search_rxterms(terms: str = Query(..., min_length=1), limit: int = Que
     try:
         return research_envelope(await nlm.search_rxterms(terms, limit), "NLM RxTerms")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"NLM upstream error: {exc}") from exc
+        raise safe_upstream_error("NLM", exc) from exc
 
 
 @app.get("/api/v1/research/literature/europe-pmc")
@@ -134,7 +137,7 @@ async def search_europe_pmc(query: str = Query(..., min_length=1), limit: int = 
     try:
         return research_envelope(await europepmc.search(query, limit), "Europe PMC")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Europe PMC upstream error: {exc}") from exc
+        raise safe_upstream_error("Europe PMC", exc) from exc
 
 
 @app.get("/api/v1/research/literature/pubmed")
@@ -148,7 +151,7 @@ async def search_pubmed(query: str = Query(..., min_length=1), limit: int = Quer
             result["articles"] = summaries.get("articles", [])
         return research_envelope(result, "NCBI PubMed E-utilities")
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"PubMed upstream error: {exc}") from exc
+        raise safe_upstream_error("PubMed", exc) from exc
 
 
 @app.get("/api/v1/research/federated-search")
@@ -164,7 +167,7 @@ async def federated_search(query: str = Query(..., min_length=2), limit: int = Q
     data, errors = {}, {}
     for name, result in zip(tasks, results):
         if isinstance(result, Exception):
-            errors[name] = str(result)
+            errors[name] = {"code": "UPSTREAM_FAILURE", "message": "Source request failed."}
         else:
             data[name] = result
     return research_envelope({"query": query, "results": data, "upstream_errors": errors}, "TMRDS Federated Public Biomedical Research Gateway")
@@ -175,7 +178,7 @@ async def evidence_entity(entity_id: str) -> dict[str, Any]:
     try:
         result = await evidence_service.entity(entity_id)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Evidence database unavailable: {exc}") from exc
+        raise safe_upstream_error("Evidence database", exc, status_code=503) from exc
     if result is None:
         raise HTTPException(status_code=404, detail="Evidence entity not found")
     return research_envelope(result, "TMRDS Governed Evidence Graph")
@@ -186,7 +189,7 @@ async def evidence_entity_assertions(entity_id: str, limit: int = Query(default=
     try:
         return research_envelope(await evidence_service.assertions(entity_id, limit), "TMRDS Governed Evidence Graph")
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Evidence database unavailable: {exc}") from exc
+        raise safe_upstream_error("Evidence database", exc, status_code=503) from exc
 
 
 @app.get("/api/v1/evidence/assertions/{assertion_id}")
@@ -194,7 +197,7 @@ async def evidence_assertion(assertion_id: str) -> dict[str, Any]:
     try:
         result = await evidence_service.assertion(assertion_id)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Evidence database unavailable: {exc}") from exc
+        raise safe_upstream_error("Evidence database", exc, status_code=503) from exc
     if result is None:
         raise HTTPException(status_code=404, detail="Evidence assertion not found")
     return research_envelope(result, "TMRDS Governed Evidence Graph")
@@ -206,7 +209,7 @@ async def evidence_path(subject_id: str = Query(..., min_length=3), object_id: s
         result = await evidence_service.path(subject_id, object_id, max_hops, predicate, source_id)
         return research_envelope({"subject_id": subject_id, "object_id": object_id, "paths": result}, "TMRDS Governed Evidence Graph")
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Evidence graph unavailable: {exc}") from exc
+        raise safe_upstream_error("Evidence graph", exc, status_code=503) from exc
 
 
 @app.get("/api/v1/evidence/graph")
@@ -216,7 +219,7 @@ async def evidence_graph(entity_id: str = Query(..., min_length=3), limit: int =
         assertions = await evidence_service.assertions(entity_id, limit)
         return research_envelope({"entity": entity, "assertions": assertions}, "TMRDS Governed Evidence Graph")
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Evidence graph unavailable: {exc}") from exc
+        raise safe_upstream_error("Evidence graph", exc, status_code=503) from exc
 
 
 @app.get("/api/v1/evidence/conflicts")
@@ -224,7 +227,7 @@ async def evidence_conflicts(limit: int = Query(default=100, ge=1, le=500)) -> d
     try:
         return research_envelope(await evidence_repository.list_conflicts(limit), "TMRDS Evidence Conflict Engine")
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Evidence database unavailable: {exc}") from exc
+        raise safe_upstream_error("Evidence database", exc, status_code=503) from exc
 
 
 @app.get("/api/v1/evidence/sources")
@@ -252,7 +255,7 @@ async def evidence_ingestion_status() -> dict[str, Any]:
     try:
         return research_envelope(await evidence_service.ingestion_status(), "TMRDS Evidence Ingestion")
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Evidence database unavailable: {exc}") from exc
+        raise safe_upstream_error("Evidence database", exc, status_code=503) from exc
 
 
 from api.evidence_ingestion_routes import router as evidence_ingestion_router
