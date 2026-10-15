@@ -21,7 +21,9 @@ class FakeLedger:
         transition_results: list[bool] | None = None,
         claim_result: bool = True,
     ) -> None:
-        self.prepare = AsyncMock()
+        async def _prepare(submission):
+            return submission.submission_id
+        self.prepare = AsyncMock(side_effect=_prepare)
         self.transition_calls: list[tuple[uuid.UUID, str, str, dict]] = []
         self.transition_results = list(transition_results or [True, True])
         self.transition = AsyncMock(side_effect=self._transition)
