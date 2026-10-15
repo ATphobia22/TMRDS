@@ -6,10 +6,12 @@ approved artifact sink before the ledger can mark a job complete.
 """
 from __future__ import annotations
 
+import argparse
 import asyncio
 import hashlib
 import json
 import os
+import sys
 from collections.abc import Awaitable, Callable
 from typing import Any
 from urllib.parse import urlsplit
@@ -176,3 +178,47 @@ def _is_safe_artifact_uri(value: object) -> bool:
         and not parsed.fragment
         and all(part not in {".", ".."} for part in parsed.path.split("/"))
     )
+
+
+
+async def _run_once() -> dict[str, int]:
+    from engines.ibm_quantum_compute import IBMQuantumComputeClient
+    from engines.ibm_quantum_job_ledger import QuantumJobLedger
+    from engines.quantum_result_store import LocalQuantumResultStore
+
+    result_dir = os.getenv("TMRDS_QUANTUM_RESULT_DIR", "").strip()
+    if not result_dir:
+        raise RuntimeError("TMRDS_QUANTUM_RESULT_DIR is required for result integrity")
+    client = IBMQuantumComputeClient.from_environment()
+    ledger = QuantumJobLedger()
+    try:
+        batch_limit = int(os.getenv("TMRDS_IBM_QUANTUM_RECONCILER_BATCH_LIMIT", "25"))
+        reconciler = IBMQuantumReconciler(
+            ledger,
+            client,
+            result_sink=LocalQuantumResultStore(result_dir),
+            batch_limit=batch_limit,
+        )
+        return await reconciler.reconcile_once()
+    finally:
+        client.close()
+        await ledger.close()
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--once", action="store_true", help="perform one bounded reconciliation pass")
+    args = parser.parse_args(argv)
+    if not args.once:
+        parser.error("only --once is supported; schedule repeated runs externally with bounded intervals")
+    try:
+        counts = asyncio.run(_run_once())
+    except Exception:
+        print("IBM Quantum reconciliation failed; check safe configuration and database status.", file=sys.stderr)
+        return 2
+    print(json.dumps(counts, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
