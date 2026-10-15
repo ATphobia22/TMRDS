@@ -92,17 +92,16 @@ Recommended state machine:
    `SUBMITTED`.
 4. On a timeout or transport failure during POST, transition to
    `SUBMISSION_UNKNOWN`; **do not automatically submit again**.
-5. Reconcile uncertain submissions with bounded, rate-limited job-list queries
-   and available tags/time/backend metadata. If a match cannot be established,
-   keep the record unresolved and require an explicit operator decision rather
-   than risking duplicate billable execution.
-6. Poll job status with bounded exponential backoff and jitter; persist every
-   state transition. Fetch results only after the API reports a result-ready
-   state, then store immutable results and a content hash.
-7. Make the reconciler restart-safe and safe for concurrent workers using
-   database uniqueness constraints, leases/row locks, and compare-and-set state
-   transitions. Redact credentials and avoid storing raw sensitive payloads in
-   routine logs.
+5. Reconcile known remote job IDs through bounded status requests. Never auto-match
+   an ambiguous submission using timestamps, backend, or workload content. Keep
+   records without a known job ID unresolved until an operator provides evidence.
+6. The opt-in single-pass worker persists status transitions and retrieves
+   results only after IBM reports a completed state. It writes canonical result
+   JSON to an immutable artifact store and records a SHA-256 digest before the
+   ledger is marked complete.
+7. The current worker is bounded and restart-tolerant, but does not yet implement
+   distributed leases. Do not run multiple worker instances concurrently. Redact
+   credentials and avoid storing raw sensitive payloads in routine logs.
 
 Do not assume the IBM service supports idempotency keys unless the current API
 contract explicitly documents that behavior. A local correlation key helps
@@ -137,11 +136,12 @@ controls to the ledger because backend, timing, and workload metadata can still
 be sensitive.
 
 The ledger's reconciliation query surfaces `SUBMISSION_UNKNOWN`,
-`SUBMITTING`, `SUBMITTED`, and `RUNNING` records. An operator/reconciler must
-match uncertain records to IBM job history before resolving them; the query
-does not guess a match or resubmit automatically. Terminal job polling, result
-retrieval, cancellation, automated quota enforcement, and a background worker
-are intentionally not claimed as implemented by this submission-only layer.
+`SUBMITTING`, `SUBMITTED`, and `RUNNING` records. The bounded worker polls only
+records with known IBM job IDs, stores completed results through an injected
+artifact sink, and never creates or cancels remote jobs. Unknown submissions can
+be resolved only through the privileged operator command, which records evidence
+in the append-only `quantum_job_operator_resolutions` table (migration 005).
+Automated quota enforcement and distributed worker leases remain unimplemented.
 
 Run local tests with:
 
@@ -149,10 +149,10 @@ Run local tests with:
 python -m pytest -q tests/test_ibm_quantum_compute.py tests/test_ibm_quantum_job_ledger.py
 ```
 
-For an existing PostgreSQL volume, apply `migrations/004_quantum_job_ledger.sql`
-through the repository's controlled migration process. Docker's
-`/docker-entrypoint-initdb.d` scripts only initialize a fresh database volume;
-restarting an already initialized container will not apply this migration.
+For an existing PostgreSQL volume, inspect migration status and apply the pending
+migrations through `engines/migration_runner.py` following
+`docs/operations/tmrds-operations-runbook.md`. Never edit an applied migration
+or destroy a volume to force initialization.
 
 
 ## Bounded reconciliation command
