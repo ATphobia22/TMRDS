@@ -10,3 +10,19 @@ CREATE TABLE IF NOT EXISTS quantum_job_operator_resolutions (
 );
 CREATE INDEX IF NOT EXISTS idx_quantum_job_operator_resolutions_submission
     ON quantum_job_operator_resolutions(submission_id, resolved_at DESC);
+
+
+CREATE OR REPLACE FUNCTION prevent_quantum_job_operator_resolution_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION 'quantum job operator resolution records are append-only';
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_quantum_job_operator_resolutions_immutable
+    ON quantum_job_operator_resolutions;
+CREATE TRIGGER trg_quantum_job_operator_resolutions_immutable
+    BEFORE UPDATE OR DELETE ON quantum_job_operator_resolutions
+    FOR EACH ROW EXECUTE FUNCTION prevent_quantum_job_operator_resolution_mutation();
