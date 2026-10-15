@@ -5,10 +5,14 @@ from __future__ import annotations
 import argparse
 import inspect
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 from fastapi.routing import APIRoute
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 from api.main import app
 
