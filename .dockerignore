@@ -20,3 +20,11 @@ data
 *.sql.gz
 *.dump
 *.sqlite
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+node_modules
+dist
+build
+*.py[cod]
