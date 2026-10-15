@@ -12,6 +12,7 @@ import json
 import os
 from collections.abc import Awaitable, Callable
 from typing import Any
+from urllib.parse import urlsplit
 from uuid import UUID
 
 from engines.ibm_quantum_compute import IBMQuantumComputeClient
@@ -106,7 +107,7 @@ class IBMQuantumReconciler:
                         counts["errors"] += 1
                         continue
                     artifact_uri = await self.result_sink(job_id, payload)
-                    if not isinstance(artifact_uri, str) or not artifact_uri.strip() or len(artifact_uri) > 2048:
+                    if not _is_safe_artifact_uri(artifact_uri):
                         counts["errors"] += 1
                         continue
                     result_hash = hashlib.sha256(serialized).hexdigest()
@@ -156,3 +157,22 @@ def _remote_status(remote: dict[str, Any]) -> str:
     if not isinstance(status, str):
         status = remote.get("status")
     return status.strip().casefold() if isinstance(status, str) else ""
+
+
+
+def _is_safe_artifact_uri(value: object) -> bool:
+    if not isinstance(value, str) or not value or len(value) > 2048:
+        return False
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return False
+    return (
+        parsed.scheme in {"artifact", "s3"}
+        and bool(parsed.netloc)
+        and parsed.username is None
+        and parsed.password is None
+        and not parsed.query
+        and not parsed.fragment
+        and all(part not in {".", ".."} for part in parsed.path.split("/"))
+    )
