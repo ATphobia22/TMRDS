@@ -70,11 +70,11 @@ def discover_migrations(directory: Path = MIGRATIONS_DIR) -> list[MigrationFile]
     return sorted(migrations, key=lambda migration: migration.version)
 
 
-async def _connect() -> asyncpg.Connection:
+async def _connect(*, require_production_opt_in: bool = False) -> asyncpg.Connection:
     dsn = os.getenv("TMRDS_DATABASE_URL", "").strip()
     if not dsn:
         raise MigrationError("TMRDS_DATABASE_URL is required; no implicit database target is permitted")
-    if os.getenv("TMRDS_ENV", "").casefold() == "production":
+    if require_production_opt_in and os.getenv("TMRDS_ENV", "").casefold() in {"production", "prod"}:
         if os.getenv("TMRDS_ALLOW_PRODUCTION_MIGRATIONS") != "true":
             raise MigrationError(
                 "production migration target blocked; use the reviewed release procedure and explicit opt-in"
@@ -133,7 +133,7 @@ async def status() -> int:
 
 async def upgrade() -> int:
     migrations = discover_migrations()
-    conn = await _connect()
+    conn = await _connect(require_production_opt_in=True)
     lock_acquired = False
     try:
         await _ensure_ledger(conn)
@@ -182,7 +182,7 @@ async def baseline(through_version: int) -> int:
     targets = [migration for migration in migrations if migration.version <= through_version]
     if not targets or targets[-1].version != through_version:
         raise MigrationError("baseline version must exactly match an existing migration")
-    conn = await _connect()
+    conn = await _connect(require_production_opt_in=True)
     lock_acquired = False
     try:
         await _ensure_ledger(conn)
