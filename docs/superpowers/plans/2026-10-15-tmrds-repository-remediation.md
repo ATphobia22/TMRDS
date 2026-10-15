@@ -4,7 +4,7 @@
 **Repository:** ATphobia22/TMRDS  
 **Target branch:** `main`  
 **Spec:** [2026-10-15-tmrds-repository-remediation-design.md](../specs/2026-10-15-tmrds-repository-remediation-design.md)  
-**Status:** Proposed — owner review required before implementation.
+**Status:** Core remediation implemented and merged to `main`; final production readiness remains conditional on environment-specific verification.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan. Work in small, test-first commits. Do not claim commands, tests, builds, attestations, installs, or deployments succeeded unless they were actually run and inspected.
 
@@ -144,3 +144,36 @@ Create small commits by workstream in this order: baseline; API/security; migrat
 - Async routes are bounded under slow/failing dependencies.
 - Quantum jobs cannot be duplicated by retry/restart, and no live hardware job runs in CI.
 - Claims of interoperability, security, build success, attestations, and deployment match actual evidence.
+
+
+## Execution record and remaining gates
+
+### Implemented and merged
+
+The core workstreams were implemented and merged through pull request #2 (merge commit `d438df0fbf87fa60cbcffe1da96de6229941e2b6`):
+
+- Stable, sanitized API dependency errors and request correlation.
+- Explicit PostgreSQL migration runner with numeric ordering, SHA-256 checksums, advisory locking, and operator-reviewed baseline safeguards.
+- Non-root API image, locked runtime/test dependencies, hardened Compose networking, local-only optional database ports, and a safer deploy helper.
+- Liveness and readiness endpoints with tests.
+- Production-default service identity enforcement and fail-closed configuration.
+- Bounded IBM Quantum reconciliation, immutable content-addressed result artifacts, operator-controlled ambiguity resolution, append-only operator audit, and rate-limited submission safeguards. Remote quantum submission and reconciliation remain disabled by default.
+- Read-only Postman smoke collection, migration and operations documentation, route/auth inventory generator, and CI container smoke test.
+
+### Verified evidence
+
+The latest checked runs for commit `ba00dbbbcb1929eeaf7c3c659e4a8508ffa00e91` completed successfully:
+
+- [TMRDS CI](https://github.com/ATphobia22/TMRDS/actions/runs/38662711265): dependency lock check, Python compilation, Compose configuration validation, Docker image build, API container liveness smoke test, IBM Quantum adapter/ledger tests, and the non-integration suite.
+- [TMRDS Security and Interoperability](https://github.com/ATphobia22/TMRDS/actions/runs/38662711229): deterministic secret scan, compilation, and non-integration tests.
+
+### Remaining acceptance gates
+
+- No production or staging deployment was performed: no target environment or deployment credentials were supplied.
+- No live PostgreSQL/Neo4j migration was performed. Before an existing database is upgraded, take and verify a backup, inspect its full schema, and use the documented baseline procedure only after confirming the schema matches.
+- No live IBM Quantum hardware job was submitted. Reconciliation requires explicit enablement and a configured account; ambiguous submissions remain unresolved until an operator supplies evidence.
+- FHIR/US Core and OMOP compatibility are not certified by unit tests alone; validate against the target server/profile versions and representative de-identified fixtures.
+- Review the generated route/auth inventory as an audit artifact. It classifies declared FastAPI dependencies only and is not proof of end-to-end authorization or infrastructure controls.
+- Before production use, provision valid service-identity JWKS/issuer/audience values, strong unique secrets, TLS/reverse-proxy policy, backups/restore drills, alerting, retention controls, and environment-specific threat-model review.
+
+This plan is an execution record, not a claim that all operational acceptance gates have been met.
