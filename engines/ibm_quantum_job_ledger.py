@@ -149,6 +149,62 @@ class QuantumJobLedger:
         )
         return dict(row) if row else None
 
+    async def resolve_unknown_submission(
+        self,
+        submission_id: uuid.UUID,
+        *,
+        ibm_job_id: str,
+        operator_id: str,
+        evidence_reference: str,
+    ) -> bool:
+        """Record an operator-evidenced resolution of an ambiguous submission."""
+        import re
+        from urllib.parse import urlsplit
+
+        if not isinstance(ibm_job_id, str) or not ibm_job_id.strip() or len(ibm_job_id) > 256 or "/" in ibm_job_id:
+            raise ValueError("IBM job ID is invalid")
+        if not isinstance(operator_id, str) or not re.fullmatch(r"[A-Za-z0-9._:-]{1,128}", operator_id):
+            raise ValueError("operator ID must be a non-empty audit identifier")
+        if not isinstance(evidence_reference, str) or len(evidence_reference) > 2048:
+            raise ValueError("evidence reference is invalid")
+        parsed = urlsplit(evidence_reference)
+        if (
+            parsed.scheme not in {"artifact", "https"}
+            or not parsed.netloc
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.query
+            or parsed.fragment
+            or any(part in {".", ".."} for part in parsed.path.split("/"))
+        ):
+            raise ValueError("evidence reference must be an artifact URI or credential-free HTTPS URL")
+
+        pool = await self._pool()
+        try:
+            row = await pool.fetchrow(
+                """UPDATE quantum_job_submissions
+                   SET state='SUBMITTED',
+                       ibm_job_id=$2,
+                       updated_at=now(),
+                       submitted_at=COALESCE(submitted_at, now()),
+                       metadata=metadata || jsonb_build_object(
+                           'operator_resolution',
+                           jsonb_build_object(
+                               'operator_id', $3,
+                               'evidence_reference', $4,
+                               'resolved_at', now()
+                           )
+                       )
+                   WHERE submission_id=$1
+                     AND state='SUBMISSION_UNKNOWN'
+                     AND ibm_job_id IS NULL
+                   RETURNING submission_id""",
+                submission_id, ibm_job_id, operator_id, evidence_reference,
+            )
+        except asyncpg.UniqueViolationError as exc:
+            raise QuantumJobLedgerError("IBM job ID is already linked to another ledger record.") from exc
+        return row is not None
+
     async def list_reconciliation_candidates(self, limit: int = 100) -> list[dict[str, Any]]:
         if not 1 <= limit <= 500:
             raise ValueError("limit must be between 1 and 500")
