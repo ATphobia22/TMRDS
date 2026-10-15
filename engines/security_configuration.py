@@ -32,7 +32,10 @@ class SecurityConfiguration:
             raise RuntimeError("TMRDS_DATABASE_URL is required; no built-in database credential is permitted")
         if len(hmac_secret) < 32:
             raise ValueError("TMRDS_HMAC_SECRET must contain at least 32 characters")
-        service_auth_required = os.getenv("TMRDS_SERVICE_AUTH_REQUIRED", "false").casefold() == "true"
+        service_auth_required = (
+            environment in _PRODUCTION_VALUES
+            or os.getenv("TMRDS_SERVICE_AUTH_REQUIRED", "false").casefold() == "true"
+        )
         service_issuer = os.getenv("TMRDS_SERVICE_ISSUER", "").strip() or None
         service_audience = os.getenv("TMRDS_SERVICE_AUDIENCE", "").strip() or None
         service_jwks_json = os.getenv("TMRDS_SERVICE_JWKS_JSON", "").strip() or None
@@ -40,7 +43,7 @@ class SecurityConfiguration:
             for name in ("TMRDS_NEO4J_URI", "TMRDS_NEO4J_USER", "TMRDS_NEO4J_PASSWORD"):
                 if not os.getenv(name, "").strip():
                     raise RuntimeError(f"{name} is required in production")
-            if service_auth_required and not all((service_issuer, service_audience, service_jwks_json)):
+            if not all((service_issuer, service_audience, service_jwks_json)):
                 raise RuntimeError("service authentication requires issuer, audience, and JWKS configuration")
         return cls(
             environment=environment,
