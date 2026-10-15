@@ -50,7 +50,6 @@ class LocalQuantumResultStore:
             raise QuantumResultStoreError("result storage permissions could not be secured") from exc
 
         job_hash = hashlib.sha256(job_id.encode("utf-8")).hexdigest()
-        payload_hash = hashlib.sha256(content).hexdigest()
         destination = root / f"result-{job_hash}.json"
         temp_path: Path | None = None
         try:
