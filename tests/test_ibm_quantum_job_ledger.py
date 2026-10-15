@@ -21,7 +21,9 @@ class FakeLedger:
         transition_results: list[bool] | None = None,
         claim_result: bool = True,
     ) -> None:
-        self.prepare = AsyncMock()
+        async def _prepare(submission):
+            return submission.submission_id
+        self.prepare = AsyncMock(side_effect=_prepare)
         self.transition_calls: list[tuple[uuid.UUID, str, str, dict]] = []
         self.transition_results = list(transition_results or [True, True])
         self.transition = AsyncMock(side_effect=self._transition)
@@ -148,7 +150,7 @@ async def test_submission_refuses_remote_post_when_atomic_rate_limit_claim_fails
     ledger = FakeLedger(claim_result=False)
     client = fake_client()
 
-    with pytest.raises(QuantumJobLedgerError, match="rate limit or concurrent state"):
+    with pytest.raises(QuantumJobLedgerError, match="rate limit was reached"):
         await IBMQuantumSubmissionService(ledger).submit(
             client=client, idempotency_key="req-rate", artifact_uri="artifact://circuits/rate",
             backend="backend", qasm_circuits=["OPENQASM 3.0;"], explicitly_authorized=True,
@@ -156,3 +158,28 @@ async def test_submission_refuses_remote_post_when_atomic_rate_limit_claim_fails
 
     client.submit_sampler.assert_not_called()
     ledger.transition.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_local_submission_limit_cannot_exceed_ibm_contract(monkeypatch):
+    monkeypatch.setenv("TMRDS_IBM_QUANTUM_SUBMISSION_LIMIT_PER_MINUTE", "6")
+    ledger = QuantumJobLedger(dsn=None)
+    with pytest.raises(QuantumJobLedgerError, match="between 1 and 5"):
+        await ledger.claim_for_submission(uuid.uuid4())
+
+
+
+@pytest.mark.asyncio
+async def test_submission_rejects_signed_artifact_urls(monkeypatch):
+    monkeypatch.setenv("TMRDS_IBM_QUANTUM_SUBMISSION_ENABLED", "true")
+    ledger = FakeLedger()
+    client = fake_client()
+
+    with pytest.raises(ValueError, match="credential-free artifact"):
+        await IBMQuantumSubmissionService(ledger).submit(
+            client=client, idempotency_key="req-signed", artifact_uri="https://storage.invalid/file?signature=secret",
+            backend="backend", qasm_circuits=["OPENQASM 3.0;"], explicitly_authorized=True,
+        )
+
+    ledger.prepare.assert_not_awaited()
+    client.submit_sampler.assert_not_called()

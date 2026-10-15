@@ -13,10 +13,27 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Sequence
+from urllib.parse import urlsplit
 
 import asyncpg
 
 from engines.ibm_quantum_compute import IBMQuantumComputeClient, IBMQuantumError
+
+
+def _is_safe_input_artifact_uri(value: str) -> bool:
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return False
+    return (
+        parsed.scheme in {"artifact", "s3"}
+        and bool(parsed.netloc)
+        and parsed.username is None
+        and parsed.password is None
+        and not parsed.query
+        and not parsed.fragment
+        and all(part not in {".", ".."} for part in parsed.path.split("/"))
+    )
 
 
 class QuantumJobLedgerError(RuntimeError):
@@ -62,7 +79,7 @@ class QuantumJobLedger:
         assert self.pool is not None
         return self.pool
 
-    async def prepare(self, submission: QuantumSubmission) -> None:
+    async def prepare(self, submission: QuantumSubmission) -> uuid.UUID:
         pool = await self._pool()
         async with pool.acquire() as conn:
             await conn.execute(
@@ -89,6 +106,8 @@ class QuantumJobLedger:
             or row["artifact_uri"] != submission.artifact_uri
             or row["backend"] != submission.backend
             or row["shots"] != submission.shots
+            or row["api_version"] != submission.api_version
+            or row["region"] != submission.region
         ):
             raise QuantumJobLedgerError(
                 "Idempotency key already belongs to a different workload."
@@ -97,6 +116,7 @@ class QuantumJobLedger:
             raise QuantumJobLedgerError(
                 f"Submission already exists in state {row['state']}; refusing duplicate remote submission."
             )
+        return uuid.UUID(str(row["submission_id"]))
 
     async def claim_for_submission(self, submission_id: uuid.UUID) -> bool:
         """Atomically enforce a per-minute remote submission ceiling and claim one row."""
@@ -293,8 +313,8 @@ class IBMQuantumSubmissionService:
             raise QuantumJobLedgerError("Explicit workload authorization is required.")
         if not idempotency_key or len(idempotency_key) > 200:
             raise ValueError("idempotency_key must contain 1-200 characters.")
-        if not artifact_uri or len(artifact_uri) > 2048:
-            raise ValueError("artifact_uri must contain 1-2048 characters.")
+        if not artifact_uri or len(artifact_uri) > 2048 or not _is_safe_input_artifact_uri(artifact_uri):
+            raise ValueError("artifact_uri must be a credential-free artifact:// or s3:// URI without query parameters.")
         if not backend or not qasm_circuits or any(
             not isinstance(circuit, str) or not circuit.strip() for circuit in qasm_circuits
         ):
@@ -315,11 +335,11 @@ class IBMQuantumSubmissionService:
             api_version=config.api_version,
             region=config.region,
         )
-        await self.ledger.prepare(submission)
-        claimed = await self.ledger.claim_for_submission(submission.submission_id)
+        submission_id = await self.ledger.prepare(submission)
+        claimed = await self.ledger.claim_for_submission(submission_id)
         if not claimed:
             raise QuantumJobLedgerError(
-                "Submission state changed concurrently or rate limit or concurrent state blocked the claim; refusing remote submission."
+                "Submission state changed concurrently or the local rate limit was reached; refusing remote submission."
             )
 
         try:
@@ -329,7 +349,7 @@ class IBMQuantumSubmissionService:
         except Exception as exc:
             # A failure after request initiation cannot prove the remote job was not created.
             await self.ledger.transition(
-                submission.submission_id, "SUBMITTING", "SUBMISSION_UNKNOWN",
+                submission_id, "SUBMITTING", "SUBMISSION_UNKNOWN",
                 error_code=type(exc).__name__[:80],
             )
             raise QuantumJobLedgerError(
@@ -339,21 +359,21 @@ class IBMQuantumSubmissionService:
         job_id = response.get("id") if isinstance(response, dict) else None
         if not isinstance(job_id, str) or not job_id:
             await self.ledger.transition(
-                submission.submission_id, "SUBMITTING", "SUBMISSION_UNKNOWN",
+                submission_id, "SUBMITTING", "SUBMISSION_UNKNOWN",
                 error_code="MISSING_REMOTE_JOB_ID",
             )
             raise QuantumJobLedgerError(
                 "IBM response did not contain a job ID; submission requires reconciliation."
             )
         saved = await self.ledger.transition(
-            submission.submission_id, "SUBMITTING", "SUBMITTED", ibm_job_id=job_id
+            submission_id, "SUBMITTING", "SUBMITTED", ibm_job_id=job_id
         )
         if not saved:
             raise QuantumJobLedgerError(
                 "IBM accepted the job but the ledger update did not complete; reconcile before any resubmission."
             )
         return {
-            "submission_id": str(submission.submission_id),
+            "submission_id": str(submission_id),
             "ibm_job_id": job_id,
             "state": "SUBMITTED",
             "input_sha256": submission.input_sha256,
