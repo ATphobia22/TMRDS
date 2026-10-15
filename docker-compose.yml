@@ -46,14 +46,14 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
     volumes:
-      - tmrds-runtime-data:/data
+      - tmrds-runtime-data:/app/data
     environment:
       TMRDS_ENV: ${TMRDS_ENV:-production}
       TMRDS_HOST: 0.0.0.0
       TMRDS_PORT: "8000"
       TMRDS_BASE_URL: ${TMRDS_BASE_URL:?Set TMRDS_BASE_URL}
       TMRDS_SESSION_TIMEOUT_MIN: "15"
-      TMRDS_AUDIT_LOG: /data/audit/access.jsonl
+      TMRDS_AUDIT_LOG: /app/data/audit/access.jsonl
       TMRDS_FHIR_VERSION: R4
       TMRDS_US_CORE_VERSION: ${TMRDS_US_CORE_VERSION:?Set TMRDS_US_CORE_VERSION}
       TMRDS_HMAC_SECRET: ${TMRDS_HMAC_SECRET:?Set TMRDS_HMAC_SECRET}
