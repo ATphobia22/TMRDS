@@ -32,3 +32,14 @@ def test_discover_migrations_rejects_invalid_sql_migration_names(tmp_path) -> No
 
     with pytest.raises(MigrationError, match="invalid migration filename"):
         discover_migrations(tmp_path)
+
+
+def test_repository_migrations_have_unique_numeric_versions() -> None:
+    from engines.migration_runner import BASELINE_SENTINELS, MIGRATIONS_DIR
+
+    migrations = discover_migrations(MIGRATIONS_DIR)
+    versions = [migration.version for migration in migrations]
+
+    assert versions == sorted(set(versions))
+    assert {1, 2, 3, 4}.issubset(set(versions))
+    assert BASELINE_SENTINELS[3] == "data_fabric_sources"
