@@ -7,8 +7,9 @@ Set database credentials in an untracked `.env` file using `.env.example` as a t
 ```bash
 docker compose build tmrds-api
 docker compose up -d tmrds-postgres tmrds-neo4j
-docker compose run --rm --no-deps -e TMRDS_ENV=development tmrds-api python -m engines.migration_runner status
-docker compose run --rm --no-deps -e TMRDS_ENV=development tmrds-api python -m engines.migration_runner upgrade
+docker compose run --rm --no-deps tmrds-api python -m engines.migration_runner status
+# Only after backup/recovery checks and explicit release approval:
+docker compose run --rm --no-deps -e TMRDS_ALLOW_PRODUCTION_MIGRATIONS=true tmrds-api python -m engines.migration_runner upgrade
 docker compose up -d tmrds-api
 ```
 
