@@ -10,6 +10,7 @@ import asyncio
 import hashlib
 import json
 import os
+import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 from urllib.parse import urlsplit
@@ -32,21 +33,26 @@ class IBMQuantumReconciler:
         result_sink: ResultSink | None = None,
         max_result_bytes: int = 10 * 1024 * 1024,
         batch_limit: int = 25,
+        max_duration_seconds: float = 300.0,
     ) -> None:
         if not 1 <= batch_limit <= 100:
             raise ValueError("batch_limit must be between 1 and 100")
         if not 1024 <= max_result_bytes <= 100 * 1024 * 1024:
             raise ValueError("max_result_bytes must be between 1 KiB and 100 MiB")
+        if not 10 <= max_duration_seconds <= 900:
+            raise ValueError("max_duration_seconds must be between 10 and 900 seconds")
         self.ledger = ledger
         self.client = client
         self.result_sink = result_sink
         self.max_result_bytes = max_result_bytes
         self.batch_limit = batch_limit
+        self.max_duration_seconds = max_duration_seconds
 
     async def reconcile_once(self) -> dict[str, int]:
         """Perform one bounded pass; never create or cancel remote jobs."""
         if os.getenv("TMRDS_IBM_QUANTUM_RECONCILER_ENABLED") != "true":
             raise RuntimeError("IBM Quantum reconciliation is disabled; explicit opt-in is required")
+        deadline = time.monotonic() + self.max_duration_seconds
         rows = await self.ledger.list_reconciliation_candidates(self.batch_limit)
         counts = {
             "checked": 0,
@@ -58,8 +64,12 @@ class IBMQuantumReconciler:
             "result_storage_unavailable": 0,
             "unrecognized": 0,
             "errors": 0,
+            "deadline_exceeded": 0,
         }
         for row in rows:
+            if time.monotonic() >= deadline:
+                counts["deadline_exceeded"] = 1
+                break
             job_id = row.get("ibm_job_id")
             if not isinstance(job_id, str) or not job_id:
                 # Never guess a match from timestamps, backend, or workload content.
