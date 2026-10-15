@@ -5,10 +5,17 @@ from __future__ import annotations
 import argparse
 import inspect
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 from fastapi.routing import APIRoute
+
+# Running `python scripts/audit_api_routes.py` puts scripts/, not the repo root,
+# at sys.path[0] in some Python environments. Make repository imports explicit.
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from api.main import app
 
