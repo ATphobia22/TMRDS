@@ -16,8 +16,8 @@ RUN python -m pip install --no-cache-dir -r /tmp/requirements-runtime.txt \
 RUN groupadd --system --gid 10001 tmrds \
     && useradd --system --uid 10001 --gid tmrds --home-dir /nonexistent \
        --shell /usr/sbin/nologin tmrds \
-    && mkdir -p /data/audit /data/research /data/logs \
-    && chown -R tmrds:tmrds /data
+    && mkdir -p /app/data/audit /app/data/research /app/data/logs \
+    && chown -R tmrds:tmrds /app/data
 
 COPY --chown=tmrds:tmrds api/ /app/api/
 COPY --chown=tmrds:tmrds engines/ /app/engines/
