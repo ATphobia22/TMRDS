@@ -24,5 +24,26 @@ jobs:
       - run: python -m compileall -q api engines tests scripts
       - run: docker compose --env-file .env.example config --quiet
       - run: docker build -t tmrds-api:ci .
+      - name: Smoke-test API container liveness
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup() { docker rm -f tmrds-api-smoke >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          docker run --detach --name tmrds-api-smoke \
+            --publish 127.0.0.1:18000:8000 \
+            --env TMRDS_ENV=development \
+            --env TMRDS_DATABASE_URL=postgresql://tmrds:unused@127.0.0.1:5432/tmrds \
+            --env TMRDS_HMAC_SECRET=ci-only-placeholder-secret-not-for-production \
+            --env TMRDS_SERVICE_AUTH_REQUIRED=false \
+            tmrds-api:ci
+          for attempt in $(seq 1 30); do
+            if curl --silent --show-error --fail http://127.0.0.1:18000/health/live; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs --tail 100 tmrds-api-smoke
+          exit 1
       - run: python -m pytest -q tests/test_ibm_quantum_compute.py tests/test_ibm_quantum_job_ledger.py
       - run: python -m pytest -q -m "not integration"
