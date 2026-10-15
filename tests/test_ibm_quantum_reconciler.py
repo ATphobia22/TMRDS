@@ -10,6 +10,11 @@ import pytest
 from engines.ibm_quantum_reconciler import IBMQuantumReconciler
 
 
+@pytest.fixture(autouse=True)
+def enable_test_reconciliation(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TMRDS_IBM_QUANTUM_RECONCILER_ENABLED", "true")
+
+
 def candidate(state: str, job_id: str | None) -> dict:
     return {
         "submission_id": uuid.uuid4(),
