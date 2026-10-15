@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+from unittest.mock import AsyncMock
 
 import pytest
 
+from engines import migration_runner
 from engines.migration_runner import MigrationError, discover_migrations
 
 
@@ -43,3 +45,30 @@ def test_repository_migrations_have_unique_numeric_versions() -> None:
     assert versions == sorted(set(versions))
     assert {1, 2, 3, 4}.issubset(set(versions))
     assert BASELINE_SENTINELS[3] == "data_fabric_sources"
+
+
+
+@pytest.mark.asyncio
+async def test_production_migration_status_is_read_only_and_does_not_need_write_opt_in(monkeypatch) -> None:
+    connection = object()
+    connect = AsyncMock(return_value=connection)
+    monkeypatch.setattr(migration_runner.asyncpg, "connect", connect)
+    monkeypatch.setenv("TMRDS_DATABASE_URL", "postgresql://example.invalid/tmrds")
+    monkeypatch.setenv("TMRDS_ENV", "production")
+    monkeypatch.delenv("TMRDS_ALLOW_PRODUCTION_MIGRATIONS", raising=False)
+
+    assert await migration_runner._connect() is connection
+    connect.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_production_migration_writes_require_explicit_opt_in(monkeypatch) -> None:
+    connect = AsyncMock()
+    monkeypatch.setattr(migration_runner.asyncpg, "connect", connect)
+    monkeypatch.setenv("TMRDS_DATABASE_URL", "postgresql://example.invalid/tmrds")
+    monkeypatch.setenv("TMRDS_ENV", "production")
+    monkeypatch.delenv("TMRDS_ALLOW_PRODUCTION_MIGRATIONS", raising=False)
+
+    with pytest.raises(MigrationError, match="production migration target blocked"):
+        await migration_runner._connect(require_production_opt_in=True)
+    connect.assert_not_awaited()
