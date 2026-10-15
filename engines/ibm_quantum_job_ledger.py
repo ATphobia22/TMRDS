@@ -98,6 +98,39 @@ class QuantumJobLedger:
                 f"Submission already exists in state {row['state']}; refusing duplicate remote submission."
             )
 
+    async def claim_for_submission(self, submission_id: uuid.UUID) -> bool:
+        """Atomically enforce a per-minute remote submission ceiling and claim one row."""
+        try:
+            limit_per_minute = int(os.getenv("TMRDS_IBM_QUANTUM_SUBMISSION_LIMIT_PER_MINUTE", "4"))
+        except ValueError as exc:
+            raise QuantumJobLedgerError("IBM Quantum submission rate limit must be an integer.") from exc
+        if not 1 <= limit_per_minute <= 5:
+            raise QuantumJobLedgerError("IBM Quantum submission rate limit must be between 1 and 5 per minute.")
+
+        pool = await self._pool()
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                # A transaction-scoped lock serializes the count-and-claim operation.
+                await conn.execute("SELECT pg_advisory_xact_lock($1)", 7_419_220_262)
+                recent_count = await conn.fetchval(
+                    """SELECT count(*)
+                       FROM quantum_job_submissions
+                       WHERE created_at > now() - interval '60 seconds'
+                         AND state <> 'PREPARED'"""
+                )
+                if int(recent_count or 0) >= limit_per_minute:
+                    raise QuantumJobLedgerError(
+                        "IBM Quantum local submission rate limit reached; wait for the rolling window."
+                    )
+                row = await conn.fetchrow(
+                    """UPDATE quantum_job_submissions
+                       SET state='SUBMITTING', updated_at=now()
+                       WHERE submission_id=$1 AND state='PREPARED'
+                       RETURNING submission_id""",
+                    submission_id,
+                )
+                return row is not None
+
     async def transition(
         self,
         submission_id: uuid.UUID,
@@ -107,6 +140,7 @@ class QuantumJobLedger:
         ibm_job_id: str | None = None,
         error_code: str | None = None,
         result_sha256: str | None = None,
+        result_artifact_uri: str | None = None,
     ) -> bool:
         allowed = {
             "PREPARED": {"SUBMITTING"},
@@ -126,10 +160,13 @@ class QuantumJobLedger:
                    result_sha256=COALESCE($6, result_sha256),
                    updated_at=now(),
                    submitted_at=CASE WHEN $3='SUBMITTED' THEN now() ELSE submitted_at END,
-                   completed_at=CASE WHEN $3 IN ('COMPLETED','FAILED','CANCELLED') THEN now() ELSE completed_at END
+                   completed_at=CASE WHEN $3 IN ('COMPLETED','FAILED','CANCELLED') THEN now() ELSE completed_at END,
+                   metadata=CASE WHEN $7 IS NULL THEN metadata
+                                 ELSE metadata || jsonb_build_object('result_artifact_uri', $7) END
                WHERE submission_id=$1 AND state=$2
                RETURNING submission_id""",
             submission_id, expected_state, new_state, ibm_job_id, error_code, result_sha256,
+            result_artifact_uri,
         )
         return row is not None
 
@@ -144,6 +181,76 @@ class QuantumJobLedger:
             submission_id,
         )
         return dict(row) if row else None
+
+    async def resolve_unknown_submission(
+        self,
+        submission_id: uuid.UUID,
+        *,
+        ibm_job_id: str,
+        operator_id: str,
+        evidence_reference: str,
+    ) -> bool:
+        """Record an operator-evidenced resolution of an ambiguous submission."""
+        import re
+        from urllib.parse import urlsplit
+
+        if not isinstance(ibm_job_id, str) or not ibm_job_id.strip() or len(ibm_job_id) > 256 or "/" in ibm_job_id:
+            raise ValueError("IBM job ID is invalid")
+        if not isinstance(operator_id, str) or not re.fullmatch(r"[A-Za-z0-9._:-]{1,128}", operator_id):
+            raise ValueError("operator ID must be a non-empty audit identifier")
+        if not isinstance(evidence_reference, str) or len(evidence_reference) > 2048:
+            raise ValueError("evidence reference is invalid")
+        try:
+            parsed = urlsplit(evidence_reference)
+            valid_reference = (
+                parsed.scheme in {"artifact", "https"}
+                and bool(parsed.netloc)
+                and parsed.username is None
+                and parsed.password is None
+                and not parsed.query
+                and not parsed.fragment
+                and all(part not in {".", ".."} for part in parsed.path.split("/"))
+            )
+        except ValueError:
+            valid_reference = False
+        if not valid_reference:
+            raise ValueError("evidence reference must be an artifact URI or credential-free HTTPS URL")
+
+        pool = await self._pool()
+        try:
+            async with pool.acquire() as conn:
+                async with conn.transaction():
+                    row = await conn.fetchrow(
+                        """UPDATE quantum_job_submissions
+                           SET state='SUBMITTED',
+                               ibm_job_id=$2,
+                               updated_at=now(),
+                               submitted_at=COALESCE(submitted_at, now()),
+                               metadata=metadata || jsonb_build_object(
+                                   'operator_resolution',
+                                   jsonb_build_object(
+                                       'operator_id', $3,
+                                       'evidence_reference', $4,
+                                       'resolved_at', now()
+                                   )
+                               )
+                           WHERE submission_id=$1
+                             AND state='SUBMISSION_UNKNOWN'
+                             AND ibm_job_id IS NULL
+                           RETURNING submission_id""",
+                        submission_id, ibm_job_id, operator_id, evidence_reference,
+                    )
+                    if row is None:
+                        return False
+                    await conn.execute(
+                        """INSERT INTO quantum_job_operator_resolutions
+                           (resolution_id, submission_id, ibm_job_id, operator_id, evidence_reference)
+                           VALUES ($1, $2, $3, $4, $5)""",
+                        uuid.uuid4(), submission_id, ibm_job_id, operator_id, evidence_reference,
+                    )
+        except asyncpg.UniqueViolationError as exc:
+            raise QuantumJobLedgerError("IBM job ID is already linked to another ledger record.") from exc
+        return True
 
     async def list_reconciliation_candidates(self, limit: int = 100) -> list[dict[str, Any]]:
         if not 1 <= limit <= 500:
@@ -209,11 +316,11 @@ class IBMQuantumSubmissionService:
             region=config.region,
         )
         await self.ledger.prepare(submission)
-        claimed = await self.ledger.transition(
-            submission.submission_id, "PREPARED", "SUBMITTING"
-        )
+        claimed = await self.ledger.claim_for_submission(submission.submission_id)
         if not claimed:
-            raise QuantumJobLedgerError("Submission state changed concurrently; refusing remote submission.")
+            raise QuantumJobLedgerError(
+                "Submission state changed concurrently or rate limit or concurrent state blocked the claim; refusing remote submission."
+            )
 
         try:
             response = await _run_blocking_submission(

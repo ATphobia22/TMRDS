@@ -52,5 +52,8 @@ def test_security_configuration_uses_explicit_database_url(monkeypatch: pytest.M
     monkeypatch.setenv("TMRDS_NEO4J_URI", "bolt+s://neo4j.example")
     monkeypatch.setenv("TMRDS_NEO4J_USER", "service")
     monkeypatch.setenv("TMRDS_NEO4J_PASSWORD", "x" * 12)
+    monkeypatch.setenv("TMRDS_SERVICE_ISSUER", "https://issuer.example.invalid")
+    monkeypatch.setenv("TMRDS_SERVICE_AUDIENCE", "tmrds-tests")
+    monkeypatch.setenv("TMRDS_SERVICE_JWKS_JSON", '{"keys":[]}')
     config = SecurityConfiguration.from_environment()
     assert config.database_url == os.environ["TMRDS_DATABASE_URL"]

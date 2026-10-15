@@ -10,6 +10,7 @@ from api.security_dependencies import _validator, require_service_identity
 
 @pytest.mark.asyncio
 async def test_service_auth_is_optional_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TMRDS_ENV", "development")
     monkeypatch.delenv("TMRDS_SERVICE_AUTH_REQUIRED", raising=False)
     assert await require_service_identity(None) is None
 
@@ -32,3 +33,15 @@ async def test_required_service_auth_fails_closed_without_validator(monkeypatch:
     with pytest.raises(HTTPException) as exc_info:
         await require_service_identity("Bearer malformed")
     assert exc_info.value.status_code == 503
+
+
+
+@pytest.mark.asyncio
+async def test_production_service_auth_cannot_be_disabled_by_environment_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("TMRDS_ENV", "production")
+    monkeypatch.setenv("TMRDS_SERVICE_AUTH_REQUIRED", "false")
+    with pytest.raises(HTTPException) as exc_info:
+        await require_service_identity(None)
+    assert exc_info.value.status_code == 401

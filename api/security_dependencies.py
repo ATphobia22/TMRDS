@@ -31,7 +31,9 @@ async def require_service_identity(
     authorization: str | None = Header(default=None),
 ) -> dict[str, object] | None:
     """Validate a bearer service token when service authentication is required."""
-    required = os.getenv("TMRDS_SERVICE_AUTH_REQUIRED", "false").casefold() == "true"
+    production = os.getenv("TMRDS_ENV", "development").strip().casefold() in {"production", "prod"}
+    configured_required = os.getenv("TMRDS_SERVICE_AUTH_REQUIRED", "false").casefold() == "true"
+    required = production or configured_required
     if not required:
         return None
     if not authorization or not authorization.startswith("Bearer "):

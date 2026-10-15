@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from api.error_responses import safe_upstream_error
 from engines.evidence_graph_repository import EvidenceGraphRepository
 
 router = APIRouter(prefix="/api/v1/evidence", tags=["evidence-retrieval"])
@@ -22,7 +23,7 @@ async def semantic_search(request: SemanticSearchRequest) -> dict[str, object]:
     try:
         results = await repository.semantic_search(request.embedding, request.limit)
     except Exception as exc:
-        raise HTTPException(status_code=503, detail=f"Evidence retrieval unavailable: {exc}") from exc
+        raise safe_upstream_error("Evidence retrieval", exc, status_code=503) from exc
     return {
         "status": "research-advisory",
         "human_authority_final": True,

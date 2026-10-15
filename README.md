@@ -97,7 +97,24 @@ TMRDS_SERVICE_JWKS_JSON
 
 ### Docker Compose
 
-The Compose stack provisions PostgreSQL/pgvector, Neo4j, and the API. The API source mount is read-only while runtime/audit data is stored in a dedicated volume. Supply credentials and service identity material through CI/CD or an external secret manager before startup.
+The hardened Compose stack provisions PostgreSQL/pgvector, Neo4j, and a non-root API image. Database ports are not published by default; the API binds to loopback by default, the database network is internal, and the API's runtime/audit/artifact data lives in a dedicated volume. Optional local database ports are available only through `docker-compose.dev.yml`.
+
+For a local development stack:
+
+```bash
+cp .env.example .env
+# Replace every placeholder with unique local-only values. Do not use these values in production.
+docker compose --env-file .env config --quiet
+docker compose --env-file .env build
+docker compose --env-file .env run --rm tmrds-api python -m engines.migration_runner status
+docker compose --env-file .env run --rm tmrds-api python -m engines.migration_runner upgrade
+docker compose --env-file .env up -d
+docker compose --env-file .env ps
+```
+
+The migration runner is explicit and does not run on API startup. For an existing database without a migration ledger, stop before `upgrade`: inspect the complete schema and backup/restore path, then use the documented operator-reviewed `baseline --through N` command only if the existing schema truly matches every migration through that version. Do not reinitialize or delete an existing database volume to work around migration errors.
+
+Production migrations require a separately reviewed release procedure and an explicit `TMRDS_ALLOW_PRODUCTION_MIGRATIONS=true` opt-in. The local example values are not production secrets or a production identity configuration.
 
 ### Repository secret hygiene
 
@@ -134,7 +151,7 @@ TMRDS treats the evidence ledger as authoritative. Derived representations must 
 
 ### PostgreSQL
 
-The PostgreSQL layer stores governed evidence, provenance records, and real-time data-fabric observations. Migrations live in `migrations/` and are mounted by the development Docker Compose stack.
+The PostgreSQL layer stores governed evidence, provenance records, and real-time data-fabric observations. SQL migrations live in `migrations/`; apply them with the explicit checksummed runner (`python -m engines.migration_runner status|upgrade`). The runner records migration versions and SHA-256 checksums, uses a PostgreSQL advisory lock, rejects checksum drift, and never runs automatically at API startup. Existing untracked schemas require an operator-reviewed baseline; never drop or recreate a persistent volume to force migration initialization.
 
 ### pgvector
 

@@ -2,13 +2,18 @@
 
 ## Startup
 
-Set database credentials in the deployment environment, then run:
+Set database credentials in an untracked `.env` file using `.env.example` as a template. Build the image and start the databases first:
 
 ```bash
-docker compose up -d
+docker compose build tmrds-api
+docker compose up -d tmrds-postgres tmrds-neo4j
+docker compose run --rm --no-deps tmrds-api python -m engines.migration_runner status
+# Only after backup/recovery checks and explicit release approval:
+docker compose run --rm --no-deps -e TMRDS_ALLOW_PRODUCTION_MIGRATIONS=true tmrds-api python -m engines.migration_runner upgrade
+docker compose up -d tmrds-api
 ```
 
-The PostgreSQL initialization directory applies `migrations/001_biomedical_evidence_graph.sql` to a new database. Existing volumes require an explicit migration process before applying later schema changes.
+Migrations are explicit; the application does not run schema changes at startup. The runner serializes upgrades with a PostgreSQL advisory lock and records checksums. For an existing volume without migration history, inspect the full schema and follow the baseline/backup procedure in `docs/operations/tmrds-operations-runbook.md`; do not assume table existence proves the entire migration was applied.
 
 ## Research API
 
