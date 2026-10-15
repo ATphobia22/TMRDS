@@ -150,7 +150,7 @@ async def test_submission_refuses_remote_post_when_atomic_rate_limit_claim_fails
     ledger = FakeLedger(claim_result=False)
     client = fake_client()
 
-    with pytest.raises(QuantumJobLedgerError, match="rate limit or concurrent state"):
+    with pytest.raises(QuantumJobLedgerError, match="rate limit was reached"):
         await IBMQuantumSubmissionService(ledger).submit(
             client=client, idempotency_key="req-rate", artifact_uri="artifact://circuits/rate",
             backend="backend", qasm_circuits=["OPENQASM 3.0;"], explicitly_authorized=True,
