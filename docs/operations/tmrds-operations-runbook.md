@@ -122,3 +122,8 @@ For each release, retain:
 - unresolved security, interoperability, and deployment risks.
 
 A successful CI run does not prove production health, regulatory conformance, external-source availability, or IBM hardware access. Never claim those outcomes without separate evidence.
+
+
+## Optional AWS deployment assessment (not provisioned)
+
+The current deployment remains Docker Compose. No AWS account, IAM role, ECS service, registry, or paid resource was created. If TMRDS is later approved for ECS, use task-level least-privilege IAM, restrict security-group ingress/egress, inject credentials from AWS Secrets Manager or Systems Manager Parameter Store rather than baking them into images, and enable CloudTrail/CloudWatch monitoring. Review the current [AWS ECS secrets-management guidance](https://docs.aws.amazon.com/AmazonECS/latest/bestpracticesguide/security-secrets-management.html) and [ECS container-instance hardening guidance](https://repost.aws/knowledge-center/ecs-secure-container-instance-best-practices) before designing that deployment. This is a future deployment checklist, not evidence that AWS controls are configured.
