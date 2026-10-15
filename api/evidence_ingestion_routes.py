@@ -6,6 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.realtime_data_fabric_routes import router as data_fabric_router
+from api.error_responses import safe_upstream_error
 from api.security_dependencies import require_service_identity
 from engines.live_evidence_ingestion_service import LiveEvidenceIngestionService
 
@@ -27,7 +28,7 @@ async def ingest_clinical_trials(
     try:
         return envelope(await service.ingest_trials(query, limit))
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"ClinicalTrials.gov ingestion failed: {exc}") from exc
+        raise safe_upstream_error("ClinicalTrials.gov ingestion", exc) from exc
 
 
 @router.post("/openneuro")
@@ -39,7 +40,7 @@ async def ingest_openneuro(
     try:
         return envelope(await service.ingest_openneuro(query, limit))
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"OpenNeuro ingestion failed: {exc}") from exc
+        raise safe_upstream_error("OpenNeuro ingestion", exc) from exc
 
 
 router.include_router(data_fabric_router)
