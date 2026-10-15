@@ -89,6 +89,8 @@ class QuantumJobLedger:
             or row["artifact_uri"] != submission.artifact_uri
             or row["backend"] != submission.backend
             or row["shots"] != submission.shots
+            or row["api_version"] != submission.api_version
+            or row["region"] != submission.region
         ):
             raise QuantumJobLedgerError(
                 "Idempotency key already belongs to a different workload."
