@@ -13,10 +13,27 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Sequence
+from urllib.parse import urlsplit
 
 import asyncpg
 
 from engines.ibm_quantum_compute import IBMQuantumComputeClient, IBMQuantumError
+
+
+def _is_safe_input_artifact_uri(value: str) -> bool:
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return False
+    return (
+        parsed.scheme in {"artifact", "s3"}
+        and bool(parsed.netloc)
+        and parsed.username is None
+        and parsed.password is None
+        and not parsed.query
+        and not parsed.fragment
+        and all(part not in {".", ".."} for part in parsed.path.split("/"))
+    )
 
 
 class QuantumJobLedgerError(RuntimeError):
@@ -296,8 +313,8 @@ class IBMQuantumSubmissionService:
             raise QuantumJobLedgerError("Explicit workload authorization is required.")
         if not idempotency_key or len(idempotency_key) > 200:
             raise ValueError("idempotency_key must contain 1-200 characters.")
-        if not artifact_uri or len(artifact_uri) > 2048:
-            raise ValueError("artifact_uri must contain 1-2048 characters.")
+        if not artifact_uri or len(artifact_uri) > 2048 or not _is_safe_input_artifact_uri(artifact_uri):
+            raise ValueError("artifact_uri must be a credential-free artifact:// or s3:// URI without query parameters.")
         if not backend or not qasm_circuits or any(
             not isinstance(circuit, str) or not circuit.strip() for circuit in qasm_circuits
         ):
