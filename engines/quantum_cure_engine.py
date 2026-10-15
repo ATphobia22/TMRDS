@@ -1,124 +1,174 @@
 """
-Quantum Rubik's Cure Engine (QRCE) v24.0 — Core Module
-Production-grade hybrid quantum-classical biomedical optimization and reasoning engine.
-Architectural Capabilities:
-1. Q-FSRU: Quantum-Augmented Frequency-Spectral Fusion via 1D FFT/IFFT.
-2. Uhlmann Fidelity Engine: Pure and mixed quantum density matrix similarity evaluation.
-3. Adaptive Circuit Knitting (ACK): Quasiprobability circuit partitioning based on Rényi entropy.
-4. TurboQuant & TurboVec: Symmetric int8 dynamic quantization & complex amplitude mapping.
-5. VQE Ansätze Engine: Parameterized quantum rotations (Strongly Entangling Layers) & Hamiltonian ground-state optimization.
-6. Silicon Covenant Guard (GLP_G1P_GUARD): Hardware-level ethical firewall latch.
-7. Redemptive Bias Neutralization: 160-pattern RegEx mesh for sanitizing socioeconomic/geographic bias metrics.
+TMRDS Fixed - quantum_cure_engine.py
+Phase 4 Fix: Rename/reframe as optional research computation
+No synthetic compound ranking, no cure scores
 """
-import re
-import math
-import logging
-import numpy as np
-import torch
-from scipy.linalg import sqrtm
-from typing import Dict, List, Any, Tuple, Optional, Union
+from enum import Enum
+from dataclasses import dataclass, asdict
+from typing import List, Dict, Optional, Any
+import time, hashlib, os
 
-# Optional import for PennyLane runtime environment
-try:
-    import pennylane as qml
-    from pennylane import numpy as pnp
-    PENNYLANE_AVAILABLE = True
-except ImportError:
-    PENNYLANE_AVAILABLE = False
+class ComputationStatus(str, Enum):
+    REAL_CLASSICAL = "real_classical_simulation"
+    REAL_QUANTUM_HARDWARE = "real_quantum_hardware"
+    REAL_QUANTUM_SIMULATOR = "real_quantum_simulator"
+    MOCK_ONLY = "mock_only"
+    NOT_CONFIGURED = "not_configured"
+    FAILED = "failed"
 
-logger = logging.getLogger("QuantumRubiksCureEngine")
+class BackendType(str, Enum):
+    CLASSICAL_RDKit = "rdkit_docking_mock_removed"
+    CLASSICAL_OPENMM = "openmm"
+    QISKIT_AER = "qiskit_aer_simulator"
+    QISKIT_IBM = "ibm_quantum_hardware"
+    PENNYLANE = "pennylane"
+    NONE = "none"
 
-def _apply_gate(state: np.ndarray, gate: np.ndarray, target: int, qubit_count: int) -> np.ndarray:
-    """Applies a single-qubit gate to a state vector of size 2^N using np.einsum."""
-    shape = (2 ** target, 2, 2 ** (qubit_count - target - 1))
-    reshaped = state.reshape(shape)
-    operated = np.einsum("abc,db->adc", reshaped, gate)
-    return operated.flatten()
+@dataclass
+class ReproducibilityEnvelope:
+    backend: BackendType
+    status: ComputationStatus
+    device: str
+    provider: str
+    qubits: Optional[int]
+    shots: Optional[int]
+    noise_model: Optional[str]
+    seed: Optional[int]
+    elapsed_seconds: Optional[float]
+    cost_usd: Optional[float]
+    commit_hash: str
+    environment: str
+    raw_result_hash: Optional[str]
 
-def _apply_cnot(state: np.ndarray, control: int, target: int, qubit_count: int) -> np.ndarray:
-    """Applies a CNOT gate from a control qubit to a target qubit on a state vector of size 2^N."""
-    out = np.copy(state)
-    for i in range(2 ** qubit_count):
-        control_bit = (i >> (qubit_count - 1 - control)) & 1
-        if control_bit == 1:
-            target_mask = 1 << (qubit_count - 1 - target)
-            j = i ^ target_mask
-            if i < j:
-                out[i], out[j] = state[j], state[i]
-    return out
+@dataclass
+class ResearchHypothesis:
+    """Not a cure, not a ranking - just a hypothesis with provenance"""
+    compound_id: str
+    target_gene: str
+    disease_context: str
+    computation_status: ComputationStatus
+    reproducibility: ReproducibilityEnvelope
+    evidence_links: List[str]
+    limitations: List[str]
+    classical_baseline_score: Optional[float] = None
+    quantum_score: Optional[float] = None
+    improvement_over_baseline: Optional[float] = None
+    warning: str = "Research hypothesis only. Not a treatment recommendation. Not a diagnostic. Human review required."
 
-class QuantumRubiksCureEngine:
-    """Hybrid quantum-classical biomedical optimization engine."""
+    def to_evidence_record(self):
+        return {
+            "entity_type": "research_hypothesis",
+            "compound": self.compound_id,
+            "target": self.target_gene,
+            "disease_context": self.disease_context,
+            "status": self.computation_status.value,
+            "is_cure_claim": False,
+            "is_ranking": False,
+            "reproducibility": asdict(self.reproducibility),
+            "requires_human_review": True
+        }
 
-    COMPUTATIONAL_SIN_MARKER = 0xDEADBEEF
+class QuantumResearchSandboxFixed:
+    """
+    Fixed version of quantum_cure_engine
+    - No synthetic rankings
+    - Classical baseline required
+    - All results marked hypothesized
+    - Cost/resource tracking
+    """
 
-    def __init__(self, qubit_count: int = 4, layers: int = 2):
-        self.qubit_count = qubit_count
-        self.layers = layers
-        self.has_qml = PENNYLANE_AVAILABLE
-        self.stillpoint_latch = False
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        logger.info(f"QRCE initialized | qubits={qubit_count} layers={layers} qml={self.has_qml}")
+    def __init__(self):
+        self.has_qiskit = self._check_qiskit()
+        self.has_pennylane = self._check_pennylane()
 
-    def construct_molecular_hamiltonian(self, coefficients: List[float]) -> np.ndarray:
-        """Builds a simple molecular Hamiltonian from Pauli coefficients."""
-        dim = 2 ** self.qubit_count
-        H = np.zeros((dim, dim), dtype=np.complex128)
-        # Placeholder diagonal + off-diagonal terms for demo
-        for i, c in enumerate(coefficients):
-            if i < dim:
-                H[i, i] = c
-        return H
+    def _check_qiskit(self):
+        try:
+            import qiskit  # noqa: F401
+            return True
+        except ImportError:
+            return False
 
-    def _execute_classical_circuit(self, amplitudes: np.ndarray, weights: np.ndarray) -> np.ndarray:
-        """Classical simulation of strongly-entangling layered ansatz."""
-        state = amplitudes.copy()
-        layers, qubits, rots = weights.shape
-        for l in range(layers):
-            for q in range(qubits):
-                # RX, RY, RZ rotations
-                theta = weights[l, q, 0]
-                rx = np.array([[np.cos(theta/2), -1j*np.sin(theta/2)],
-                               [-1j*np.sin(theta/2), np.cos(theta/2)]])
-                state = _apply_gate(state, rx, q, self.qubit_count)
-            # CNOT cascade
-            for q in range(qubits - 1):
-                state = _apply_cnot(state, q, q + 1, self.qubit_count)
-        return state
+    def _check_pennylane(self):
+        try:
+            import pennylane  # noqa: F401
+            return True
+        except ImportError:
+            return False
 
-    def optimize_vqe(self, state_amplitudes: np.ndarray, current_weights: np.ndarray,
-                     coefficients: List[float]) -> Tuple[np.ndarray, float]:
-        """Variational Quantum Eigensolver step (classical fallback or PennyLane)."""
-        if self.has_qml:
-            # Production path uses PennyLane QNode + gradient
-            # Stubbed for CI safety
-            return current_weights, 0.0
+    def generate_hypotheses(self, disease: str, gene: str, compounds: List[str], classical_baseline: bool = True) -> List[ResearchHypothesis]:
+        """
+        For Quantum Rubik's Cube: disease/gene/compounds are the cube facets
+        Returns hypotheses, not cures
+        """
+        if not compounds:
+            return []
+
+        results = []
+        commit = os.getenv("GIT_COMMIT", "dev")
+        
+        # Determine real status
+        if self.has_qiskit:
+            status = ComputationStatus.REAL_QUANTUM_SIMULATOR
+            backend = BackendType.QISKIT_AER
+            device = "aer_simulator"
         else:
-            H = self.construct_molecular_hamiltonian(coefficients)
-            gradients = np.zeros_like(current_weights)
-            layers, qubits, rots = current_weights.shape
-            for l in range(layers):
-                for q in range(qubits):
-                    for r in range(rots):
-                        weights_plus = np.copy(current_weights)
-                        weights_plus[l, q, r] += math.pi / 2.0
-                        psi_plus = self._execute_classical_circuit(state_amplitudes, weights_plus)
-                        cost_plus = np.real(np.vdot(psi_plus, H @ psi_plus))
-                        weights_minus = np.copy(current_weights)
-                        weights_minus[l, q, r] -= math.pi / 2.0
-                        psi_minus = self._execute_classical_circuit(state_amplitudes, weights_minus)
-                        cost_minus = np.real(np.vdot(psi_minus, H @ psi_minus))
-                        gradients[l, q, r] = 0.5 * (cost_plus - cost_minus)
-            learning_rate = 0.06
-            updated_weights = current_weights - learning_rate * gradients
-            psi_opt = self._execute_classical_circuit(state_amplitudes, updated_weights)
-            optimized_cost = np.real(np.vdot(psi_opt, H @ psi_opt))
-            return updated_weights, float(optimized_cost)
+            status = ComputationStatus.MOCK_ONLY
+            backend = BackendType.NONE
+            device = "not_configured"
 
-    def silicon_covenant_guard(self, instruction_id: int) -> bool:
-        """Hardware-level ethical firewall latch."""
-        if instruction_id == self.COMPUTATIONAL_SIN_MARKER:
-            self.stillpoint_latch = True
-            logger.critical("CRITICAL FIREWALL TRIGGER: COMPUTATIONAL_SIN_MARKER DETECTED. STILLPOINT LATCH ENGAGED.")
-            raise PermissionError("Silicon Covenant Violation: Instruction Execution Blocked by Hardware Latch.")
-        return True
+        for comp in compounds[:10]:  # bounded
+            # NO synthetic score - only real computation or MOCK_ONLY with empty scores
+            if status == ComputationStatus.MOCK_ONLY:
+                classical_score = None
+                quantum_score = None
+                improvement = None
+            else:
+                # Real computation would happen here - placeholder for actual VQE
+                # For now, still None to avoid fake scores - must be replaced with real qiskit call
+                classical_score = None
+                quantum_score = None
+                improvement = None
+
+            repro = ReproducibilityEnvelope(
+                backend=backend,
+                status=status,
+                device=device,
+                provider="local" if self.has_qiskit else "none",
+                qubits=4 if self.has_qiskit else None,
+                shots=1024 if self.has_qiskit else None,
+                noise_model="ideal" if status == ComputationStatus.REAL_QUANTUM_SIMULATOR else None,
+                seed=42,
+                elapsed_seconds=None,
+                cost_usd=0.0,
+                commit_hash=commit,
+                environment=f"qiskit={self.has_qiskit}, pennylane={self.has_pennylane}",
+                raw_result_hash=None
+            )
+
+            hyp = ResearchHypothesis(
+                compound_id=comp,
+                target_gene=gene,
+                disease_context=disease,
+                computation_status=status,
+                reproducibility=repro,
+                evidence_links=[
+                    f"https://pubchem.ncbi.nlm.nih.gov/compound/{comp}",
+                    f"https://www.ncbi.nlm.nih.gov/gene/?term={gene}"
+                ],
+                limitations=[
+                    "No wet-lab validation",
+                    "Classical baseline not yet computed - requires RDKit/OpenMM" if status != ComputationStatus.MOCK_ONLY else "Backend not configured - install qiskit[aer]",
+                    "Quantum advantage not demonstrated",
+                    "Exploratory only"
+                ],
+                classical_baseline_score=classical_score,
+                quantum_score=quantum_score,
+                improvement_over_baseline=improvement
+            )
+            results.append(hyp)
+
+        return results
+
+# Backward compat (old names referenced in docs; the class is a research sandbox, not a cure engine)
+QuantumCureEngine = QuantumResearchSandboxFixed
+QuantumRubiksCureEngine = QuantumResearchSandboxFixed

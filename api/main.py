@@ -283,7 +283,9 @@ async def evidence_ingestion_status() -> dict[str, Any]:
 
 
 from api.evidence_ingestion_routes import router as evidence_ingestion_router
+from api.tmrds_complete_routes import router as tmrds_cube_router
 app.include_router(evidence_ingestion_router)
+app.include_router(tmrds_cube_router, prefix="/api/v1/cube")
 app.include_router(ai_governance_router)
 app.include_router(evidence_retrieval_router)
 app.include_router(interoperability_router)

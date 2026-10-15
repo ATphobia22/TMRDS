@@ -107,6 +107,57 @@ class AlphaFold3Node:
             "safety_note": self.safety_note,
         }
 
+    def fetch_live_alphafold_db(self, uniprot_id: str, timeout: float = 20.0) -> Dict[str, Any]:
+        """Fetch real AlphaFold DB metadata for a UniProt accession.
+
+        Returns genuine API fields only (globalMetricValue is the real mean
+        pLDDT; per-residue scores live in the CIF file and are never invented).
+        Fail-closed: network problems or unknown accessions return an explicit
+        unavailable/not_found status with null metrics — never fabricated data.
+        """
+        uid = (uniprot_id or "").strip()
+        if not uid:
+            raise ValueError("uniprot_id must not be empty")
+        url = f"https://alphafold.ebi.ac.uk/api/prediction/{uid}"
+        try:
+            import requests
+            response = requests.get(url, timeout=timeout)
+            if response.status_code == 404:
+                return {
+                    "backend": "alphafold_db",
+                    "status": "NOT_FOUND",
+                    "uniprot_id": uid,
+                    "metrics": None,
+                    "message": "No AlphaFold DB entry for this accession.",
+                }
+            response.raise_for_status()
+            data = response.json()
+        except Exception as exc:  # noqa: BLE001 — fail closed, report honestly
+            return {
+                "backend": "alphafold_db",
+                "status": "UNAVAILABLE",
+                "uniprot_id": uid,
+                "metrics": None,
+                "message": f"AlphaFold DB unreachable: {type(exc).__name__}",
+            }
+        entry = data[0] if isinstance(data, list) and data else (data if isinstance(data, dict) else {})
+        mean_plddt = entry.get("globalMetricValue")
+        return {
+            "backend": "alphafold_db",
+            "status": "REAL_PREDICTED" if mean_plddt else "REAL_OBSERVED",
+            "uniprot_id": uid,
+            "gene": entry.get("gene"),
+            "pdb_url": entry.get("pdbUrl"),
+            "cif_url": entry.get("cifUrl"),
+            "pae_url": entry.get("paeDocUrl"),
+            "metrics": {"mean_plddt": mean_plddt} if mean_plddt else None,
+            "model_version": entry.get("latestVersion"),
+            "source_url": url,
+            "license": "CC-BY-4.0",
+            "message": "Predicted-structure confidence only; not a clinical or efficacy measure.",
+            "safety_note": self.safety_note,
+        }
+
     def status(self) -> Dict[str, Any]:
         return {
             "node": "AlphaFold3Node",
