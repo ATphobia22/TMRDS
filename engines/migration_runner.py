@@ -22,7 +22,12 @@ LOCK_KEY = 7_419_220_261
 LEDGER_TABLE = "tmrds_schema_migrations"
 # These sentinels are deliberately minimal. Baseline is an operator assertion
 # after checking the full schema, not an automatic schema-equivalence claim.
-BASELINE_SENTINELS = {1: "evidence_sources", 2: "ai_models", 4: "quantum_job_submissions"}
+BASELINE_SENTINELS = {
+    1: "evidence_sources",
+    2: "ai_models",
+    3: "data_fabric_sources",
+    4: "quantum_job_submissions",
+}
 
 
 class MigrationError(RuntimeError):
