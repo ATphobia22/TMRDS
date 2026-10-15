@@ -167,43 +167,57 @@ class QuantumJobLedger:
             raise ValueError("operator ID must be a non-empty audit identifier")
         if not isinstance(evidence_reference, str) or len(evidence_reference) > 2048:
             raise ValueError("evidence reference is invalid")
-        parsed = urlsplit(evidence_reference)
-        if (
-            parsed.scheme not in {"artifact", "https"}
-            or not parsed.netloc
-            or parsed.username is not None
-            or parsed.password is not None
-            or parsed.query
-            or parsed.fragment
-            or any(part in {".", ".."} for part in parsed.path.split("/"))
-        ):
+        try:
+            parsed = urlsplit(evidence_reference)
+            valid_reference = (
+                parsed.scheme in {"artifact", "https"}
+                and bool(parsed.netloc)
+                and parsed.username is None
+                and parsed.password is None
+                and not parsed.query
+                and not parsed.fragment
+                and all(part not in {".", ".."} for part in parsed.path.split("/"))
+            )
+        except ValueError:
+            valid_reference = False
+        if not valid_reference:
             raise ValueError("evidence reference must be an artifact URI or credential-free HTTPS URL")
 
         pool = await self._pool()
         try:
-            row = await pool.fetchrow(
-                """UPDATE quantum_job_submissions
-                   SET state='SUBMITTED',
-                       ibm_job_id=$2,
-                       updated_at=now(),
-                       submitted_at=COALESCE(submitted_at, now()),
-                       metadata=metadata || jsonb_build_object(
-                           'operator_resolution',
-                           jsonb_build_object(
-                               'operator_id', $3,
-                               'evidence_reference', $4,
-                               'resolved_at', now()
-                           )
-                       )
-                   WHERE submission_id=$1
-                     AND state='SUBMISSION_UNKNOWN'
-                     AND ibm_job_id IS NULL
-                   RETURNING submission_id""",
-                submission_id, ibm_job_id, operator_id, evidence_reference,
-            )
+            async with pool.acquire() as conn:
+                async with conn.transaction():
+                    row = await conn.fetchrow(
+                        """UPDATE quantum_job_submissions
+                           SET state='SUBMITTED',
+                               ibm_job_id=$2,
+                               updated_at=now(),
+                               submitted_at=COALESCE(submitted_at, now()),
+                               metadata=metadata || jsonb_build_object(
+                                   'operator_resolution',
+                                   jsonb_build_object(
+                                       'operator_id', $3,
+                                       'evidence_reference', $4,
+                                       'resolved_at', now()
+                                   )
+                               )
+                           WHERE submission_id=$1
+                             AND state='SUBMISSION_UNKNOWN'
+                             AND ibm_job_id IS NULL
+                           RETURNING submission_id""",
+                        submission_id, ibm_job_id, operator_id, evidence_reference,
+                    )
+                    if row is None:
+                        return False
+                    await conn.execute(
+                        """INSERT INTO quantum_job_operator_resolutions
+                           (resolution_id, submission_id, ibm_job_id, operator_id, evidence_reference)
+                           VALUES ($1, $2, $3, $4, $5)""",
+                        uuid.uuid4(), submission_id, ibm_job_id, operator_id, evidence_reference,
+                    )
         except asyncpg.UniqueViolationError as exc:
             raise QuantumJobLedgerError("IBM job ID is already linked to another ledger record.") from exc
-        return row is not None
+        return True
 
     async def list_reconciliation_candidates(self, limit: int = 100) -> list[dict[str, Any]]:
         if not 1 <= limit <= 500:
