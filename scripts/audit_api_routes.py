@@ -97,6 +97,12 @@ def main() -> int:
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered, encoding="utf-8")
+        print(json.dumps({
+            "route_count": inventory["route_count"],
+            "duplicate_method_paths": inventory["duplicate_method_paths"],
+            "write_routes_without_declared_auth_dependency": inventory["write_routes_without_declared_auth_dependency"],
+            "artifact": str(args.output),
+        }, indent=2, sort_keys=True))
     else:
         print(rendered, end="")
     return 1 if inventory["duplicate_method_paths"] else 0
