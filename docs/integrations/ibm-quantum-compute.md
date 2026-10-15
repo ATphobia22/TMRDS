@@ -122,10 +122,13 @@ Hardware submission is fail-closed. Both conditions are required:
   authorization and budget/consent policy checks.
 
 The service persists a `PREPARED` record and atomically claims
-`SUBMITTING` before issuing a single submission request. Ambiguous network
-failures become `SUBMISSION_UNKNOWN`, not an automatic retry. Reusing an
-idempotency key for a different workload is rejected. Local idempotency does
-not imply remote IBM idempotency.
+`SUBMITTING` before issuing a single submission request. The database-backed
+claim serializes the rolling-window count and limits submissions to four per
+minute by default; `TMRDS_IBM_QUANTUM_SUBMISSION_LIMIT_PER_MINUTE` accepts only
+values from 1 through IBM's documented maximum of 5. Ambiguous network failures
+become `SUBMISSION_UNKNOWN`, not an automatic retry. Reusing an idempotency
+key for a different workload is rejected. Local idempotency does not imply
+remote IBM idempotency.
 
 The ledger records an input SHA-256 and immutable artifact URI; callers are
 responsible for placing the circuit artifact in an approved immutable store.
