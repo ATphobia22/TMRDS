@@ -23,7 +23,8 @@ async def run_once(limit: int) -> int:
         await ledger.connect()
         store = LocalQuantumArtifactStore()
         reconciler = IBMQuantumReconciler(
-            ledger, client, result_sink=store.store, batch_limit=limit
+            ledger, client, result_sink=store.store, batch_limit=limit,
+            max_duration_seconds=float(os.getenv("TMRDS_IBM_QUANTUM_RECONCILER_MAX_SECONDS", "300")),
         )
         counts = await reconciler.reconcile_once()
         # Counts are safe operational metadata; never print job IDs or payloads.
