@@ -320,7 +320,7 @@ class IBMQuantumSubmissionService:
         claimed = await self.ledger.claim_for_submission(submission_id)
         if not claimed:
             raise QuantumJobLedgerError(
-                "Submission state changed concurrently or rate limit or concurrent state blocked the claim; refusing remote submission."
+                "Submission state changed concurrently or the local rate limit was reached; refusing remote submission."
             )
 
         try:
@@ -340,7 +340,7 @@ class IBMQuantumSubmissionService:
         job_id = response.get("id") if isinstance(response, dict) else None
         if not isinstance(job_id, str) or not job_id:
             await self.ledger.transition(
-                submission.submission_id, "SUBMITTING", "SUBMISSION_UNKNOWN",
+                submission_id, "SUBMITTING", "SUBMISSION_UNKNOWN",
                 error_code="MISSING_REMOTE_JOB_ID",
             )
             raise QuantumJobLedgerError(
