@@ -1,0 +1,100 @@
+{
+  "info": {
+    "_postman_id": "8c8a5b67-4d6f-4a93-a5f0-0c0fdb1f6f01",
+    "name": "TMRDS API Smoke Tests",
+    "description": "Read-only smoke checks for liveness, readiness, and research-advisory API metadata. No clinical payloads, credentials, or write requests are included.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Liveness",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health/live"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('liveness returns 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('liveness is dependency independent', function () { pm.expect(pm.response.json().status).to.eql('alive'); });",
+              "pm.test('request correlation ID is returned', function () { pm.expect(pm.response.headers.get('X-Request-ID')).to.be.a('string').and.not.empty; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Readiness",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health/ready"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('readiness requires migrated PostgreSQL schema', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('ready'); });",
+              "pm.test('request correlation ID is returned', function () { pm.expect(pm.response.headers.get('X-Request-ID')).to.be.a('string').and.not.empty; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Research adapter inventory",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/research/health"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('research health is informational', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('research-advisory'); });",
+              "pm.test('health does not claim live upstream availability', function () { pm.expect(pm.response.json().data).to.be.an('object'); });",
+              "pm.test('request correlation ID is returned', function () { pm.expect(pm.response.headers.get('X-Request-ID')).to.be.a('string').and.not.empty; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI governance status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/governance/ai/status"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('governance status is research advisory', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('research-advisory'); });",
+              "pm.test('autonomous treatment remains disallowed', function () { pm.expect(pm.response.json().autonomous_treatment_allowed).to.eql(false); });",
+              "pm.test('request correlation ID is returned', function () { pm.expect(pm.response.headers.get('X-Request-ID')).to.be.a('string').and.not.empty; });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
