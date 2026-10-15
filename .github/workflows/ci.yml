@@ -33,7 +33,7 @@ jobs:
           docker run --detach --name tmrds-api-smoke \
             --publish 127.0.0.1:18000:8000 \
             --env TMRDS_ENV=development \
-            --env TMRDS_DATABASE_URL=postgresql://tmrds:unused@127.0.0.1:5432/tmrds \
+            --env TMRDS_DATABASE_URL=postgresql:///tmrds \
             --env TMRDS_HMAC_SECRET=ci-only-placeholder-secret-not-for-production \
             --env TMRDS_SERVICE_AUTH_REQUIRED=false \
             tmrds-api:ci
