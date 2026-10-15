@@ -6,12 +6,10 @@ approved artifact sink before the ledger can mark a job complete.
 """
 from __future__ import annotations
 
-import argparse
 import asyncio
 import hashlib
 import json
 import os
-import sys
 from collections.abc import Awaitable, Callable
 from typing import Any
 from urllib.parse import urlsplit
@@ -178,88 +176,3 @@ def _is_safe_artifact_uri(value: object) -> bool:
         and not parsed.fragment
         and all(part not in {".", ".."} for part in parsed.path.split("/"))
     )
-
-
-
-async def _run_once() -> dict[str, int]:
-    from engines.ibm_quantum_compute import IBMQuantumComputeClient
-    from engines.ibm_quantum_job_ledger import QuantumJobLedger
-    from engines.quantum_result_store import LocalQuantumResultStore
-
-    result_dir = os.getenv("TMRDS_QUANTUM_RESULT_DIR", "").strip()
-    if not result_dir:
-        raise RuntimeError("TMRDS_QUANTUM_RESULT_DIR is required for result integrity")
-    client = IBMQuantumComputeClient.from_environment()
-    ledger = QuantumJobLedger()
-    try:
-        batch_limit = int(os.getenv("TMRDS_IBM_QUANTUM_RECONCILER_BATCH_LIMIT", "25"))
-        reconciler = IBMQuantumReconciler(
-            ledger,
-            client,
-            result_sink=LocalQuantumResultStore(result_dir),
-            batch_limit=batch_limit,
-        )
-        return await reconciler.reconcile_once()
-    finally:
-        client.close()
-        await ledger.close()
-
-
-async def _resolve_unknown(
-    submission_id: UUID, ibm_job_id: str, operator_id: str, evidence_reference: str
-) -> bool:
-    from engines.ibm_quantum_job_ledger import QuantumJobLedger
-
-    ledger = QuantumJobLedger()
-    try:
-        return await ledger.resolve_unknown_submission(
-            submission_id,
-            ibm_job_id=ibm_job_id,
-            operator_id=operator_id,
-            evidence_reference=evidence_reference,
-        )
-    finally:
-        await ledger.close()
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--once", action="store_true", help="perform one bounded reconciliation pass")
-    parser.add_argument("--resolve-unknown", type=UUID, help="resolve one ambiguous ledger UUID with operator evidence")
-    parser.add_argument("--ibm-job-id", help="confirmed IBM job ID for operator resolution")
-    parser.add_argument("--operator-id", help="operator audit identifier")
-    parser.add_argument("--evidence-reference", help="credential-free artifact URI or HTTPS evidence URL")
-    args = parser.parse_args(argv)
-
-    if args.resolve_unknown is not None:
-        if args.once or not all((args.ibm_job_id, args.operator_id, args.evidence_reference)):
-            parser.error("--resolve-unknown requires --ibm-job-id, --operator-id, and --evidence-reference; do not combine with --once")
-        if os.getenv("TMRDS_QUANTUM_OPERATOR_RESOLUTION_ENABLED") != "true":
-            print("operator resolution is disabled; explicit privileged opt-in is required", file=sys.stderr)
-            return 2
-        try:
-            resolved = asyncio.run(_resolve_unknown(
-                args.resolve_unknown, args.ibm_job_id, args.operator_id, args.evidence_reference
-            ))
-        except Exception:
-            print("operator resolution failed; check safe configuration and ledger status", file=sys.stderr)
-            return 2
-        if not resolved:
-            print("no unresolved submission matched; no ledger state was changed", file=sys.stderr)
-            return 2
-        print("ambiguous submission resolved and operator evidence recorded")
-        return 0
-
-    if not args.once:
-        parser.error("choose --once or --resolve-unknown; schedule reconciliation externally with bounded intervals")
-    try:
-        counts = asyncio.run(_run_once())
-    except Exception:
-        print("IBM Quantum reconciliation failed; check safe configuration and database status.", file=sys.stderr)
-        return 2
-    print(json.dumps(counts, sort_keys=True))
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
