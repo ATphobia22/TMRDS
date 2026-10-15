@@ -84,6 +84,24 @@ The reconciler performs read-only job/status/result requests, processes a bounde
 
 The optional Compose worker is under the `quantum-reconciler` profile. It is a one-shot task and defaults to disabled. Do not enable it until the IBM account has a valid instance CRN, required IAM read permissions, and a configured durable result store. The regular IBM Quantum account alone does not prove Compute Service job entitlement.
 
+Run one pass only after the profile is explicitly enabled:
+
+```bash
+TMRDS_IBM_QUANTUM_RECONCILER_ENABLED=true docker compose --profile quantum-reconciler run --rm tmrds-quantum-reconciler
+```
+
+For an ambiguous record, first verify the remote job ID in IBM's authenticated job history and preserve evidence in a durable, access-controlled artifact or incident record. Then run the privileged command from an administrative shell:
+
+```bash
+TMRDS_QUANTUM_OPERATOR_RESOLUTION_ENABLED=true python -m engines.ibm_quantum_reconciler \\
+  --resolve-unknown <submission-uuid> \\
+  --ibm-job-id <confirmed-ibm-job-id> \\
+  --operator-id <operator-audit-id> \\
+  --evidence-reference artifact://quantum-audit/<evidence-id>
+```
+
+This updates only a `SUBMISSION_UNKNOWN` record that has no linked remote job ID and writes a separate append-only audit row through migration 005. The operator identifier is an asserted audit identity supplied by the privileged operator; this CLI does not authenticate the human independently. Protect shell access and audit storage accordingly. The command never creates a remote job.
+
 ## Backup and rollback
 
 - Back up PostgreSQL using the established operator backup mechanism and verify restoration in an isolated test environment.
