@@ -166,3 +166,20 @@ async def test_local_submission_limit_cannot_exceed_ibm_contract(monkeypatch):
     ledger = QuantumJobLedger(dsn=None)
     with pytest.raises(QuantumJobLedgerError, match="between 1 and 5"):
         await ledger.claim_for_submission(uuid.uuid4())
+
+
+
+@pytest.mark.asyncio
+async def test_submission_rejects_signed_artifact_urls(monkeypatch):
+    monkeypatch.setenv("TMRDS_IBM_QUANTUM_SUBMISSION_ENABLED", "true")
+    ledger = FakeLedger()
+    client = fake_client()
+
+    with pytest.raises(ValueError, match="credential-free artifact"):
+        await IBMQuantumSubmissionService(ledger).submit(
+            client=client, idempotency_key="req-signed", artifact_uri="https://storage.invalid/file?signature=secret",
+            backend="backend", qasm_circuits=["OPENQASM 3.0;"], explicitly_authorized=True,
+        )
+
+    ledger.prepare.assert_not_awaited()
+    client.submit_sampler.assert_not_called()
