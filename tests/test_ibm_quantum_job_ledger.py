@@ -15,11 +15,17 @@ from engines.ibm_quantum_job_ledger import (
 
 
 class FakeLedger:
-    def __init__(self, *, transition_results: list[bool] | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        transition_results: list[bool] | None = None,
+        claim_result: bool = True,
+    ) -> None:
         self.prepare = AsyncMock()
         self.transition_calls: list[tuple[uuid.UUID, str, str, dict]] = []
         self.transition_results = list(transition_results or [True, True])
         self.transition = AsyncMock(side_effect=self._transition)
+        self.claim_for_submission = AsyncMock(return_value=claim_result)
 
     async def _transition(self, submission_id, expected, new, **kwargs):
         self.transition_calls.append((submission_id, expected, new, kwargs))
@@ -84,8 +90,9 @@ async def test_submission_persists_before_single_remote_post(monkeypatch):
     )
 
     ledger.prepare.assert_awaited_once()
+    ledger.claim_for_submission.assert_awaited_once()
     assert [call[1:3] for call in ledger.transition_calls] == [
-        ("PREPARED", "SUBMITTING"), ("SUBMITTING", "SUBMITTED")
+        ("SUBMITTING", "SUBMITTED")
     ]
     assert ledger.transition_calls[-1][3]["ibm_job_id"] == "ibm-job-123"
     client.submit_sampler.assert_called_once_with(
@@ -132,3 +139,20 @@ def test_invalid_state_transition_is_rejected_without_database():
     with pytest.raises(ValueError, match="Invalid quantum job state transition"):
         import asyncio
         asyncio.run(ledger.transition(uuid.uuid4(), "PREPARED", "COMPLETED"))
+
+
+
+@pytest.mark.asyncio
+async def test_submission_refuses_remote_post_when_atomic_rate_limit_claim_fails(monkeypatch):
+    monkeypatch.setenv("TMRDS_IBM_QUANTUM_SUBMISSION_ENABLED", "true")
+    ledger = FakeLedger(claim_result=False)
+    client = fake_client()
+
+    with pytest.raises(QuantumJobLedgerError, match="rate limit or concurrent state"):
+        await IBMQuantumSubmissionService(ledger).submit(
+            client=client, idempotency_key="req-rate", artifact_uri="artifact://circuits/rate",
+            backend="backend", qasm_circuits=["OPENQASM 3.0;"], explicitly_authorized=True,
+        )
+
+    client.submit_sampler.assert_not_called()
+    ledger.transition.assert_not_awaited()
