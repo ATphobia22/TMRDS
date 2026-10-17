@@ -54,15 +54,25 @@ class AlphaFold3Node:
         if self.backend == "mock":
             return self._mock_prediction(sequence, ligand_smiles, job_name)
 
-        logger.info("AF3 backend=%s job=%s len=%d ligand=%s",
-                    self.backend, job_name, len(sequence), bool(ligand_smiles))
+        logger.info(
+            "AF3 backend requested but adapter is not implemented: backend=%s len=%d ligand=%s",
+            self.backend,
+            len(sequence),
+            bool(ligand_smiles),
+        )
         return {
             "job_name": job_name,
             "backend": self.backend,
-            "status": "QUEUED",
-            "message": "Submit to AlphaFold Server / OpenFold3 / local AF3 runtime",
+            "status": "NOT_CONFIGURED",
+            "job_id": None,
+            "message": (
+                "No prediction was submitted: this backend is a configuration placeholder "
+                "until a real adapter is implemented and verified."
+            ),
             "sequence_length": len(sequence),
             "ligand_provided": ligand_smiles is not None,
+            "metrics": None,
+            "structure_uri": None,
             "safety_note": self.safety_note,
         }
 
@@ -142,15 +152,16 @@ class AlphaFold3Node:
             }
         entry = data[0] if isinstance(data, list) and data else (data if isinstance(data, dict) else {})
         mean_plddt = entry.get("globalMetricValue")
+        has_confidence = isinstance(mean_plddt, (int, float)) and not isinstance(mean_plddt, bool)
         return {
             "backend": "alphafold_db",
-            "status": "REAL_PREDICTED" if mean_plddt else "REAL_OBSERVED",
+            "status": "REAL_PREDICTION_CONFIDENCE_AVAILABLE" if has_confidence else "REAL_PREDICTION_CONFIDENCE_UNAVAILABLE",
             "uniprot_id": uid,
             "gene": entry.get("gene"),
             "pdb_url": entry.get("pdbUrl"),
             "cif_url": entry.get("cifUrl"),
             "pae_url": entry.get("paeDocUrl"),
-            "metrics": {"mean_plddt": mean_plddt} if mean_plddt else None,
+            "metrics": {"mean_plddt": float(mean_plddt)} if has_confidence else None,
             "model_version": entry.get("latestVersion"),
             "source_url": url,
             "license": "CC-BY-4.0",
@@ -169,5 +180,5 @@ class AlphaFold3Node:
                 "multimer",
                 "structure_guided_ranking",
             ],
-            "status": "READY",
+            "status": "MOCK_ONLY" if self.backend == "mock" else "NOT_CONFIGURED",
         }
