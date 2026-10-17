@@ -255,3 +255,10 @@ TMRDS/
 ## Disclaimer
 
 TMRDS is research software for biomedical evidence exploration and engineering development. It is not medical advice, a diagnosis, a prescription, or a substitute for qualified clinical judgment. No repository documentation should be interpreted as evidence that TMRDS is FDA-cleared, clinically validated, HIPAA-compliant, ONC-certified, TEFCA-connected, or authorized for a particular regulated use.
+
+
+## Release gates and dependency security
+
+The repository now defines separate CI, secret/security, supply-chain, and CodeQL workflows. The supply-chain gate validates both `requirements.txt`/`requirements.lock` and `requirements-runtime.txt`/`requirements-runtime.lock`, then audits each exact-pin lock for known Python dependency advisories. Pull requests also receive dependency review. See [CI and release gates](docs/operations/ci-release-gates.md) for the dependency update procedure, limitations, and release checklist.
+
+**Owner action still required:** branch protection is currently disabled on `main`. Configure required checks and pull-request protections in GitHub repository settings after the new workflow check names have appeared. Workflow YAML alone cannot enforce branch protection.
