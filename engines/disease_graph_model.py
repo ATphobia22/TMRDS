@@ -271,9 +271,9 @@ class ClinVarSubmission:
     submitter: str
     submitter_id: Optional[str]
     condition: str  # MONDO/OMIM string as provided
-    condition_ids: List[Identifier] = field(default_factory=list)
     clinical_significance: str  # e.g., Pathogenic, Uncertain - preserved as source stated
     review_status: str  # e.g., criteria_provided_single_submitter, reviewed_by_expert_panel
+    condition_ids: List[Identifier] = field(default_factory=list)
     last_evaluated: Optional[str] = None
     date_submitted: Optional[str] = None
     explanation: Optional[str] = None
@@ -489,48 +489,318 @@ class GraphEdge:
 # Adapters - real API contracts, no bulk mirroring, respect terms
 # ---------------------------------------------------------------------------
 
+class EnsemblLookupError(RuntimeError):
+    """Raised when an Ensembl-backed lookup cannot return verified source data."""
+
+
 class EnsemblRESTAdapter:
+    """Live, provenance-bearing Ensembl REST adapter.
+
+    release=None uses the release currently served by the configured REST host
+    and records it when /info/data reports exactly one release. Supplying a
+    release is an assertion: this adapter fails closed if the endpoint cannot
+    prove it is serving that exact release.
     """
-    Ensembl REST API: https://rest.ensembl.org
-    Pin release, assembly, transcript versions. Respect rate limits.
-    """
+
     BASE = "https://rest.ensembl.org"
+    GRCH37_BASE = "https://grch37.rest.ensembl.org"
     DOC = "https://rest.ensembl.org/documentation/info/"
 
-    def __init__(self, release: str="112", assembly: str="GRCh38"):
-        self.release = release
-        self.assembly = assembly
-        self.license = "Apache 2.0 for code, data via Ensembl terms"
+    def __init__(self, release: Optional[str] = None, assembly: str = "GRCh38") -> None:
+        normalized_assembly = (assembly or "").strip().upper()
+        if normalized_assembly not in {"GRCH37", "GRCH38"}:
+            raise ValueError("assembly must be GRCh37 or GRCh38")
+        if release is not None and not re.fullmatch(r"\d{2,3}", str(release).strip()):
+            raise ValueError("release must be a two- or three-digit Ensembl data release")
+        self.release = str(release).strip() if release is not None else None
+        self.assembly = "GRCh37" if normalized_assembly == "GRCH37" else "GRCh38"
+        self.base_url = self.GRCH37_BASE if self.assembly == "GRCh37" else self.BASE
+        self.license = "Ensembl data terms"
         self.terms_url = "https://www.ensembl.org/info/about/legal/index.html"
+        self._release_checked = False
+        self._available_releases: tuple[int, ...] = ()
+        self._observed_release: Optional[str] = None
 
-    def lookup_gene(self, hgnc_symbol: str) -> Tuple[Identifier, Provenance, Dict[str,Any]]:
-        # Returns placeholder structure - real call would use requests with retries/backoff
-        prov = Provenance.now(
+    @staticmethod
+    def _validate_timeout(timeout: float) -> float:
+        import math
+
+        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)):
+            raise ValueError("timeout must be a finite number from 0 to 60 seconds")
+        numeric_timeout = float(timeout)
+        if not math.isfinite(numeric_timeout) or not 0 < numeric_timeout <= 60:
+            raise ValueError("timeout must be a finite number from 0 to 60 seconds")
+        return numeric_timeout
+
+    def _request_json(self, endpoint: str, timeout: float = 10.0) -> tuple[Any, Any, str]:
+        """Request JSON from a fixed Ensembl host without redirects."""
+        import requests
+
+        timeout_value = self._validate_timeout(timeout)
+        url = f"{self.base_url}{endpoint}"
+        try:
+            response = requests.get(
+                url,
+                headers={"Accept": "application/json", "Content-Type": "application/json"},
+                timeout=timeout_value,
+                allow_redirects=False,
+            )
+        except requests.RequestException as exc:
+            raise EnsemblLookupError(
+                f"Ensembl request failed ({type(exc).__name__}); no result was accepted"
+            ) from exc
+
+        status_code = getattr(response, "status_code", 0)
+        if status_code == 404:
+            raise EnsemblLookupError(f"Ensembl endpoint returned HTTP 404: {endpoint.split('?')[0]}")
+        if not isinstance(status_code, int) or status_code < 200 or status_code >= 300:
+            raise EnsemblLookupError(f"Ensembl endpoint returned HTTP {status_code}: {endpoint.split('?')[0]}")
+
+        try:
+            payload = response.json()
+        except (ValueError, TypeError) as exc:
+            raise EnsemblLookupError("Ensembl endpoint returned invalid JSON") from exc
+        return payload, response, url
+
+    def _discover_data_release(self, timeout: float = 10.0) -> Optional[str]:
+        """Observe the release exposed by /info/data; never assume a requested pin."""
+        if not self._release_checked:
+            self._release_checked = True
+            try:
+                payload, _, _ = self._request_json("/info/data", timeout=timeout)
+                raw_releases = payload.get("releases") if isinstance(payload, dict) else None
+                if (
+                    isinstance(raw_releases, list)
+                    and raw_releases
+                    and all(isinstance(value, int) and not isinstance(value, bool) and value > 0 for value in raw_releases)
+                ):
+                    self._available_releases = tuple(sorted(set(raw_releases)))
+                    if len(self._available_releases) == 1:
+                        self._observed_release = str(self._available_releases[0])
+                else:
+                    logger.warning("Ensembl /info/data returned an unrecognized release payload")
+            except EnsemblLookupError as exc:
+                logger.warning("Ensembl release discovery unavailable (%s)", type(exc).__name__)
+
+        if self.release is not None:
+            expected = int(self.release)
+            if self._available_releases != (expected,):
+                raise EnsemblLookupError(
+                    f"Configured Ensembl release {self.release} could not be verified; "
+                    "the configured REST endpoint must expose exactly that release"
+                )
+        return self._observed_release
+
+    def _provenance(
+        self,
+        response: Any,
+        url: str,
+        endpoint: str,
+        query: Dict[str, Any],
+        data_release: Optional[str],
+    ) -> Provenance:
+        raw_payload = getattr(response, "content", None)
+        if not isinstance(raw_payload, bytes) or not raw_payload:
+            response_text = getattr(response, "text", "")
+            raw_payload = response_text.encode("utf-8") if isinstance(response_text, str) and response_text else None
+        query_params = {
+            **query,
+            "assembly": self.assembly,
+            "requested_release": self.release,
+            "observed_data_release": data_release,
+        }
+        return Provenance.now(
             source_name="Ensembl",
-            source_url=self.BASE,
-            version=self.release,
+            source_url=url,
+            version=data_release,
             license=self.terms_url,
-            endpoint=f"/lookup/symbol/homo_sapiens/{hgnc_symbol}",
-            query={"release": self.release, "assembly": self.assembly}
+            endpoint=endpoint,
+            query=query_params,
+            raw_payload=raw_payload,
         )
-        # mock structure but flagged as OBSERVED with no fabricated sequence
-        payload = {"symbol": hgnc_symbol, "release": self.release, "assembly": self.assembly}
-        return (Identifier("ENSEMBL", f"ENSG_mock_{hgnc_symbol}", version=self.release, iri=f"{self.BASE}/id/ENSG..."), prov, payload)
 
-    def get_variant_consequences(self, variant_spdi: str) -> Tuple[List[Dict[str,Any]], Provenance]:
-        prov = Provenance.now(
-            source_name="Ensembl VEP",
-            source_url=self.BASE,
-            version=self.release,
-            endpoint=f"/vep/human/region/{variant_spdi}",
-            query={"release": self.release}
+    @staticmethod
+    def _normalize_gene_symbol(hgnc_symbol: str) -> str:
+        if not isinstance(hgnc_symbol, str):
+            raise ValueError("hgnc_symbol must be a string")
+        symbol = hgnc_symbol.strip()
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}", symbol):
+            raise ValueError("hgnc_symbol contains unsupported characters or has an invalid length")
+        return symbol
+
+    def lookup_gene(
+        self,
+        hgnc_symbol: str,
+        timeout: float = 10.0,
+    ) -> Tuple[Identifier, Provenance, Dict[str, Any]]:
+        """Resolve a human gene symbol using Ensembl's live lookup endpoint."""
+        symbol = self._normalize_gene_symbol(hgnc_symbol)
+        data_release = self._discover_data_release(timeout)
+        endpoint = f"/lookup/symbol/homo_sapiens/{symbol}"
+        payload, response, url = self._request_json(endpoint, timeout=timeout)
+
+        if not isinstance(payload, dict):
+            raise EnsemblLookupError("Ensembl gene lookup returned an unexpected response shape")
+        gene_id = payload.get("id")
+        object_type = payload.get("object_type")
+        if not isinstance(gene_id, str) or not re.fullmatch(r"ENSG\d+(?:\.\d+)?", gene_id):
+            raise EnsemblLookupError("Ensembl response did not contain a valid Ensembl gene identifier")
+        if object_type is not None and object_type != "Gene":
+            raise EnsemblLookupError("Ensembl lookup returned a non-gene feature")
+
+        observed_assembly = payload.get("assembly_name")
+        if observed_assembly and str(observed_assembly).casefold() != self.assembly.casefold():
+            raise EnsemblLookupError(
+                f"Ensembl returned assembly {observed_assembly}, not configured assembly {self.assembly}"
+            )
+
+        stable_gene_id = gene_id.split(".", 1)[0]
+        identifier_version = payload.get("version")
+        identifier = Identifier(
+            "ENSEMBL",
+            stable_gene_id,
+            version=str(identifier_version) if identifier_version is not None else None,
+            iri=f"{self.base_url}/id/{stable_gene_id}",
         )
-        return ([], prov)
+        provenance = self._provenance(
+            response,
+            url,
+            endpoint,
+            {
+                "species": "homo_sapiens",
+                "symbol": symbol,
+                "feature_type": "Gene",
+                "response_assembly": observed_assembly,
+            },
+            data_release,
+        )
+        return identifier, provenance, dict(payload)
 
-    def get_transcripts(self, ensembl_gene_id: str) -> Tuple[List[Transcript], Provenance]:
-        prov = Provenance.now(source_name="Ensembl", source_url=self.BASE, version=self.release,
-                              endpoint=f"/lookup/id/{ensembl_gene_id}?expand=1")
-        return ([], prov)
+    def get_variant_consequences(
+        self,
+        variant_spdi: str,
+        timeout: float = 10.0,
+    ) -> Tuple[List[Dict[str, Any]], Provenance]:
+        """Run Ensembl VEP for HGVS input; reject SPDI until coordinate mapping exists.
+
+        The historical parameter name is retained for compatibility. A value such
+        as 17:g.41196312G>T is HGVS and can be queried directly. A RefSeq SPDI
+        such as NC_000017.11:41196311:G:T is deliberately rejected because
+        accession/coordinate normalization is not implemented here.
+        """
+        if not isinstance(variant_spdi, str) or not variant_spdi.strip():
+            raise ValueError("variant input must be a non-empty string")
+        variant = variant_spdi.strip()
+        if len(variant) > 256 or not re.fullmatch(
+            r"(?:[A-Za-z0-9_.-]+:)?[gcnrp]\.[A-Za-z0-9_+>*()=?-]+",
+            variant,
+        ):
+            raise EnsemblLookupError(
+                "Variant input is not supported HGVS notation; SPDI-to-HGVS normalization "
+                "is not implemented and no VEP request was made"
+            )
+
+        from urllib.parse import quote
+
+        data_release = self._discover_data_release(timeout)
+        endpoint = f"/vep/human/hgvs/{quote(variant, safe=':._+*()=')}"
+        payload, response, url = self._request_json(endpoint, timeout=timeout)
+        if not isinstance(payload, list) or any(not isinstance(item, dict) for item in payload):
+            raise EnsemblLookupError("Ensembl VEP returned an unexpected response shape")
+        provenance = self._provenance(
+            response,
+            url,
+            endpoint,
+            {"variant_hgvs": variant, "species": "homo_sapiens", "annotation": "VEP"},
+            data_release,
+        )
+        return payload, provenance
+
+    def get_transcripts(
+        self,
+        ensembl_gene_id: str,
+        timeout: float = 10.0,
+    ) -> Tuple[List[Transcript], Provenance]:
+        """Retrieve the actual transcript records for a stable Ensembl gene ID."""
+        if not isinstance(ensembl_gene_id, str):
+            raise ValueError("ensembl_gene_id must be a string")
+        gene_id = ensembl_gene_id.strip()
+        if not re.fullmatch(r"ENSG\d+(?:\.\d+)?", gene_id):
+            raise ValueError("ensembl_gene_id must be a stable ENSG identifier")
+
+        data_release = self._discover_data_release(timeout)
+        endpoint = f"/lookup/id/{gene_id}?expand=1"
+        payload, response, url = self._request_json(endpoint, timeout=timeout)
+        if not isinstance(payload, dict) or payload.get("object_type", "Gene") != "Gene":
+            raise EnsemblLookupError("Ensembl transcript lookup returned an unexpected response shape")
+        raw_transcripts = payload.get("Transcript", [])
+        if not isinstance(raw_transcripts, list):
+            raise EnsemblLookupError("Ensembl transcript collection was malformed")
+
+        observed_assembly = payload.get("assembly_name")
+        if observed_assembly and str(observed_assembly).casefold() != self.assembly.casefold():
+            raise EnsemblLookupError(
+                f"Ensembl returned assembly {observed_assembly}, not configured assembly {self.assembly}"
+            )
+
+        provenance = self._provenance(
+            response,
+            url,
+            endpoint,
+            {"gene_id": gene_id, "expand": True, "response_assembly": observed_assembly},
+            data_release,
+        )
+        resolved_gene_id = str(payload.get("id", gene_id)).split(".", 1)[0]
+        raw_gene_version = payload.get("version")
+        gene_identifier = Identifier(
+            "ENSEMBL",
+            resolved_gene_id,
+            version=str(raw_gene_version) if raw_gene_version is not None else None,
+            iri=f"{self.base_url}/id/{resolved_gene_id}",
+        )
+        transcripts: List[Transcript] = []
+        for raw_transcript in raw_transcripts:
+            if not isinstance(raw_transcript, dict):
+                raise EnsemblLookupError("Ensembl returned a malformed transcript record")
+            transcript_id = raw_transcript.get("id")
+            if not isinstance(transcript_id, str) or not re.fullmatch(r"ENST\d+(?:\.\d+)?", transcript_id):
+                raise EnsemblLookupError("Ensembl returned a transcript without a valid ENST identifier")
+            raw_version = raw_transcript.get("version")
+            transcript_stable_id = transcript_id.split(".", 1)[0]
+            raw_exons = raw_transcript.get("Exon", [])
+            if not isinstance(raw_exons, list) or any(not isinstance(exon, dict) for exon in raw_exons):
+                raise EnsemblLookupError(f"Ensembl returned malformed exon metadata for {transcript_stable_id}")
+            tags = raw_transcript.get("tags", [])
+            if not isinstance(tags, list):
+                tags = []
+            evidence = EvidenceEnvelope(
+                provenance=provenance,
+                evidence_class=EvidenceClass.OBSERVED,
+                confidence=None,
+                confidence_policy=ConfidencePolicy.EMPTY,
+                evidence_quality_notes="Gene/transcript metadata from Ensembl REST; no functional interpretation",
+            )
+            transcripts.append(
+                Transcript(
+                    ensembl_transcript_id=Identifier(
+                        "ENSEMBL",
+                        transcript_stable_id,
+                        version=str(raw_version) if raw_version is not None else None,
+                        iri=f"{self.base_url}/id/{transcript_stable_id}",
+                    ),
+                    ensembl_gene_id=gene_identifier,
+                    biotype=raw_transcript.get("biotype"),
+                    is_mane_select="MANE_Select" in tags,
+                    is_canonical=raw_transcript.get("is_canonical") in (1, "1", True),
+                    sequence=None,
+                    length=None,
+                    exons=[dict(exon) for exon in raw_exons],
+                    ensembl_release=data_release or "unknown",
+                    assembly=str(raw_transcript.get("assembly_name") or observed_assembly or self.assembly),
+                    evidence=[evidence],
+                )
+            )
+        return transcripts, provenance
 
 class ClinVarAdapter:
     """
@@ -720,7 +990,7 @@ class VariantLiteratureView:
 # ---------------------------------------------------------------------------
 
 class DiseaseGraphBuilder:
-    def __init__(self, ensembl_release: str="112", assembly: str="GRCh38"):
+    def __init__(self, ensembl_release: Optional[str] = None, assembly: str="GRCh38"):
         self.nodes: Dict[str, Any] = {}
         self.edges: List[GraphEdge] = []
         self.ensembl_release = ensembl_release
@@ -1064,7 +1334,7 @@ def build_example_cube() -> DiseaseGraphBuilder:
     Builds a minimal disease cube example with full provenance - suitable for contract tests
     without live network.
     """
-    builder = DiseaseGraphBuilder(ensembl_release="112", assembly="GRCh38")
+    builder = DiseaseGraphBuilder(ensembl_release=None, assembly="GRCh38")
 
     gene = Gene(
         primary_hgnc_symbol="BRCA1",
