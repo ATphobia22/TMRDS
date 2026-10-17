@@ -1,12 +1,9 @@
-"""
-Qiskit Nature Bridge for TMRDS.
-Constructs molecular electronic-structure Hamiltonians and feeds them
-into the existing QuantumRubiksCureEngine VQE path.
-"""
+"""Fail-closed Qiskit Nature bridge for optional molecular research computation."""
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+import re
+from typing import Any, Dict
 
 import numpy as np
 
@@ -19,21 +16,28 @@ try:
 except ImportError:
     QISKIT_NATURE_AVAILABLE = False
 
+try:
+    import pyscf  # noqa: F401
+    PYSCF_AVAILABLE = True
+except ImportError:
+    PYSCF_AVAILABLE = False
+
 
 class QiskitNatureBridge:
-    """
-    Quantum chemistry → qubit Hamiltonian adapter.
+    """Build a genuine molecular Hamiltonian when all optional runtime dependencies exist.
 
-    Flow:
-      1. Build molecule (atom coords) via PySCF
-      2. Driver → ElectronicStructureProblem
-      3. Mapper → qubit Hamiltonian
-      4. Hand off coefficients to QuantumRubiksCureEngine.optimize_vqe
+    The adapter does not return a generic hard-coded H2 Hamiltonian for another
+    molecule. Package availability is not evidence that VQE or quantum hardware
+    execution occurred.
     """
+
+    SUPPORTED_MAPPERS = {"jordan_wigner", "parity"}
 
     def __init__(self, mapper: str = "jordan_wigner") -> None:
+        if mapper not in self.SUPPORTED_MAPPERS:
+            raise ValueError(f"mapper must be one of {sorted(self.SUPPORTED_MAPPERS)}")
         self.mapper_name = mapper
-        self.available = QISKIT_NATURE_AVAILABLE
+        self.available = QISKIT_NATURE_AVAILABLE and PYSCF_AVAILABLE
 
     def build_hamiltonian_from_xyz(
         self,
@@ -42,54 +46,80 @@ class QiskitNatureBridge:
         charge: int = 0,
         spin: int = 0,
     ) -> Dict[str, Any]:
-        """atom_string example: 'H 0 0 0; H 0 0 0.74'"""
-        if not QISKIT_NATURE_AVAILABLE:
-            return self._mock_h2_hamiltonian()
+        """Build an electronic-structure Hamiltonian from semicolon-delimited XYZ atoms."""
+        if not isinstance(atom_string, str) or not atom_string.strip():
+            raise ValueError("atom_string must be a non-empty molecular geometry")
+        if len(atom_string) > 4096 or any(ord(character) < 32 and character not in "\t\r\n" for character in atom_string):
+            raise ValueError("atom_string contains unsupported control characters or exceeds the size limit")
+        if not isinstance(basis, str) or not re.fullmatch(r"[A-Za-z0-9*+()_-]{1,64}", basis):
+            raise ValueError("basis contains unsupported characters or has an invalid length")
+        if isinstance(charge, bool) or not isinstance(charge, int) or not -100 <= charge <= 100:
+            raise ValueError("charge must be an integer from -100 through 100")
+        if isinstance(spin, bool) or not isinstance(spin, int) or not 0 <= spin <= 100:
+            raise ValueError("spin must be an integer from 0 through 100")
+
+        if not QISKIT_NATURE_AVAILABLE or not PYSCF_AVAILABLE:
+            return {
+                "status": "NOT_CONFIGURED",
+                "error_code": "OPTIONAL_BACKEND_UNAVAILABLE",
+                "message": (
+                    "No Hamiltonian was built because qiskit-nature and PySCF are both required. "
+                    "No fallback or placeholder coefficients were returned."
+                ),
+                "num_qubits": None,
+                "num_terms": None,
+                "coefficients": None,
+                "basis": basis,
+                "mapper": self.mapper_name,
+                "source": None,
+                "computation_executed": False,
+            }
 
         try:
-            driver = PySCFDriver(
-                atom=atom_string,
-                basis=basis,
-                charge=charge,
-                spin=spin,
-            )
+            driver = PySCFDriver(atom=atom_string.strip(), basis=basis, charge=charge, spin=spin)
             problem = driver.run()
             if self.mapper_name == "parity":
                 mapper = ParityMapper(num_particles=problem.num_particles)
             else:
                 mapper = JordanWignerMapper()
             qubit_op = mapper.map(problem.hamiltonian.second_q_op())
-            coeffs = [float(np.real(t.coeff)) for t in qubit_op]
+            coefficients = [float(np.real(term.coeff)) for term in qubit_op]
             return {
                 "status": "HAMILTONIAN_BUILT",
-                "num_qubits": qubit_op.num_qubits,
-                "num_terms": len(coeffs),
-                "coefficients": coeffs[:64],
+                "num_qubits": int(qubit_op.num_qubits),
+                "num_terms": len(coefficients),
+                "coefficients": coefficients[:64],
+                "coefficients_truncated": len(coefficients) > 64,
                 "basis": basis,
                 "mapper": self.mapper_name,
                 "source": "qiskit-nature + PySCF",
+                "computation_executed": True,
+                "note": "Hamiltonian construction only; this result is not a VQE optimization or hardware run.",
             }
-        except Exception as exc:  # noqa: BLE001
-            logger.error("Hamiltonian build failed: %s", exc)
-            return {"status": "ERROR", "error": str(exc)}
-
-    def _mock_h2_hamiltonian(self) -> Dict[str, Any]:
-        coeffs = [-1.0523732, 0.39793742, -0.39793742, -0.01128010, 0.18093120]
-        return {
-            "status": "HAMILTONIAN_BUILT_MOCK",
-            "num_qubits": 4,
-            "num_terms": len(coeffs),
-            "coefficients": coeffs,
-            "basis": "sto3g",
-            "mapper": "jordan_wigner",
-            "source": "mock_H2",
-            "note": "Install qiskit-nature + pyscf for real electronic-structure Hamiltonians",
-        }
+        except Exception as exc:  # noqa: BLE001 - do not leak library paths or user input
+            logger.error("Hamiltonian build failed (%s)", type(exc).__name__)
+            return {
+                "status": "ERROR",
+                "error_code": "HAMILTONIAN_BUILD_FAILED",
+                "error_type": type(exc).__name__,
+                "message": "Hamiltonian construction failed; inspect restricted service diagnostics.",
+                "num_qubits": None,
+                "num_terms": None,
+                "coefficients": None,
+                "basis": basis,
+                "mapper": self.mapper_name,
+                "source": "qiskit-nature + PySCF",
+                "computation_executed": False,
+            }
 
     def status(self) -> Dict[str, Any]:
+        available = QISKIT_NATURE_AVAILABLE and PYSCF_AVAILABLE
         return {
             "node": "QiskitNatureBridge",
             "qiskit_nature_available": QISKIT_NATURE_AVAILABLE,
+            "pyscf_available": PYSCF_AVAILABLE,
             "mapper": self.mapper_name,
-            "status": "READY",
+            "status": "AVAILABLE" if available else "NOT_CONFIGURED",
+            "vqe_solver_implemented": False,
+            "hardware_execution_claimed": False,
         }

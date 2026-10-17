@@ -1,12 +1,12 @@
-"""
-TMRDS Fixed - quantum_cure_engine.py
-Phase 4 Fix: Rename/reframe as optional research computation
-No synthetic compound ranking, no cure scores
-"""
+"""Research-computation metadata scaffold; no model or quantum job is executed here."""
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
 from enum import Enum
-from dataclasses import dataclass, asdict
-from typing import List, Dict, Optional, Any
-import time, hashlib, os
+from typing import List, Optional
+from urllib.parse import quote, urlencode
+import os
+
 
 class ComputationStatus(str, Enum):
     REAL_CLASSICAL = "real_classical_simulation"
@@ -16,6 +16,7 @@ class ComputationStatus(str, Enum):
     NOT_CONFIGURED = "not_configured"
     FAILED = "failed"
 
+
 class BackendType(str, Enum):
     CLASSICAL_RDKit = "rdkit_docking_mock_removed"
     CLASSICAL_OPENMM = "openmm"
@@ -23,6 +24,7 @@ class BackendType(str, Enum):
     QISKIT_IBM = "ibm_quantum_hardware"
     PENNYLANE = "pennylane"
     NONE = "none"
+
 
 @dataclass
 class ReproducibilityEnvelope:
@@ -40,9 +42,10 @@ class ReproducibilityEnvelope:
     environment: str
     raw_result_hash: Optional[str]
 
+
 @dataclass
 class ResearchHypothesis:
-    """Not a cure, not a ranking - just a hypothesis with provenance"""
+    """A source-link scaffold, not a cure, score, ranking, or computed result."""
     compound_id: str
     target_gene: str
     disease_context: str
@@ -53,122 +56,149 @@ class ResearchHypothesis:
     classical_baseline_score: Optional[float] = None
     quantum_score: Optional[float] = None
     improvement_over_baseline: Optional[float] = None
-    warning: str = "Research hypothesis only. Not a treatment recommendation. Not a diagnostic. Human review required."
+    warning: str = (
+        "Research hypothesis scaffold only. No computation was executed. "
+        "Not a treatment recommendation or diagnosis; human review required."
+    )
 
-    def to_evidence_record(self):
+    def to_evidence_record(self) -> dict[str, object]:
+        computation_executed = self.computation_status in {
+            ComputationStatus.REAL_CLASSICAL,
+            ComputationStatus.REAL_QUANTUM_HARDWARE,
+            ComputationStatus.REAL_QUANTUM_SIMULATOR,
+        }
         return {
             "entity_type": "research_hypothesis",
             "compound": self.compound_id,
             "target": self.target_gene,
             "disease_context": self.disease_context,
             "status": self.computation_status.value,
+            "computation_executed": computation_executed,
+            "score_available": any(
+                score is not None
+                for score in (
+                    self.classical_baseline_score,
+                    self.quantum_score,
+                    self.improvement_over_baseline,
+                )
+            ),
             "is_cure_claim": False,
             "is_ranking": False,
             "reproducibility": asdict(self.reproducibility),
-            "requires_human_review": True
+            "requires_human_review": True,
         }
 
+
 class QuantumResearchSandboxFixed:
-    """
-    Fixed version of quantum_cure_engine
-    - No synthetic rankings
-    - Classical baseline required
-    - All results marked hypothesized
-    - Cost/resource tracking
+    """Generate bounded research links without claiming to run a solver.
+
+    Qiskit/PennyLane package presence alone is not sufficient to claim a simulation.
+    A genuine solver, explicit molecular problem construction, and evaluation against
+    a classical baseline must be implemented before computation statuses can change.
     """
 
-    def __init__(self):
+    MAX_COMPOUNDS = 10
+
+    def __init__(self) -> None:
         self.has_qiskit = self._check_qiskit()
         self.has_pennylane = self._check_pennylane()
 
-    def _check_qiskit(self):
+    @staticmethod
+    def _check_qiskit() -> bool:
         try:
             import qiskit  # noqa: F401
             return True
         except ImportError:
             return False
 
-    def _check_pennylane(self):
+    @staticmethod
+    def _check_pennylane() -> bool:
         try:
             import pennylane  # noqa: F401
             return True
         except ImportError:
             return False
 
-    def generate_hypotheses(self, disease: str, gene: str, compounds: List[str], classical_baseline: bool = True) -> List[ResearchHypothesis]:
-        """
-        For Quantum Rubik's Cube: disease/gene/compounds are the cube facets
-        Returns hypotheses, not cures
-        """
-        if not compounds:
+    @staticmethod
+    def _required_label(name: str, value: str, max_length: int) -> str:
+        if not isinstance(value, str):
+            raise ValueError(f"{name} must be a string")
+        normalized = value.strip()
+        if not normalized or len(normalized) > max_length:
+            raise ValueError(f"{name} must be non-empty and at most {max_length} characters")
+        return normalized
+
+    def generate_hypotheses(
+        self,
+        disease: str,
+        gene: str,
+        compounds: List[str],
+        classical_baseline: bool = True,
+    ) -> List[ResearchHypothesis]:
+        """Return source links only; no VQE, docking, ranking or hardware calls occur."""
+        disease_label = self._required_label("disease", disease, 256)
+        gene_label = self._required_label("gene", gene, 128)
+        if not isinstance(compounds, list):
+            raise ValueError("compounds must be a list of compound names or identifiers")
+        if len(compounds) > self.MAX_COMPOUNDS:
+            raise ValueError(f"at most {self.MAX_COMPOUNDS} compounds may be requested per call")
+        if not isinstance(classical_baseline, bool):
+            raise ValueError("classical_baseline must be a boolean")
+        normalized_compounds = [
+            self._required_label(f"compounds[{index}]", compound, 128)
+            for index, compound in enumerate(compounds)
+        ]
+        if not normalized_compounds:
             return []
 
-        results = []
-        commit = os.getenv("GIT_COMMIT", "dev")
-        
-        # Determine real status
-        if self.has_qiskit:
-            status = ComputationStatus.REAL_QUANTUM_SIMULATOR
-            backend = BackendType.QISKIT_AER
-            device = "aer_simulator"
-        else:
-            status = ComputationStatus.MOCK_ONLY
-            backend = BackendType.NONE
-            device = "not_configured"
-
-        for comp in compounds[:10]:  # bounded
-            # NO synthetic score - only real computation or MOCK_ONLY with empty scores
-            if status == ComputationStatus.MOCK_ONLY:
-                classical_score = None
-                quantum_score = None
-                improvement = None
-            else:
-                # Real computation would happen here - placeholder for actual VQE
-                # For now, still None to avoid fake scores - must be replaced with real qiskit call
-                classical_score = None
-                quantum_score = None
-                improvement = None
-
-            repro = ReproducibilityEnvelope(
-                backend=backend,
-                status=status,
-                device=device,
-                provider="local" if self.has_qiskit else "none",
-                qubits=4 if self.has_qiskit else None,
-                shots=1024 if self.has_qiskit else None,
-                noise_model="ideal" if status == ComputationStatus.REAL_QUANTUM_SIMULATOR else None,
-                seed=42,
+        commit = (os.getenv("GIT_COMMIT") or "unknown").strip() or "unknown"
+        environment = (
+            f"qiskit_installed={self.has_qiskit}; "
+            f"pennylane_installed={self.has_pennylane}; "
+            "execution_adapter=not_implemented"
+        )
+        results: List[ResearchHypothesis] = []
+        for compound in normalized_compounds:
+            reproducibility = ReproducibilityEnvelope(
+                backend=BackendType.NONE,
+                status=ComputationStatus.NOT_CONFIGURED,
+                device="not_configured",
+                provider="none",
+                qubits=None,
+                shots=None,
+                noise_model=None,
+                seed=None,
                 elapsed_seconds=None,
-                cost_usd=0.0,
+                cost_usd=None,
                 commit_hash=commit,
-                environment=f"qiskit={self.has_qiskit}, pennylane={self.has_pennylane}",
-                raw_result_hash=None
+                environment=environment,
+                raw_result_hash=None,
             )
-
-            hyp = ResearchHypothesis(
-                compound_id=comp,
-                target_gene=gene,
-                disease_context=disease,
-                computation_status=status,
-                reproducibility=repro,
-                evidence_links=[
-                    f"https://pubchem.ncbi.nlm.nih.gov/compound/{comp}",
-                    f"https://www.ncbi.nlm.nih.gov/gene/?term={gene}"
-                ],
-                limitations=[
-                    "No wet-lab validation",
-                    "Classical baseline not yet computed - requires RDKit/OpenMM" if status != ComputationStatus.MOCK_ONLY else "Backend not configured - install qiskit[aer]",
-                    "Quantum advantage not demonstrated",
-                    "Exploratory only"
-                ],
-                classical_baseline_score=classical_score,
-                quantum_score=quantum_score,
-                improvement_over_baseline=improvement
+            limitations = [
+                "No molecular Hamiltonian, VQE solver, quantum simulation, docking run, or hardware job was executed.",
+                "No classical baseline was computed; this module emits no scientific scores or rankings.",
+                "Quantum advantage is not demonstrated and experimental validation has not been performed.",
+                "Research discovery only; human review required.",
+            ]
+            if not classical_baseline:
+                limitations.append("The caller explicitly disabled a classical baseline request.")
+            results.append(
+                ResearchHypothesis(
+                    compound_id=compound,
+                    target_gene=gene_label,
+                    disease_context=disease_label,
+                    computation_status=ComputationStatus.NOT_CONFIGURED,
+                    reproducibility=reproducibility,
+                    evidence_links=[
+                        f"https://pubchem.ncbi.nlm.nih.gov/#query={quote(compound, safe='')}",
+                        f"https://www.ncbi.nlm.nih.gov/gene/?{urlencode({'term': gene_label})}",
+                    ],
+                    limitations=limitations,
+                )
             )
-            results.append(hyp)
-
         return results
 
-# Backward compat (old names referenced in docs; the class is a research sandbox, not a cure engine)
+
+# Backward compatibility: these aliases are research scaffolds, not cure engines.
 QuantumCureEngine = QuantumResearchSandboxFixed
 QuantumRubiksCureEngine = QuantumResearchSandboxFixed
