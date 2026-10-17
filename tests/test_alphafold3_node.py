@@ -112,3 +112,7 @@ def test_status_does_not_advertise_unimplemented_prediction_capabilities_as_avai
         assert status["confidence_metrics_available"] is False
         assert status["structure_artifact_available"] is False
         assert status["declared_capabilities"]
+
+
+def test_asset_url_parser_fails_closed_on_malformed_url() -> None:
+    assert AlphaFold3Node._safe_asset_url("https://[invalid-host") is None
