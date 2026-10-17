@@ -17,7 +17,7 @@ All workflows use read-only repository permissions by default. The CodeQL job ad
 1. Update the declaration in `requirements.txt` and/or `requirements-runtime.txt`.
 2. Regenerate the matching lock file(s) using the project's reviewed dependency-lock process; lock files must contain exact `==` pins, including transitive dependencies.
 3. Run `python scripts/check_dependency_lock.py`.
-4. Run `pip-audit --strict -r requirements.lock` and `pip-audit --strict -r requirements-runtime.lock`.
+4. Run `pip-audit --strict --no-deps -r requirements.lock` and `pip-audit --strict --no-deps -r requirements-runtime.lock`.
 5. Review the resulting diff for unrelated upgrades, license/source concerns, Python 3.11 compatibility, and upstream release notes.
 6. Let CI complete before merging. Do not resolve a failed lock check by adding a package to a lock without confirming it is intentionally required.
 

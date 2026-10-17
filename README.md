@@ -259,6 +259,6 @@ TMRDS is research software for biomedical evidence exploration and engineering d
 
 ## Release gates and dependency security
 
-The repository now defines separate CI, secret/security, supply-chain, and CodeQL workflows. The supply-chain gate validates both `requirements.txt`/`requirements.lock` and `requirements-runtime.txt`/`requirements-runtime.lock`, then audits each exact-pin lock for known Python dependency advisories. Pull requests also receive dependency review. See [CI and release gates](docs/operations/ci-release-gates.md) for the dependency update procedure, limitations, and release checklist.
+The repository now defines separate CI, secret/security, supply-chain, and CodeQL workflows. Third-party workflow actions are pinned to verified full commit SHAs, with version comments for review and Dependabot update proposals. The supply-chain gate validates both `requirements.txt`/`requirements.lock` and `requirements-runtime.txt`/`requirements-runtime.lock`, then audits each exact-pin lock for known Python dependency advisories. Pull requests also receive dependency review. See [CI and release gates](docs/operations/ci-release-gates.md) for the dependency update procedure, limitations, and release checklist.
 
 **Owner action still required:** branch protection is currently disabled on `main`. Configure required checks and pull-request protections in GitHub repository settings after the new workflow check names have appeared. Workflow YAML alone cannot enforce branch protection.
