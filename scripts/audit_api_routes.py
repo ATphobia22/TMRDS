@@ -14,7 +14,7 @@ from fastapi.routing import APIRoute
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from api.main import app
+from api.main import app  # noqa: E402
 
 AUTH_DEPENDENCY_NAMES = {
     "require_service_identity",
@@ -59,7 +59,7 @@ def build_inventory() -> dict[str, Any]:
             if key in seen:
                 duplicates.append({"method": method, "path": route.path})
             seen.add(key)
-            entry = {
+            routes.append({
                 "method": method,
                 "path": route.path,
                 "endpoint": f"{endpoint.__module__}.{endpoint.__name__}",
@@ -68,8 +68,7 @@ def build_inventory() -> dict[str, Any]:
                 "dependencies": dependencies,
                 "auth_guards": auth_guards,
                 "auth_classification": auth_class,
-            }
-            routes.append(entry)
+            })
             if method in WRITE_METHODS and not auth_guards:
                 unguarded_writes.append({"method": method, "path": route.path})
 
@@ -86,6 +85,16 @@ def build_inventory() -> dict[str, Any]:
             "database permissions, reverse-proxy policy, or runtime configuration."
         ),
     }
+
+
+def policy_findings(inventory: dict[str, Any]) -> list[str]:
+    """Return release-gate findings; static inventory is not a complete auth proof."""
+    findings: list[str] = []
+    for route in inventory.get("duplicate_method_paths", []):
+        findings.append(f"duplicate route: {route.get('method')} {route.get('path')}")
+    for route in inventory.get("write_routes_without_declared_auth_dependency", []):
+        findings.append(f"write route lacks recognized declared auth dependency: {route.get('method')} {route.get('path')}")
+    return findings
 
 
 def main() -> int:
@@ -105,7 +114,12 @@ def main() -> int:
         }, indent=2, sort_keys=True))
     else:
         print(rendered, end="")
-    return 1 if inventory["duplicate_method_paths"] else 0
+
+    failures = policy_findings(inventory)
+    if failures:
+        print("\n".join(failures), file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

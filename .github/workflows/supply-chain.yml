@@ -34,10 +34,29 @@ jobs:
           python -m pip install pip-audit==2.10.1
       - name: Validate direct declarations against both lock files
         run: python scripts/check_dependency_lock.py
-      - name: Audit complete development/test lock
-        run: pip-audit --strict --no-deps -r requirements.lock
-      - name: Audit minimal runtime lock
-        run: pip-audit --strict --no-deps -r requirements-runtime.lock
+      - name: Audit both locks and retain machine-readable reports
+        shell: bash
+        run: |
+          set +e
+          mkdir -p build/audit
+          pip-audit --strict --no-deps --requirement requirements.lock --format json --output build/audit/test-dependencies.json
+          test_status=$?
+          pip-audit --strict --no-deps --requirement requirements-runtime.lock --format json --output build/audit/runtime-dependencies.json
+          runtime_status=$?
+          set -e
+          printf 'test dependency audit exit code: %s\nruntime dependency audit exit code: %s\n' "$test_status" "$runtime_status"
+          if [[ "$test_status" -ne 0 || "$runtime_status" -ne 0 ]]; then
+            echo "Dependency audit failed due to vulnerabilities or dependency collection errors." >&2
+            exit 1
+          fi
+      - name: Upload machine-readable dependency audit reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: tmrds-dependency-audit
+          path: build/audit/*.json
+          if-no-files-found: ignore
+          retention-days: 30
 
   dependency-review:
     name: Review pull-request dependency changes

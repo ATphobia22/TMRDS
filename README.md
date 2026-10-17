@@ -210,13 +210,15 @@ TMRDS therefore implements a **research-advisory architecture**, not an autonomo
 Core development/CI targets **Python 3.11**. From the repository root, run:
 
 ```bash
-python -m pytest -q -m "not integration"
+python scripts/check_dependency_lock.py
+python scripts/check_workflow_security.py
 python scripts/security_scan.py .
 python -m compileall -q api engines scripts tests
 python scripts/audit_api_routes.py --output api-route-inventory.json
+python -m pytest -q -m "not integration"
 ```
 
-The route audit emits a JSON inventory of FastAPI routes, source locations, declared dependencies, and write routes without a recognized declared authentication dependency. It is a static review aid—not proof that authorization is correct or that a route is exploitable. Review every flagged route and the runtime proxy/configuration context.
+The route audit emits a JSON inventory of FastAPI routes, source locations, declared dependencies, and write routes without a recognized declared authentication dependency. Duplicate method/path definitions and write routes without a recognized declared auth dependency fail the static gate. This is still a heuristic, not proof of authorization correctness; review endpoint behavior and runtime policy.
 
 Live-source and PostgreSQL/Neo4j tests are explicitly marked `integration` and require their external services/configuration. CI does not require live PHI, institutional EHR access, or IBM Quantum hardware. A read-only [Postman smoke collection](postman/TMRDS-API-smoke.postman_collection.json) covers liveness, readiness, and research-advisory metadata; import it into Postman and set `baseUrl` to the local API address.
 
@@ -259,6 +261,6 @@ TMRDS is research software for biomedical evidence exploration and engineering d
 
 ## Release gates and dependency security
 
-The repository now defines separate CI, secret/security, supply-chain, and CodeQL workflows. Third-party workflow actions are pinned to verified full commit SHAs, with version comments for review and Dependabot update proposals. The supply-chain gate validates both `requirements.txt`/`requirements.lock` and `requirements-runtime.txt`/`requirements-runtime.lock`, then audits each exact-pin lock for known Python dependency advisories. Pull requests also receive dependency review. See [CI and release gates](docs/operations/ci-release-gates.md) for the dependency update procedure, limitations, and release checklist.
+The repository now defines CI, secret/security/interoperability, supply-chain, CodeQL (Python and GitHub Actions), and release-verification workflows. Third-party workflow actions are pinned to verified full commit SHAs, with version comments for review and Dependabot update proposals. The supply-chain gate validates both `requirements.txt`/`requirements.lock` and `requirements-runtime.txt`/`requirements-runtime.lock`, then audits each exact-pin lock for known Python dependency advisories. Pull requests also receive dependency review. See [CI and release gates](docs/operations/ci-release-gates.md), the [dependency-management procedure](docs/operations/dependency-management.md), and the [release-readiness audit](docs/audits/2026-10-17-tmrds-release-readiness.md) for update steps, limitations, and release evidence requirements. The release workflow builds locally and uploads test/SBOM evidence; it does not publish or deploy.
 
 **Owner action still required:** branch protection is currently disabled on `main`. Configure required checks and pull-request protections in GitHub repository settings after the new workflow check names have appeared. Workflow YAML alone cannot enforce branch protection.
