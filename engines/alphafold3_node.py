@@ -155,8 +155,12 @@ class AlphaFold3Node:
                 raise ValueError(f"candidate_smiles[{index}] must be non-empty and at most 4096 characters")
             if any(ord(character) < 32 for character in smiles):
                 raise ValueError(f"candidate_smiles[{index}] must not contain control characters")
-        if isinstance(top_k, bool) or not isinstance(top_k, int) or not 1 <= top_k <= 1000:
-            raise ValueError("top_k must be an integer from 1 through 1000")
+        if isinstance(top_k, bool) or not isinstance(top_k, int):
+            raise ValueError("top_k must be an integer")
+        if top_k < 1:
+            raise ValueError("top_k must be at least 1")
+        if top_k > 1000:
+            raise ValueError("top_k must be at most 1000")
         return {
             "target_length": len(sequence),
             "candidates_evaluated": len(candidate_smiles),
