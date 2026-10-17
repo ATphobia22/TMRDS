@@ -67,3 +67,25 @@ The repository search for TODO produced a case-insensitive match in an AlphaFold
 - [Failing NumPy Dependabot CI example](https://github.com/ATphobia22/TMRDS/actions/runs/38664852634)
 - [GitHub secure use of Actions](https://docs.github.com/en/actions/reference/security/secure-use)
 - [PyPA pip-audit](https://github.com/pypa/pip-audit)
+
+
+## Latest post-merge verification (2026-10-17)
+
+The current main commit is `03c36caa38ace2c340127393b9b01060df480ea3`. The four push-triggered workflows on that exact commit completed successfully:
+
+- [TMRDS CI](https://github.com/ATphobia22/TMRDS/actions/runs/39057490498)
+- [Security and Interoperability](https://github.com/ATphobia22/TMRDS/actions/runs/39057490415)
+- [Supply Chain Security](https://github.com/ATphobia22/TMRDS/actions/runs/39057490483)
+- [CodeQL](https://github.com/ATphobia22/TMRDS/actions/runs/39057490639)
+
+The scientific-backend remediation was merged as [PR #15](https://github.com/ATphobia22/TMRDS/pull/15). A stale pre-merge branch run failed test collection because it retained the old `ClinVarSubmission` dataclass field order; that run is not the current main commit's status. Current-main workflow results above are green.
+
+### Remaining blockers and staged work
+
+- **Repository policy:** branch protection / rulesets could not be inspected or changed with the available repository integration permissions. The existing owner-action note says protection is disabled; an authorized owner must configure required checks and review rules in repository settings.
+- **Scientific execution:** AlphaFold3/OpenFold3 prediction backends, VQE/classical-baseline solving, SPDI-to-HGVS normalization, and production molecular docking remain unimplemented. These must report `MOCK_ONLY` or `NOT_CONFIGURED` rather than fabricate results.
+- **Environment verification:** no production deployment, production migration, cloud provisioning, live patient-data access, or IBM Quantum hardware submission was performed. Integration tests requiring external services need a disposable non-production environment.
+- **Operational recovery:** backup/restore and disaster-recovery rehearsal, production secrets/configuration review, and upstream quota/timeout checks remain release-environment tasks.
+- **Lock integrity:** exact dependency versions are pinned, but the current lock files do not include artifact hashes; pinning is not equivalent to verified package-artifact integrity.
+
+The latest main workflow success is evidence for that commit only; each subsequent release candidate must be checked independently.

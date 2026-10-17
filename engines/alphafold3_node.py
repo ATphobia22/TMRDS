@@ -10,6 +10,8 @@ Cloud: Google Cloud Model Garden / AlphaFold Server
 from __future__ import annotations
 
 import logging
+import math
+import re
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("TMRDS.AlphaFold3")
@@ -42,14 +44,54 @@ class AlphaFold3Node:
             "Experimental validation is required before clinical or therapeutic use."
         )
 
+    @staticmethod
+    def _validate_sequence(sequence: str) -> str:
+        if not isinstance(sequence, str):
+            raise ValueError("sequence must be a string")
+        normalized = "".join(sequence.split()).upper()
+        if not 10 <= len(normalized) <= 100_000:
+            raise ValueError("sequence must contain between 10 and 100000 amino-acid residues")
+        if any(residue not in "ACDEFGHIKLMNPQRSTVWYBXZJUO" for residue in normalized):
+            raise ValueError("sequence contains unsupported amino-acid symbols")
+        return normalized
+
+    @staticmethod
+    def _validate_timeout(timeout: float) -> float:
+        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)):
+            raise ValueError("timeout must be a finite number greater than 0 and at most 60 seconds")
+        value = float(timeout)
+        if not math.isfinite(value) or not 0 < value <= 60:
+            raise ValueError("timeout must be a finite number greater than 0 and at most 60 seconds")
+        return value
+
+    @staticmethod
+    def _safe_asset_url(value: Any) -> Optional[str]:
+        from urllib.parse import urlparse
+
+        if not isinstance(value, str):
+            return None
+        try:
+            parsed = urlparse(value)
+        except ValueError:
+            return None
+        if parsed.scheme != "https" or parsed.hostname != "alphafold.ebi.ac.uk" or parsed.username or parsed.password:
+            return None
+        return value
+
     def predict_structure(
         self,
         sequence: str,
         ligand_smiles: Optional[str] = None,
         job_name: str = "tmrds_af3",
     ) -> Dict[str, Any]:
-        if not sequence or len(sequence) < 10:
-            raise ValueError("sequence must be a valid amino-acid string (≥10 residues)")
+        sequence = self._validate_sequence(sequence)
+        if not isinstance(job_name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", job_name):
+            raise ValueError("job_name must be 1-128 safe ASCII letters, digits, dots, underscores, or hyphens")
+        if ligand_smiles is not None:
+            if not isinstance(ligand_smiles, str) or not ligand_smiles.strip() or len(ligand_smiles) > 4096:
+                raise ValueError("ligand_smiles must be non-empty and at most 4096 characters")
+            if any(ord(character) < 32 for character in ligand_smiles):
+                raise ValueError("ligand_smiles must not contain control characters")
 
         if self.backend == "mock":
             return self._mock_prediction(sequence, ligand_smiles, job_name)
@@ -103,10 +145,22 @@ class AlphaFold3Node:
         candidate_smiles: List[str],
         top_k: int = 5,
     ) -> Dict[str, Any]:
-        if not candidate_smiles:
-            raise ValueError("candidate_smiles must be non-empty")
+        self._validate_sequence(sequence)
+        if not isinstance(candidate_smiles, list) or not candidate_smiles:
+            raise ValueError("candidate_smiles must be a non-empty list")
+        if len(candidate_smiles) > 1000:
+            raise ValueError("candidate_smiles must contain at most 1000 entries")
+        for index, smiles in enumerate(candidate_smiles):
+            if not isinstance(smiles, str) or not smiles.strip() or len(smiles) > 4096:
+                raise ValueError(f"candidate_smiles[{index}] must be non-empty and at most 4096 characters")
+            if any(ord(character) < 32 for character in smiles):
+                raise ValueError(f"candidate_smiles[{index}] must not contain control characters")
+        if isinstance(top_k, bool) or not isinstance(top_k, int):
+            raise ValueError("top_k must be an integer")
         if top_k < 1:
             raise ValueError("top_k must be at least 1")
+        if top_k > 1000:
+            raise ValueError("top_k must be at most 1000")
         return {
             "target_length": len(sequence),
             "candidates_evaluated": len(candidate_smiles),
@@ -118,21 +172,30 @@ class AlphaFold3Node:
         }
 
     def fetch_live_alphafold_db(self, uniprot_id: str, timeout: float = 20.0) -> Dict[str, Any]:
-        """Fetch real AlphaFold DB metadata for a UniProt accession.
+        """Fetch validated AlphaFold DB metadata for a UniProt accession.
 
-        Returns genuine API fields only (globalMetricValue is the real mean
-        pLDDT; per-residue scores live in the CIF file and are never invented).
-        Fail-closed: network problems or unknown accessions return an explicit
-        unavailable/not_found status with null metrics — never fabricated data.
+        Only upstream metadata is returned. Invalid accessions, unsafe redirects,
+        malformed payloads, and invalid confidence values fail closed.
         """
-        uid = (uniprot_id or "").strip()
-        if not uid:
-            raise ValueError("uniprot_id must not be empty")
+        import re
+        import requests
+
+        if not isinstance(uniprot_id, str):
+            raise ValueError("uniprot_id must be a string")
+        uid = uniprot_id.strip().upper()
+        if not re.fullmatch(r"(?:[A-Z0-9]{6}|[A-Z0-9]{10})(?:-[1-9][0-9]*)?", uid):
+            raise ValueError("uniprot_id must be a valid-looking six- or ten-character accession with optional isoform suffix")
+        timeout_value = self._validate_timeout(timeout)
         url = f"https://alphafold.ebi.ac.uk/api/prediction/{uid}"
         try:
-            import requests
-            response = requests.get(url, timeout=timeout)
-            if response.status_code == 404:
+            response = requests.get(
+                url,
+                headers={"Accept": "application/json"},
+                timeout=timeout_value,
+                allow_redirects=False,
+            )
+            status_code = getattr(response, "status_code", 0)
+            if status_code == 404:
                 return {
                     "backend": "alphafold_db",
                     "status": "NOT_FOUND",
@@ -140,28 +203,57 @@ class AlphaFold3Node:
                     "metrics": None,
                     "message": "No AlphaFold DB entry for this accession.",
                 }
-            response.raise_for_status()
+            if not isinstance(status_code, int) or not 200 <= status_code < 300:
+                return {
+                    "backend": "alphafold_db",
+                    "status": "UNAVAILABLE",
+                    "uniprot_id": uid,
+                    "metrics": None,
+                    "message": f"AlphaFold DB returned HTTP {status_code}.",
+                }
             data = response.json()
-        except Exception as exc:  # noqa: BLE001 — fail closed, report honestly
+        except Exception as exc:  # noqa: BLE001 — fail closed, never expose request internals
+            logger.warning("AlphaFold DB lookup failed (%s)", type(exc).__name__)
             return {
                 "backend": "alphafold_db",
                 "status": "UNAVAILABLE",
                 "uniprot_id": uid,
                 "metrics": None,
-                "message": f"AlphaFold DB unreachable: {type(exc).__name__}",
+                "message": f"AlphaFold DB request failed ({type(exc).__name__}).",
             }
-        entry = data[0] if isinstance(data, list) and data else (data if isinstance(data, dict) else {})
+
+        if isinstance(data, list):
+            entry = data[0] if data and isinstance(data[0], dict) else None
+        else:
+            entry = data if isinstance(data, dict) else None
+        if entry is None:
+            return {
+                "backend": "alphafold_db",
+                "status": "INVALID_RESPONSE",
+                "uniprot_id": uid,
+                "metrics": None,
+                "message": "AlphaFold DB returned an unexpected response shape.",
+            }
+
         mean_plddt = entry.get("globalMetricValue")
-        has_confidence = isinstance(mean_plddt, (int, float)) and not isinstance(mean_plddt, bool)
+        valid_plddt = (
+            isinstance(mean_plddt, (int, float))
+            and not isinstance(mean_plddt, bool)
+            and math.isfinite(float(mean_plddt))
+            and 0.0 <= float(mean_plddt) <= 100.0
+        )
+        safe_pdb_url = self._safe_asset_url(entry.get("pdbUrl"))
+        safe_cif_url = self._safe_asset_url(entry.get("cifUrl"))
+        safe_pae_url = self._safe_asset_url(entry.get("paeDocUrl"))
         return {
             "backend": "alphafold_db",
-            "status": "REAL_PREDICTION_CONFIDENCE_AVAILABLE" if has_confidence else "REAL_PREDICTION_CONFIDENCE_UNAVAILABLE",
+            "status": "REAL_PREDICTION_CONFIDENCE_AVAILABLE" if valid_plddt else "REAL_PREDICTION_CONFIDENCE_UNAVAILABLE",
             "uniprot_id": uid,
-            "gene": entry.get("gene"),
-            "pdb_url": entry.get("pdbUrl"),
-            "cif_url": entry.get("cifUrl"),
-            "pae_url": entry.get("paeDocUrl"),
-            "metrics": {"mean_plddt": float(mean_plddt)} if has_confidence else None,
+            "gene": entry.get("gene") if isinstance(entry.get("gene"), str) else None,
+            "pdb_url": safe_pdb_url,
+            "cif_url": safe_cif_url,
+            "pae_url": safe_pae_url,
+            "metrics": {"mean_plddt": float(mean_plddt)} if valid_plddt else None,
             "model_version": entry.get("latestVersion"),
             "source_url": url,
             "license": "CC-BY-4.0",
@@ -170,15 +262,20 @@ class AlphaFold3Node:
         }
 
     def status(self) -> Dict[str, Any]:
+        configured = False  # No prediction backend adapter is implemented in this node.
         return {
             "node": "AlphaFold3Node",
             "backend": self.backend,
             "supported_backends": list(self.SUPPORTED_BACKENDs),
-            "capabilities": [
+            "declared_capabilities": [
                 "protein_folding",
                 "protein_ligand_cofolding",
                 "multimer",
                 "structure_guided_ranking",
             ],
+            "available_capabilities": [],
             "status": "MOCK_ONLY" if self.backend == "mock" else "NOT_CONFIGURED",
+            "prediction_execution_available": configured,
+            "confidence_metrics_available": False,
+            "structure_artifact_available": False,
         }
