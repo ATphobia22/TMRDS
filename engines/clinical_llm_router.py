@@ -1,8 +1,4 @@
-"""
-Clinical LLM Router for TMRDS.
-Backends: vLLM (preferred), HuggingFace transformers, mock.
-Targets: Meditron-7B / 70B, Doctor-Dignity, future medical LLMs.
-"""
+"""Research-only local LLM router with explicit mock-state reporting."""
 from __future__ import annotations
 
 import logging
@@ -26,18 +22,11 @@ except ImportError:
 
 
 class ClinicalLLMRouter:
-    """
-    Unified medical LLM interface.
+    """Unified research-only local LLM interface.
 
-    Backend priority:
-      1. vLLM  (high-throughput GPU serving)
-      2. HuggingFace transformers
-      3. mock  (CI / offline)
-
-    Model map:
-      meditron-7b   → epfl-llm/meditron-7b
-      meditron-70b  → epfl-llm/meditron-70b
-      doctor-dignity → DOCTOR_DIGNITY_PATH or default HF id
+    Remote model repository code is never trusted implicitly. If a model cannot
+    load under the default safe configuration, generation is explicitly marked
+    MOCK_ONLY; callers must not treat the fallback text as model output.
     """
 
     MODEL_MAP = {
@@ -46,7 +35,6 @@ class ClinicalLLMRouter:
         "doctor-dignity": os.getenv("DOCTOR_DIGNITY_PATH", "llSourcell/doctorGPT_mini"),
         "mock-clinical": None,
     }
-
     SUPPORTED_MODELS = tuple(MODEL_MAP.keys())
 
     def __init__(
@@ -57,14 +45,19 @@ class ClinicalLLMRouter:
     ) -> None:
         if default_model not in self.SUPPORTED_MODELS:
             raise ValueError(f"Unsupported model: {default_model}")
+        if not isinstance(tensor_parallel_size, int) or tensor_parallel_size < 1:
+            raise ValueError("tensor_parallel_size must be a positive integer")
+        if backend not in {"auto", "vllm", "hf", "mock"}:
+            raise ValueError("backend must be one of: auto, vllm, hf, mock")
+
         self.default_model = default_model
-        self.backend = self._resolve_backend(backend)
+        self.backend = "mock" if default_model == "mock-clinical" else self._resolve_backend(backend)
         self.tensor_parallel_size = tensor_parallel_size
         self._llm = None
         self._tokenizer = None
         self.safety_disclaimer = (
-            "This output is for research assistance only. "
-            "It is not a substitute for professional medical judgment."
+            "Research assistance only. Outputs require independent review and "
+            "must not be used as diagnosis, prescribing, or autonomous clinical action."
         )
         if self.default_model != "mock-clinical":
             self._lazy_load(self.default_model)
@@ -84,28 +77,29 @@ class ClinicalLLMRouter:
             return
         try:
             if self.backend == "vllm" and VLLM_AVAILABLE:
-                logger.info("Loading %s via vLLM", hf_id)
+                logger.info("Loading model %s via vLLM with remote code disabled", hf_id)
                 self._llm = LLM(
                     model=hf_id,
                     tensor_parallel_size=self.tensor_parallel_size,
-                    trust_remote_code=True,
+                    trust_remote_code=False,
                 )
             elif self.backend == "hf" and HF_AVAILABLE:
-                logger.info("Loading %s via HuggingFace", hf_id)
-                self._tokenizer = AutoTokenizer.from_pretrained(hf_id, trust_remote_code=True)
+                logger.info("Loading model %s via HuggingFace with remote code disabled", hf_id)
+                self._tokenizer = AutoTokenizer.from_pretrained(hf_id, trust_remote_code=False)
                 self._llm = AutoModelForCausalLM.from_pretrained(
                     hf_id,
                     torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
                     device_map="auto",
-                    trust_remote_code=True,
+                    trust_remote_code=False,
                 )
             else:
-                logger.warning("Requested backend unavailable — falling back to mock")
+                logger.warning("Requested backend unavailable; switching to explicit mock mode")
                 self.backend = "mock"
-        except Exception as exc:  # noqa: BLE001
-            logger.error("Model load failed: %s — using mock", exc)
+        except Exception as exc:  # noqa: BLE001 - avoid exposing provider/model internals
+            logger.error("Model load failed (%s); switching to explicit mock mode", type(exc).__name__)
             self.backend = "mock"
             self._llm = None
+            self._tokenizer = None
 
     def generate(
         self,
@@ -114,6 +108,13 @@ class ClinicalLLMRouter:
         max_tokens: int = 512,
         temperature: float = 0.2,
     ) -> Dict[str, Any]:
+        if not isinstance(prompt, str) or not prompt.strip():
+            raise ValueError("prompt must be a non-empty string")
+        if not isinstance(max_tokens, int) or not 1 <= max_tokens <= 8192:
+            raise ValueError("max_tokens must be an integer from 1 through 8192")
+        if not isinstance(temperature, (int, float)) or not 0 <= temperature <= 2:
+            raise ValueError("temperature must be between 0 and 2")
+
         model = model or self.default_model
         if model not in self.SUPPORTED_MODELS:
             raise ValueError(f"Unsupported model: {model}")
@@ -121,47 +122,55 @@ class ClinicalLLMRouter:
         if model != self.default_model and model != "mock-clinical":
             self._lazy_load(model)
 
+        inference_executed = False
         if self.backend == "vllm" and self._llm is not None:
-            params = SamplingParams(temperature=temperature, max_tokens=max_tokens)
+            params = SamplingParams(temperature=float(temperature), max_tokens=max_tokens)
             outputs = self._llm.generate([prompt], params)
             completion = outputs[0].outputs[0].text
+            inference_executed = True
         elif self.backend == "hf" and self._llm is not None and self._tokenizer is not None:
             inputs = self._tokenizer(prompt, return_tensors="pt").to(self._llm.device)
             with torch.no_grad():
                 out = self._llm.generate(
                     **inputs,
                     max_new_tokens=max_tokens,
-                    temperature=temperature,
+                    temperature=float(temperature),
                     do_sample=temperature > 0,
                 )
             completion = self._tokenizer.decode(out[0], skip_special_tokens=True)
+            inference_executed = True
         else:
             completion = (
-                f"[Clinical Assistant — {model} (mock)]\n"
-                f"Query: {prompt[:120]}...\n"
-                f"Differential considerations require full history, exam, and labs. "
-                f"Recommend correlation with imaging and specialist review.\n"
-                f"{self.safety_disclaimer}"
+                "MOCK_ONLY: no language-model inference was performed. "
+                "Configure and verify a supported local model backend before requesting generation. "
+                + self.safety_disclaimer
             )
 
         return {
             "model": model,
-            "backend": self.backend,
+            "backend": self.backend if inference_executed else "mock",
             "prompt_tokens": len(prompt.split()),
             "completion": completion,
             "max_tokens": max_tokens,
-            "temperature": temperature,
+            "temperature": float(temperature),
             "safety_disclaimer": self.safety_disclaimer,
-            "status": "GENERATED",
+            "status": "GENERATED" if inference_executed else "MOCK_ONLY",
+            "inference_executed": inference_executed,
+            "human_review_required": True,
         }
 
     def list_models(self) -> List[str]:
         return list(self.SUPPORTED_MODELS)
 
     def backend_status(self) -> Dict[str, Any]:
+        loaded = self._llm is not None and (
+            self.backend == "vllm" or (self.backend == "hf" and self._tokenizer is not None)
+        )
         return {
-            "active_backend": self.backend,
+            "active_backend": self.backend if loaded else "mock",
             "vllm_available": VLLM_AVAILABLE,
             "hf_available": HF_AVAILABLE,
             "default_model": self.default_model,
+            "model_loaded": loaded,
+            "status": "READY" if loaded else "MOCK_ONLY",
         }
