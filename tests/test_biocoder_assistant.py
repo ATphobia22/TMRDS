@@ -30,7 +30,7 @@ def test_unconfigured_backend_does_not_fabricate_code() -> None:
 
 def test_real_router_completion_is_reported_as_generated() -> None:
     assistant = BioCoderAssistant(
-        FakeRouter({"completion": "def solve() -> int:\\n    return 1", "model": "test-model", "backend": "test"})
+        FakeRouter({"completion": "def solve() -> int:\n    return 1", "model": "test-model", "backend": "test"})
     )
 
     result = assistant.generate_code("Return a constant")

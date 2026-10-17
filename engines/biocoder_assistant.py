@@ -46,22 +46,22 @@ class BioCoderAssistant:
         if any(not isinstance(module, str) or not module.strip() for module in imports):
             raise ValueError("context_imports must contain non-empty strings")
         import_block = (
-            "\\n".join(f"import {module}" for module in imports)
+            "\n".join(f"import {module}" for module in imports)
             if imports
             else "# (no extra imports)"
         )
         return (
-            "You are an expert bioinformatics engineer.\\n"
-            f"Domain: {domain}\\n"
-            f"Language: {language}\\n"
-            f"Required context:\\n{import_block}\\n\\n"
-            f"Task:\\n{task_description.strip()}\\n\\n"
-            "Constraints:\\n"
-            "- Produce complete, runnable code only when the backend supports generation.\\n"
-            "- Prefer Biopython / pysam / pandas / numpy where appropriate.\\n"
-            "- Include type hints and a minimal docstring.\\n"
-            "- Do not invent non-existent APIs.\\n"
-            "- Label assumptions and require human review before execution.\\n"
+            "You are an expert bioinformatics engineer.\n"
+            f"Domain: {domain}\n"
+            f"Language: {language}\n"
+            f"Required context:\n{import_block}\n\n"
+            f"Task:\n{task_description.strip()}\n\n"
+            "Constraints:\n"
+            "- Produce complete, runnable code only when the backend supports generation.\n"
+            "- Prefer Biopython / pysam / pandas / numpy where appropriate.\n"
+            "- Include type hints and a minimal docstring.\n"
+            "- Do not invent non-existent APIs.\n"
+            "- Label assumptions and require human review before execution.\n"
         )
 
     def generate_code(
