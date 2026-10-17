@@ -18,31 +18,46 @@ class SecretFinding:
 PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("private_key", re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----")),
     ("github_token", re.compile(r"\bgh[pousr]_[A-Za-z0-9_]{20,}\b")),
+    ("github_fine_grained_token", re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}\b")),
+    ("gitlab_token", re.compile(r"\bglpat-[A-Za-z0-9_-]{20,}\b")),
+    ("slack_token", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b")),
     ("api_token", re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b")),
     ("bearer_token", re.compile(r"\bBearer\s+[A-Za-z0-9._~+/=-]{24,}\b", re.IGNORECASE)),
     ("database_password_url", re.compile(r"(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?)://[^\s:/]+:[^\s@]+@", re.IGNORECASE)),
     ("aws_access_key", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
-    ("secret_assignment", re.compile(r"\b(?:SECRET_KEY|API_KEY|ACCESS_TOKEN)\s*=\s*[\"'][^\"']{12,}[\"']")),
+    (
+        "secret_assignment",
+        re.compile(
+            r"\b(?:SECRET_KEY|API_KEY|ACCESS_TOKEN|CLIENT_SECRET|PRIVATE_KEY|"
+            r"AWS_SECRET_ACCESS_KEY|TMRDS_HMAC_SECRET|IBM_QUANTUM_API_KEY)\s*=\s*[\"'][^\"']{12,}[\"']",
+            re.IGNORECASE,
+        ),
+    ),
 )
-
-ALLOWED_MARKERS = {
+# Only these explicit placeholder values may suppress the specific regex match that
+# contains them. They never suppress scanning of other text on the same line.
+SAFE_PLACEHOLDERS = {
     "<strong-random-secret>",
     "<strong-password>",
     "<set-in-deployment-secret>",
     "<redacted>",
-    "example.invalid",
+    "replace-with-local-only-password",
+    "replace-with-local-only-pin",
+    "replace-with-random-secret",
 }
 SKIP_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", ".pytest_cache"}
 SKIP_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".zip", ".pdf", ".sqlite", ".db"}
 
 
 def scan_text(text: str, path: str = "<text>") -> list[SecretFinding]:
+    """Return likely secret-pattern matches without line-level allowlist bypasses."""
     findings: list[SecretFinding] = []
     for line_number, line in enumerate(text.splitlines(), start=1):
-        if any(marker in line for marker in ALLOWED_MARKERS):
-            continue
         for pattern_name, pattern in PATTERNS:
-            if pattern.search(line):
+            for match in pattern.finditer(line):
+                matched_text = match.group(0).casefold()
+                if any(placeholder.casefold() in matched_text for placeholder in SAFE_PLACEHOLDERS):
+                    continue
                 findings.append(SecretFinding(path, line_number, pattern_name))
     return findings
 

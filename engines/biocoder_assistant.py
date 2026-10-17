@@ -1,8 +1,7 @@
 """
 BioCoder-aware Research Assistant for TMRDS.
 Provides structured prompts and evaluation hooks for bioinformatics
-code generation (BioCoder benchmark style).
-Integrates with ClinicalLLMRouter for domain-specific code synthesis.
+code generation. The detached mock response is never represented as real generation.
 """
 from __future__ import annotations
 
@@ -10,12 +9,7 @@ from typing import Any, Dict, List, Optional
 
 
 class BioCoderAssistant:
-    """
-    Bioinformatics code-generation helper.
-
-    Uses the prompt patterns from BioCoder (Tang et al., Bioinformatics 2024)
-    to produce high-context requests for ClinicalLLMRouter / Meditron.
-    """
+    """Bioinformatics code-generation helper for research workflows."""
 
     DOMAINS = (
         "sequence_analysis",
@@ -62,25 +56,34 @@ class BioCoderAssistant:
         prompt = self.build_prompt(task_description, language, context_imports, domain)
         if self.llm_router is not None:
             result = self.llm_router.generate(prompt, model=model, max_tokens=1024, temperature=0.1)
+            backend = result.get("backend", "unknown")
+            status = result.get("status", "UNKNOWN")
             return {
                 "prompt": prompt,
                 "completion": result.get("completion"),
                 "model": result.get("model"),
-                "backend": result.get("backend"),
+                "backend": backend,
                 "domain": domain,
-                "status": "GENERATED",
+                "status": "MOCK" if status == "MOCK" or backend == "mock" else status,
+                "mock_fallback": bool(result.get("mock_fallback", status == "MOCK" or backend == "mock")),
+                "fallback_reason": result.get("fallback_reason"),
+                "safety_disclaimer": result.get("safety_disclaimer"),
             }
         return {
             "prompt": prompt,
             "completion": (
                 f"# BioCoder mock — domain={domain}\n"
                 f"# Task: {task_description[:80]}...\n"
-                f"def solve():\n"
-                f"    raise NotImplementedError('Wire ClinicalLLMRouter for real generation')\n"
+                "# No code was generated or executed; connect a reviewed model backend.\n"
+                "def solve():\n"
+                "    raise NotImplementedError('Wire ClinicalLLMRouter for real generation')\n"
             ),
             "model": "mock",
+            "backend": "mock",
             "domain": domain,
             "status": "MOCK",
+            "mock_fallback": False,
+            "fallback_reason": "no_model_router_configured",
             "citation": "Tang et al., BioCoder: a benchmark for bioinformatics code generation, Bioinformatics 2024",
         }
 
@@ -89,5 +92,5 @@ class BioCoderAssistant:
             "node": "BioCoderAssistant",
             "domains": list(self.DOMAINS),
             "llm_attached": self.llm_router is not None,
-            "status": "READY",
+            "status": "READY" if self.llm_router is not None else "MOCK_ONLY",
         }

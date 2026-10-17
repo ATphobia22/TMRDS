@@ -210,17 +210,22 @@ TMRDS therefore implements a **research-advisory architecture**, not an autonomo
 Core development/CI targets **Python 3.11**. From the repository root, run:
 
 ```bash
-python -m pytest -q -m "not integration"
+python -m pip install -r requirements.lock
+python scripts/check_dependency_lock.py
+python scripts/check_workflow_security.py
 python scripts/security_scan.py .
 python -m compileall -q api engines scripts tests
 python scripts/audit_api_routes.py --output api-route-inventory.json
+python -m pytest -q -m "not integration"
 ```
 
-The route audit emits a JSON inventory of FastAPI routes, source locations, declared dependencies, and write routes without a recognized declared authentication dependency. It is a static review aid—not proof that authorization is correct or that a route is exploitable. Review every flagged route and the runtime proxy/configuration context.
+GitHub Actions now has separate CI, static security/interoperability, dependency advisory, CodeQL, and release-verification workflows. External actions are pinned to full commit SHAs; CI checks those references and requires explicit workflow permissions. Dependency audit uses `pip-audit` on both canonical locks. The release workflow builds a local release-candidate image and attempts to attach machine-readable CycloneDX runtime SBOM and test results; it does not push images or deploy infrastructure. Review the [dependency-management procedure](docs/operations/dependency-management.md) before accepting automated dependency updates.
+
+The route audit emits a JSON inventory of FastAPI routes, source locations, declared dependencies, and write routes without a recognized declared authentication dependency. Duplicate method/path definitions and write routes without a recognized declared auth dependency fail the static gate. This remains a static review aid—not proof that authorization is correct, that a route is exploitable, or that runtime policy is configured properly. Review route behavior and proxy/configuration context as part of release approval.
 
 Live-source and PostgreSQL/Neo4j tests are explicitly marked `integration` and require their external services/configuration. CI does not require live PHI, institutional EHR access, or IBM Quantum hardware. A read-only [Postman smoke collection](postman/TMRDS-API-smoke.postman_collection.json) covers liveness, readiness, and research-advisory metadata; import it into Postman and set `baseUrl` to the local API address.
 
-The current remediation work adds checksummed explicit migrations, request-correlation/error handling, hardened container defaults, dependency locks, health probes, route inventory output, and bounded IBM Quantum recovery controls. These controls still require environment-specific operational validation before a production release.
+The merged remediation includes checksummed explicit migrations, request-correlation/error handling, hardened container defaults, pinned dependency locks, health probes, route inventory output, and bounded IBM Quantum recovery controls. Production readiness still depends on environment-specific migration/restore drills, database and upstream integration tests, and review of any audit/code-scanning results on the release commit. CI success alone is not a production deployment or a regulatory-compliance claim.
 
 ## Repository layout
 
@@ -235,7 +240,7 @@ TMRDS/
 ├── tests/               # Unit, API-contract, and integration tests
 ├── frontend/            # Frontend assets/application surface
 ├── workers/             # Continuous real-world data synchronization workers
-├── .github/workflows/   # CI and security scanning
+├── .github/workflows/   # CI, security, dependency audit, CodeQL, release verification
 ├── docker-compose.yml   # PostgreSQL/pgvector + Neo4j + API stack
 ├── deploy.sh            # Deployment helper
 ├── requirements.txt     # Python runtime/test dependencies

@@ -12,7 +12,7 @@ Web-verified evaluation of proposed TMRDS architecture language.
 |----------|--------------|--------------|
 | Multi-agent orchestration | Swarms framework is a real multi-agent library | `ClinicalSwarmOrchestrator` (local patterns; optional external swarms) |
 | Parallel epistemic branches | Engineering pattern (not a named clinical standard) | `EpistemicParallelRouter` |
-| Dual-tier memory / long context | Redis exists; Titans is real Google Research work (arXiv:2501.00663) | `DualTierMemory` — Redis-ready Tier1 + long-doc Tier2 **interface** |
+| Dual-tier memory / long context | Titans is a research reference (arXiv:2501.00663); no Redis adapter is shipped in the current implementation | `DualTierMemory` uses bounded in-process Tier1/Tier2 stores only; it is not distributed or durable across restarts. Redis integration remains future work until an adapter, persistence semantics, and tests are implemented. |
 | IEEE 11073 device telemetry | Real; HL7 PHD FHIR IG maps PHD→Observation | `IEEE11073PHDBridge` |
 | AlphaFold3 / ESMFold | Real structure tools; license constraints differ | Existing AF3 node + `ESMFoldStructureNode` |
 | FHIR / OMOP / IHIE / IDOH plane | Real standards & Indiana ecosystem | Already integrated |

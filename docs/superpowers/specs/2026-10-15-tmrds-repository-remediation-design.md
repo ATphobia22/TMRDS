@@ -3,7 +3,7 @@
 **Date:** 2026-10-15  
 **Repository:** ATphobia22/TMRDS  
 **Target branch:** main  
-**Status:** Proposed; owner review required before implementation.
+**Status:** Core remediation merged; 2026-10-17 release-gate follow-up is under review. Production release remains conditional on current CI/security evidence and environment-specific verification.
 
 ## 1. Goals
 
