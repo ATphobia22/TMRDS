@@ -83,7 +83,12 @@ class QiskitNatureBridge:
             else:
                 mapper = JordanWignerMapper()
             qubit_op = mapper.map(problem.hamiltonian.second_q_op())
-            coefficients = [float(np.real(term.coeff)) for term in qubit_op]
+            raw_coefficients = np.asarray(qubit_op.coeffs)
+            if raw_coefficients.dtype == object or not np.isfinite(raw_coefficients).all():
+                raise ValueError("operator coefficients are parameterized or non-finite")
+            if np.any(np.abs(np.imag(raw_coefficients)) > 1e-8):
+                raise ValueError("molecular Hamiltonian contains non-real Pauli coefficients")
+            coefficients = [float(value) for value in np.real(raw_coefficients).tolist()]
             return {
                 "status": "HAMILTONIAN_BUILT",
                 "num_qubits": int(qubit_op.num_qubits),

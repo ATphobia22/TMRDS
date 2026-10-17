@@ -271,9 +271,9 @@ class ClinVarSubmission:
     submitter: str
     submitter_id: Optional[str]
     condition: str  # MONDO/OMIM string as provided
-    condition_ids: List[Identifier] = field(default_factory=list)
     clinical_significance: str  # e.g., Pathogenic, Uncertain - preserved as source stated
     review_status: str  # e.g., criteria_provided_single_submitter, reviewed_by_expert_panel
+    condition_ids: List[Identifier] = field(default_factory=list)
     last_evaluated: Optional[str] = None
     date_submitted: Optional[str] = None
     explanation: Optional[str] = None
