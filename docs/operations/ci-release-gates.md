@@ -6,11 +6,12 @@
 |---|---|---|---|
 | Unit/API tests, compilation, Compose validation, container build and liveness smoke test | `.github/workflows/ci.yml` | Catch code, packaging, container and basic startup regressions | Production database readiness, live external integrations, or deployment health |
 | Secret scan, route/auth inventory, unit tests | `.github/workflows/security.yml` | Detect known secret patterns and surface routes needing auth review | Correct authorization semantics for every route |
-| Direct requirement-to-lock validation and vulnerability audit | `.github/workflows/supply-chain.yml` | Check both dependency sets and fail on known advisories | Absence of undisclosed vulnerabilities or risks in non-Python assets |
+| Direct requirement-to-lock validation and vulnerability audit | `.github/workflows/supply-chain.yml` | Check both dependency sets, retain machine-readable advisory reports, and fail on known advisories | Absence of undisclosed vulnerabilities or risks in non-Python assets |
 | Pull-request dependency review | `.github/workflows/supply-chain.yml` | Fail a PR when dependency review identifies high/critical severity changes | Full transitive runtime behavior |
-| CodeQL Python analysis | `.github/workflows/codeql.yml` | Static analysis for supported Python security patterns | Runtime exploitability or regulatory compliance |
+| CodeQL Python and GitHub Actions analysis | `.github/workflows/codeql.yml` | Static analysis for supported application and workflow security patterns | Runtime exploitability or regulatory compliance |
+| Local release verification and runtime SBOM | `.github/workflows/release.yml` | Re-run gates, build a local image, emit a CycloneDX runtime SBOM and upload test evidence | Published image, deployment, signature/attestation, or production readiness |
 
-All workflows use read-only repository permissions by default. The CodeQL job adds only the permissions required to publish code-scanning results. No workflow should use production credentials, run production migrations, submit IBM Quantum jobs, or provision cloud resources.
+All workflows use read-only repository permissions by default. `scripts/check_workflow_security.py` fails when a third-party action is not pinned to a full commit SHA or a workflow lacks top-level permissions. The CodeQL job adds only the permissions required to publish code-scanning results. No workflow should use production credentials, run production migrations, submit IBM Quantum jobs, or provision cloud resources.
 
 ## Dependency update procedure
 
