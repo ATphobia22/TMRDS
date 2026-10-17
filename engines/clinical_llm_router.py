@@ -110,7 +110,7 @@ class ClinicalLLMRouter:
     ) -> Dict[str, Any]:
         if not isinstance(prompt, str) or not prompt.strip():
             raise ValueError("prompt must be a non-empty string")
-        if not isinstance(max_tokens, int) or not 1 <= max_tokens <= 8192:
+        if isinstance(max_tokens, bool) or not isinstance(max_tokens, int) or not 1 <= max_tokens <= 8192:
             raise ValueError("max_tokens must be an integer from 1 through 8192")
         if not isinstance(temperature, (int, float)) or not 0 <= temperature <= 2:
             raise ValueError("temperature must be between 0 and 2")
