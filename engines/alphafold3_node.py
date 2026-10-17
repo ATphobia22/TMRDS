@@ -10,6 +10,8 @@ Cloud: Google Cloud Model Garden / AlphaFold Server
 from __future__ import annotations
 
 import logging
+import math
+import re
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("TMRDS.AlphaFold3")
@@ -49,7 +51,7 @@ class AlphaFold3Node:
         job_name: str = "tmrds_af3",
     ) -> Dict[str, Any]:
         sequence = self._validate_sequence(sequence)
-        if not isinstance(job_name, str) or not __import__("re").fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", job_name):
+        if not isinstance(job_name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", job_name):
             raise ValueError("job_name must be 1-128 safe ASCII letters, digits, dots, underscores, or hyphens")
         if ligand_smiles is not None:
             if not isinstance(ligand_smiles, str) or not ligand_smiles.strip() or len(ligand_smiles) > 4096:
@@ -199,7 +201,7 @@ class AlphaFold3Node:
         valid_plddt = (
             isinstance(mean_plddt, (int, float))
             and not isinstance(mean_plddt, bool)
-            and __import__("math").isfinite(float(mean_plddt))
+            and math.isfinite(float(mean_plddt))
             and 0.0 <= float(mean_plddt) <= 100.0
         )
         safe_pdb_url = self._safe_asset_url(entry.get("pdbUrl"))
@@ -222,15 +224,20 @@ class AlphaFold3Node:
         }
 
     def status(self) -> Dict[str, Any]:
+        configured = False  # No prediction backend adapter is implemented in this node.
         return {
             "node": "AlphaFold3Node",
             "backend": self.backend,
             "supported_backends": list(self.SUPPORTED_BACKENDs),
-            "capabilities": [
+            "declared_capabilities": [
                 "protein_folding",
                 "protein_ligand_cofolding",
                 "multimer",
                 "structure_guided_ranking",
             ],
+            "available_capabilities": [],
             "status": "MOCK_ONLY" if self.backend == "mock" else "NOT_CONFIGURED",
+            "prediction_execution_available": configured,
+            "confidence_metrics_available": False,
+            "structure_artifact_available": False,
         }

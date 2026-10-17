@@ -102,3 +102,13 @@ def test_backend_placeholders_never_claim_execution() -> None:
         assert result["status"] == "NOT_CONFIGURED"
         assert result["metrics"] is None
         assert result["structure_uri"] is None
+
+
+def test_status_does_not_advertise_unimplemented_prediction_capabilities_as_available() -> None:
+    for backend in ("mock", "alphafold_server", "openfold3", "local_af3"):
+        status = AlphaFold3Node(backend=backend).status()
+        assert status["available_capabilities"] == []
+        assert status["prediction_execution_available"] is False
+        assert status["confidence_metrics_available"] is False
+        assert status["structure_artifact_available"] is False
+        assert status["declared_capabilities"]
