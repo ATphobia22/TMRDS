@@ -44,6 +44,40 @@ class AlphaFold3Node:
             "Experimental validation is required before clinical or therapeutic use."
         )
 
+    @staticmethod
+    def _validate_sequence(sequence: str) -> str:
+        if not isinstance(sequence, str):
+            raise ValueError("sequence must be a string")
+        normalized = "".join(sequence.split()).upper()
+        if not 10 <= len(normalized) <= 100_000:
+            raise ValueError("sequence must contain between 10 and 100000 amino-acid residues")
+        if any(residue not in "ACDEFGHIKLMNPQRSTVWYBXZJUO" for residue in normalized):
+            raise ValueError("sequence contains unsupported amino-acid symbols")
+        return normalized
+
+    @staticmethod
+    def _validate_timeout(timeout: float) -> float:
+        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)):
+            raise ValueError("timeout must be a finite number greater than 0 and at most 60 seconds")
+        value = float(timeout)
+        if not math.isfinite(value) or not 0 < value <= 60:
+            raise ValueError("timeout must be a finite number greater than 0 and at most 60 seconds")
+        return value
+
+    @staticmethod
+    def _safe_asset_url(value: Any) -> Optional[str]:
+        from urllib.parse import urlparse
+
+        if not isinstance(value, str):
+            return None
+        try:
+            parsed = urlparse(value)
+        except ValueError:
+            return None
+        if parsed.scheme != "https" or parsed.hostname != "alphafold.ebi.ac.uk" or parsed.username or parsed.password:
+            return None
+        return value
+
     def predict_structure(
         self,
         sequence: str,
