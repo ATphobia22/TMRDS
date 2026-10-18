@@ -88,15 +88,27 @@ else:
     limiter = _NoOpLimiter()
 
 
+class _RequestIdFilter(logging.Filter):
+    """Ensure the request_id field exists on every record (defaults to "-")."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if not hasattr(record, "request_id"):
+            record.request_id = "-"
+        return True
+
+
 def configure_logging() -> None:
     """Configure stdlib logging once. Never logs secret values."""
     if logging.getLogger().handlers:
         return
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s request_id=%(request_id)s %(message)s",
-        defaults={"request_id": "-"},
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s %(levelname)s %(name)s request_id=%(request_id)s %(message)s")
     )
+    handler.addFilter(_RequestIdFilter())
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    root.addHandler(handler)
 
 
 def setup_metrics(app: Any) -> bool:
