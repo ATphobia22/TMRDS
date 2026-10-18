@@ -493,6 +493,106 @@ def build_default_registry() -> Dict[str, SourceDefinition]:
         evidence_class="observed",
     ))
 
+    # 17. Semantic Scholar
+    add(SourceDefinition(
+        key="semantic_scholar",
+        display_name="Semantic Scholar API",
+        api_endpoint="https://api.semanticscholar.org/graph/v1/paper/search",
+        permitted_use=PermittedUse.METADATA_ONLY,
+        license_class=LicenseClass.CUSTOM,
+        identifier_types=[IdentifierType.DOI, IdentifierType.PMID, IdentifierType.ARXIV_ID],
+        query_params={"query": "string", "limit": 100, "fields": "title,abstract,authors,year,doi,url,openAccessPdf,citationCount"},
+        update_cadence=UpdateCadence.DAILY,
+        attribution="Semantic Scholar API, Allen Institute for AI. Commercial use restricted by the S2 license.",
+        retention_policy="Store citation metadata + retrieval timestamp. TLDRs are triage, not citable evidence.",
+        adapter_owner="engines/semantic_scholar_pipeline.py",
+        version="1.0.0",
+        docs_url="https://www.semanticscholar.org/product/api",
+        rate_limit="1 RPS keyed introductory tier; keyless shared pool throttled under load",
+        evidence_class="observed",
+        notes="Optional S2_API_KEY sent as x-api-key header. Client enforces >=1s between calls.",
+    ))
+
+    # 18. PubChem PUG-REST
+    add(SourceDefinition(
+        key="pubchem",
+        display_name="PubChem PUG-REST",
+        api_endpoint="https://pubchem.ncbi.nlm.nih.gov/rest/pug",
+        permitted_use=PermittedUse.OPEN_RETRIEVAL,
+        license_class=LicenseClass.OPEN,
+        identifier_types=[],
+        query_params={"name": "compound name", "properties": "IUPACName,InChIKey,CanonicalSMILES,...", "format": "JSON"},
+        update_cadence=UpdateCadence.ON_DEMAND,
+        attribution="PubChem, National Library of Medicine.",
+        retention_policy="Store CID, queried name, properties, retrieval timestamp. Bulk via FTP, not API.",
+        adapter_owner="engines/pubchem_pipeline.py",
+        version="1.0.0",
+        docs_url="https://pubchem.ncbi.nlm.nih.gov/docs/pug-rest",
+        rate_limit="<=5/s, <=400/min published ceilings; dynamic throttling shrinks them under load",
+        evidence_class="observed",
+        notes="Name-addressed lookup, not keyword search. Native identifier: CID (no enum entry).",
+    ))
+
+    # 19. ChEMBL
+    add(SourceDefinition(
+        key="chembl",
+        display_name="ChEMBL",
+        api_endpoint="https://www.ebi.ac.uk/chembl/api/data",
+        permitted_use=PermittedUse.OPEN_RETRIEVAL,
+        license_class=LicenseClass.CUSTOM,
+        identifier_types=[],
+        query_params={"q": "molecule search string", "limit": 100},
+        update_cadence=UpdateCadence.ON_DEMAND,
+        attribution="ChEMBL, EMBL-EBI. Database data CC BY-SA 3.0.",
+        retention_policy="Store ChEMBL ID, query, assay context with any bioactivity value, retrieval timestamp.",
+        adapter_owner="engines/chembl_pipeline.py",
+        version="1.0.0",
+        docs_url="https://www.ebi.ac.uk/chembl/api/data",
+        rate_limit="None published; client spaces calls >=1s (be modest)",
+        evidence_class="observed",
+        notes="CC BY-SA 3.0: attribution required; share-alike applies to adapted redistribution. Bioactivity values are assay-heterogeneous.",
+    ))
+
+    # 20. DailyMed
+    add(SourceDefinition(
+        key="dailymed",
+        display_name="DailyMed",
+        api_endpoint="https://dailymed.nlm.nih.gov/dailymed/services/v2",
+        permitted_use=PermittedUse.REGULATORY_RETRIEVAL,
+        license_class=LicenseClass.OPEN,
+        identifier_types=[],
+        query_params={"drug_name": "string", "pagesize": 100},
+        update_cadence=UpdateCadence.ON_DEMAND,
+        attribution="DailyMed, National Library of Medicine. U.S. federal public data.",
+        retention_policy="Store SPL SET ID, title, published date, retrieval timestamp. Label text is regulatory verbatim.",
+        adapter_owner="engines/dailymed_pipeline.py",
+        version="1.0.0",
+        docs_url="https://dailymed.nlm.nih.gov/dailymed/app-support-web-services.cfm",
+        rate_limit="None published for DailyMed specifically",
+        evidence_class="observed",
+        notes="v2 path verified live 2026-10-18; older v1 paths 302-redirect. Labels are labeler-specific SPLs (one drug -> many SPLs). Native identifier: SPL SET ID.",
+    ))
+
+    # 21. RxNorm / RxNav
+    add(SourceDefinition(
+        key="rxnorm",
+        display_name="RxNorm / RxNav",
+        api_endpoint="https://rxnav.nlm.nih.gov/REST",
+        permitted_use=PermittedUse.METADATA_ONLY,
+        license_class=LicenseClass.OPEN,
+        identifier_types=[],
+        query_params={"term": "drug name string", "maxEntries": 50},
+        update_cadence=UpdateCadence.ON_DEMAND,
+        attribution="RxNorm, National Library of Medicine.",
+        retention_policy="Store RxCUI, matched name, score, retrieval timestamp. Terminology only.",
+        adapter_owner="engines/rxnorm_pipeline.py",
+        version="1.0.0",
+        docs_url="https://lhncbc.nlm.nih.gov/RxNav/",
+        rate_limit="20 req/s/IP (NLM API Terms of Service)",
+        evidence_class="observed",
+        notes="Terminology/normalization ONLY. The drug-drug Interaction API has been DEAD since Jan 2024 - never rebuild interaction checking. Native identifier: RxCUI.",
+    ))
+
     return reg
 
 # ---------------------------------------------------------------------------

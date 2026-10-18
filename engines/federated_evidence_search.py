@@ -2,7 +2,8 @@
 
 Orchestrates the repository's live, read-only source pipelines
 (Europe PMC, PubMed/E-utilities, ClinicalTrials.gov, openFDA, OpenAlex,
-arXiv, AlphaFold DB) into normalized evidence envelopes with per-source
+arXiv, AlphaFold DB, Semantic Scholar, Crossref, PubChem, ChEMBL, DailyMed,
+RxNorm) into normalized evidence envelopes with per-source
 provenance. Every source runs isolated: one source failing never poisons
 the others, and failures are reported as warnings — never as invented
 records.
@@ -26,11 +27,17 @@ from typing import Any
 import httpx
 
 from engines.arxiv_pipeline import ArxivPipeline
+from engines.chembl_pipeline import ChEMBLPipeline
 from engines.clinical_trials_pipeline import ClinicalTrialsPipeline
+from engines.crossref_pipeline import CrossrefPipeline
+from engines.dailymed_pipeline import DailyMedPipeline
 from engines.europe_pmc_pipeline import EuropePMCPipeline
 from engines.openalex_pipeline import OpenAlexPipeline
 from engines.openfda_pipeline import OpenFDAPipeline
+from engines.pubchem_pipeline import PubChemPipeline
 from engines.pubmed_literature_bridge import PubMedLiteratureBridge
+from engines.rxnorm_pipeline import RxNormPipeline
+from engines.semantic_scholar_pipeline import SemanticScholarPipeline
 
 AFDB_API = "https://alphafold.ebi.ac.uk/api/prediction"
 
@@ -42,6 +49,12 @@ COVERAGE = {
     "openalex": "OpenAlex: open scholarly metadata incl. preprints; coverage varies by publisher.",
     "arxiv": "arXiv: preprints, not peer-reviewed; quantitative biology subset most relevant.",
     "alphafold_db": "AlphaFold DB: predicted structures; confidence metrics only from genuine API responses.",
+    "semantic_scholar": "Semantic Scholar: open scholarly metadata + citation graph; 1 RPS keyed tier; commercial-use restrictions apply.",
+    "crossref": "Crossref: DOI metadata authority; abstracts/references are optional deposits, coverage uneven.",
+    "pubchem": "PubChem PUG-REST: compound properties; published rate limits are ceilings under dynamic throttling.",
+    "chembl": "ChEMBL: bioactivity data, CC BY-SA 3.0; values are literature-curated and assay-heterogeneous.",
+    "dailymed": "DailyMed: FDA SPL labels; labeler-specific; regulatory verbatim, not curated indications.",
+    "rxnorm": "RxNorm/RxNav: drug terminology/normalization only; interaction API dead since Jan 2024.",
     "lens_patents": "Lens Patents: requires an API token; unavailable without credentials. Not legal advice.",
     "ibm_quantum": "IBM Quantum: requires API key + instance CRN; unavailable without credentials.",
 }
@@ -107,6 +120,12 @@ class FederatedEvidenceSearch:
         self.openfda = OpenFDAPipeline()
         self.openalex = OpenAlexPipeline()
         self.arxiv = ArxivPipeline()
+        self.semantic_scholar = SemanticScholarPipeline()
+        self.crossref = CrossrefPipeline()
+        self.pubchem = PubChemPipeline()
+        self.chembl = ChEMBLPipeline()
+        self.dailymed = DailyMedPipeline()
+        self.rxnorm = RxNormPipeline()
 
     async def _guard(self, source: str, coro) -> SourceResult:
         try:
@@ -127,6 +146,12 @@ class FederatedEvidenceSearch:
             self._guard("openfda", self._search_openfda(query, per_source)),
             self._guard("openalex", self._search_openalex(query, per_source)),
             self._guard("arxiv", self._search_arxiv(query, per_source)),
+            self._guard("semantic_scholar", self._search_semantic_scholar(query, per_source)),
+            self._guard("crossref", self._search_crossref(query, per_source)),
+            self._guard("pubchem", self._search_pubchem(query, per_source)),
+            self._guard("chembl", self._search_chembl(query, per_source)),
+            self._guard("dailymed", self._search_dailymed(query, per_source)),
+            self._guard("rxnorm", self._search_rxnorm(query, per_source)),
         )
         envelopes: list[dict[str, Any]] = []
         source_status: dict[str, dict[str, Any]] = {}
@@ -262,6 +287,66 @@ class FederatedEvidenceSearch:
     async def _search_arxiv(self, query: str, n: int) -> list[dict[str, Any]]:
         entries = await self.arxiv.search(query, n)
         return [_make_envelope("arxiv", "arXiv", e, "preprint") for e in entries]
+
+    async def _search_semantic_scholar(self, query: str, n: int) -> list[dict[str, Any]]:
+        papers = await self.semantic_scholar.search(query, n)
+        out = []
+        for p in papers:
+            env = _make_envelope("semantic_scholar", "Semantic Scholar", p, "citation")
+            env["cited_by_count"] = p.get("cited_by_count")
+            out.append(env)
+        return out
+
+    async def _search_crossref(self, query: str, n: int) -> list[dict[str, Any]]:
+        works = await self.crossref.search(query, n)
+        out = []
+        for w in works:
+            env = _make_envelope("crossref", "Crossref", w, "citation")
+            env["cited_by_count"] = w.get("cited_by_count")
+            out.append(env)
+        return out
+
+    async def _search_pubchem(self, query: str, n: int) -> list[dict[str, Any]]:
+        # PubChem is name-addressed: one lookup per query term, not a keyword search.
+        compounds = await self.pubchem.search_by_name(query)
+        out = []
+        for c in compounds[:n]:
+            env = _make_envelope("pubchem", "PubChem", c, "compound")
+            env["cid"] = c.get("cid")
+            env["compound_properties"] = c.get("properties")
+            out.append(env)
+        return out
+
+    async def _search_chembl(self, query: str, n: int) -> list[dict[str, Any]]:
+        molecules = await self.chembl.search_molecule(query, n)
+        out = []
+        for m in molecules:
+            env = _make_envelope("chembl", "ChEMBL", m, "compound")
+            env["chembl_id"] = m.get("chembl_id")
+            env["canonical_smiles"] = m.get("canonical_smiles")
+            env["warnings"].append("Bioactivity values are literature-curated and assay-heterogeneous; check assay conditions.")
+            out.append(env)
+        return out
+
+    async def _search_dailymed(self, query: str, n: int) -> list[dict[str, Any]]:
+        records = await self.dailymed.search_by_drug_name(query, n)
+        out = []
+        for r in records:
+            env = _make_envelope("dailymed", "DailyMed", r, "regulatory_signal")
+            env["spl_set_id"] = r.get("spl_set_id")
+            env["warnings"].append("Label text is regulatory verbatim, not a curated indication; not for care decisions.")
+            out.append(env)
+        return out
+
+    async def _search_rxnorm(self, query: str, n: int) -> list[dict[str, Any]]:
+        candidates = await self.rxnorm.approximate_term(query, n)
+        out = []
+        for c in candidates:
+            env = _make_envelope("rxnorm", "RxNorm", c, "terminology")
+            env["rxcui"] = c.get("rxcui")
+            env["warnings"].append("Terminology/normalization only; the interaction API has been dead since Jan 2024.")
+            out.append(env)
+        return out
 
     async def fetch_structure(self, uniprot_id: str) -> dict[str, Any]:
         """Live AlphaFold DB structure metadata for one UniProt accession. Fail-closed."""
