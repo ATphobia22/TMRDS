@@ -64,6 +64,22 @@ For a production database, the runner requires the explicit environment flag `TM
 
 API errors use stable public error codes and the `X-Request-ID` response header. Do not log tokens, authorization headers, full upstream bodies, raw circuits, or clinical payloads. The request ID is for correlation, not authentication.
 
+## Observability, rate limiting, and API-key auth
+
+**Metrics.** `GET /metrics` exposes Prometheus RED metrics (rate, errors, duration per route) via `prometheus-fastapi-instrumentator`. Scrape it from Prometheus on a 15s interval. In Compose the API binds to loopback, so scrape via `127.0.0.1:8000`; do not expose `/metrics` to the public internet. If the instrumentator package is missing, the endpoint is absent and startup logs a warning — the API still serves.
+
+**Rate limiting.** `slowapi` enforces a sliding-window default of 120 requests/minute per client IP on all routes, with a stricter 20/minute on the expensive `GET /api/v1/research/federated-search` (it fans out to six upstream sources per call). A 429 response carries a `Retry-After` header and the sanitized body `{"detail": {"code": "RATE_LIMITED", "message": ...}}`. Per-route tiers are applied with `@limiter.limit(...)` in `api/main.py`; the decorated route must accept `request: Request`.
+
+**Security headers.** Every response carries `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, and a minimal `Permissions-Policy`.
+
+**API-key auth (optional, off by default).** Public research routes serve public data and stay open unless the operator opts into key-gating:
+
+1. Create a key file with one `key_id:sha256(secret)` per line (`#` comments and blanks allowed). Generate each secret with `python -c "import secrets; print(secrets.token_urlsafe(32))"` and store only its SHA-256 hex in the file — never the secret itself.
+2. Hand the key to the consumer as `tmrds_<key_id>_<secret>`.
+3. Set `TMRDS_API_KEYS_FILE=/run/secrets/tmrds_api_keys` (Compose file secret or a root-only file) and restart.
+
+Fail-closed behavior: if `TMRDS_API_KEYS_FILE` is set but the file is missing, unreadable, malformed, or empty, the process raises at startup and refuses to serve rather than running open. When set and valid, every `/api/*` path requires `X-API-Key`; `/health/*` and `/metrics` stay open. Denials return 401 `{"detail": {"code": "UNAUTHORIZED", ...}}` and are logged with the key_id only — raw keys are never logged. Revoke a key by deleting its line and restarting. Per-key scopes are future work; v1 grants the single research scope or nothing.
+
 ## IBM Quantum reconciliation
 
 Hardware job creation remains disabled unless the submitting application explicitly enables it and supplies per-workload authorization. CI never submits hardware jobs.

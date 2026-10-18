@@ -6,12 +6,24 @@ provenance-bearing governed assertions and remain research-advisory/read-only.
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 
 from api.error_responses import RequestCorrelationMiddleware, safe_upstream_error
+from api.ops import (
+    FEDERATED_SEARCH_RATE_LIMIT,
+    SecurityHeadersMiddleware,
+    configure_logging,
+    limiter,
+    metrics_enabled,
+    rate_limiting_enabled,
+    setup_metrics,
+    setup_rate_limiting,
+)
+from api.api_key_auth import ApiKeyGateMiddleware, check_startup_posture
 
 from api.ai_governance_routes import router as ai_governance_router
 from api.evidence_retrieval_routes import router as evidence_retrieval_router
@@ -29,6 +41,23 @@ from engines.evidence_source_registry import default_source_registry
 
 app = FastAPI(title="TMRDS Research Gateway", version="2.2.0-research", description="Live biomedical research gateway and source-governed evidence graph.")
 app.add_middleware(RequestCorrelationMiddleware)
+
+configure_logging()
+setup_metrics(app)
+setup_rate_limiting(app)
+app.add_middleware(SecurityHeadersMiddleware)
+# Fail-closed: if TMRDS_API_KEYS_FILE is set but unreadable/malformed, this raises
+# and the process refuses to start rather than serving open.
+_posture = check_startup_posture()
+if _posture["keys"]:
+    app.add_middleware(ApiKeyGateMiddleware, keys=_posture["keys"])
+_ops_logger = logging.getLogger("tmrds.ops")
+_ops_logger.info(
+    "startup posture: metrics=%s rate_limiting=%s auth=%s",
+    metrics_enabled(),
+    rate_limiting_enabled(),
+    _posture["auth"],
+)
 
 cdc = CDCDataPipeline()
 openneuro = OpenNeuroPipeline()
@@ -179,7 +208,8 @@ async def search_pubmed(query: str = Query(..., min_length=1), limit: int = Quer
 
 
 @app.get("/api/v1/research/federated-search")
-async def federated_search(query: str = Query(..., min_length=2), limit: int = Query(default=10, ge=1, le=25)) -> dict[str, Any]:
+@limiter.limit(FEDERATED_SEARCH_RATE_LIMIT)
+async def federated_search(request: Request, query: str = Query(..., min_length=2), limit: int = Query(default=10, ge=1, le=25)) -> dict[str, Any]:
     async def pubmed_task() -> dict[str, Any]:
         result = await asyncio.to_thread(pubmed.search, query, limit)
         if result.get("pmids"):

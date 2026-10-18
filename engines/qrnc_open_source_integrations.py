@@ -23,7 +23,7 @@ INTEGRATIONS: List[Dict[str, Any]] = [
         "license_note": "Predicted structures; commercial use of AF3 weights restricted — use AFDB API for metadata",
         "url": "https://alphafold.ebi.ac.uk/",
         "api": "https://alphafold.ebi.ac.uk/api/prediction/{accession}",
-        "tmrds": "engines/alphafold_research.py client_implemented",
+        "tmrds": "engines/alphafold3_node.py::fetch_live_alphafold_db (live AFDB metadata); engines/alphafold_research.py does not exist",
         "doctor_value": "pLDDT/pAE metadata for known UniProt accessions; not efficacy",
     },
     {

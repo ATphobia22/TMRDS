@@ -1,3 +1,4 @@
+prometheus-fastapi-instrumentator==8.1.0
 PyJWT==2.15.1
 annotated-doc==0.0.5
 annotated-types==0.8.0
@@ -31,6 +32,7 @@ python-multipart==0.0.32
 pytz==2026.5
 PyYAML==6.0.3
 requests==2.34.2
+slowapi==0.1.10
 starlette==1.8.0
 typing-inspection==0.4.4
 typing-extensions==4.16.0
