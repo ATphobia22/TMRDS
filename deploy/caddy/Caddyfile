@@ -1,0 +1,19 @@
+# Caddy reverse proxy for TMRDS. Automatic Let's Encrypt TLS; certificates persist
+# in the caddy_data volume. /metrics is never exposed publicly — Prometheus
+# scrapes it over the internal backend network.
+
+{$TMRDS_PUBLIC_HOST} {
+	# Keep operator metrics off the public internet.
+	handle /metrics* {
+		abort
+	}
+	handle {
+		reverse_proxy tmrds-api:8000
+	}
+}
+
+{$TMRDS_AUTH_HOST} {
+	# Keycloak (OIDC identity provider). TLS terminated here; Keycloak runs
+	# with --proxy=edge behind it.
+	reverse_proxy keycloak:8080
+}

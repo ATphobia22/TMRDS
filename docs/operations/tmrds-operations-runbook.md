@@ -78,7 +78,34 @@ API errors use stable public error codes and the `X-Request-ID` response header.
 2. Hand the key to the consumer as `tmrds_<key_id>_<secret>`.
 3. Set `TMRDS_API_KEYS_FILE=/run/secrets/tmrds_api_keys` (Compose file secret or a root-only file) and restart.
 
-Fail-closed behavior: if `TMRDS_API_KEYS_FILE` is set but the file is missing, unreadable, malformed, or empty, the process raises at startup and refuses to serve rather than running open. When set and valid, every `/api/*` path requires `X-API-Key`; `/health/*` and `/metrics` stay open. Denials return 401 `{"detail": {"code": "UNAUTHORIZED", ...}}` and are logged with the key_id only — raw keys are never logged. Revoke a key by deleting its line and restarting. Per-key scopes are future work; v1 grants the single research scope or nothing.
+Fail-closed behavior is intentionally NOT used here: the system always starts and serves. If `TMRDS_API_KEYS_FILE` is set but the file is missing, unreadable, malformed, or empty, the API runs OPEN and reports the degraded posture loudly — a CRITICAL startup log line plus `"auth": "degraded-open"` with the reason in `GET /api/v1/ops/posture` — instead of refusing to start. Nothing fails silently, and public research data stays reachable. When the file is valid, every `/api/*` path requires `X-API-Key`; `/health/*` and `/metrics` stay open. Denials return 401 `{"detail": {"code": "UNAUTHORIZED", ...}}` and are logged with the key_id only — raw keys are never logged. Allowed requests are audit-logged with key_id and path. Revoke a key by deleting its line and restarting. Per-key scopes are future work; v1 grants the single research scope or nothing.
+
+## Observability overlay (Caddy, Prometheus, Alertmanager, Grafana, Keycloak)
+
+`docker-compose.obs.yml` layers the public edge and operations stack onto the base file without touching it:
+
+```bash
+cp secrets/grafana_admin_password.txt.example secrets/grafana_admin_password.txt
+cp secrets/keycloak_db_password.txt.example secrets/keycloak_db_password.txt
+cp secrets/keycloak_admin_password.txt.example secrets/keycloak_admin_password.txt
+# fill in all three files, then:
+docker compose -f docker-compose.yml -f docker-compose.obs.yml up -d
+```
+
+What it adds:
+- **Caddy** (`https://$TMRDS_PUBLIC_HOST`): automatic Let's Encrypt TLS, certificates persisted in `caddy_data`. `/metrics*` is blocked at the edge (`abort`) — Prometheus scrapes it over the internal backend network only.
+- **Prometheus**: scrapes `tmrds-api:8000/metrics` every 15s; evaluates `deploy/prometheus/alerts.yml` (API down, 5xx rate, p95 latency, 429 spike).
+- **Alertmanager**: receives alerts; the default receiver is a placeholder — configure a real notifier before relying on pages.
+- **Grafana OSS** (AGPL-3.0): serves the provisioned "TMRDS API — RED" dashboard (request rate, 5xx share, p50/p95 latency, 429 rate) with the Prometheus datasource pre-wired. Admin password comes from the `grafana_admin_password` file secret, never the environment.
+- **Keycloak** (`https://$TMRDS_AUTH_HOST`, realm `tmrds`): OIDC identity provider for the existing service-JWT validator (`engines/service_identity.py`). The realm import creates the confidential `tmrds-api` client (client-credentials flow only, human login disabled) with `evidence.write` / `evidence.read` client scopes.
+
+Wiring Keycloak to the API (machine-to-machine):
+1. Open the Keycloak admin console, retrieve the generated secret for the `tmrds-api` client (Credentials tab).
+2. `python scripts/fetch-keycloak-jwks.py --issuer https://$TMRDS_AUTH_HOST/realms/tmrds` and store the output as `TMRDS_SERVICE_JWKS_JSON` (use a secret, not a committed file).
+3. Set `TMRDS_SERVICE_ISSUER=https://$TMRDS_AUTH_HOST/realms/tmrds` (must match exactly — the validator checks `iss` strictly) and `TMRDS_SERVICE_AUDIENCE=tmrds-api`.
+4. Keep `TMRDS_SERVICE_AUTH_REQUIRED=true` in production. Re-run the fetch script after any Keycloak key rotation.
+
+Secrets rule for the whole stack: secret VALUES never go in `environment:` (visible via `docker inspect`). Use Compose file secrets mounted at `/run/secrets/` with `*_FILE` variables, or `_FILE`-suffixed app variables like `TMRDS_API_KEYS_FILE`. The `./secrets/` directory is gitignored; only `*.example` templates are committed.
 
 ## IBM Quantum reconciliation
 

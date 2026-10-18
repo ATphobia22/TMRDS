@@ -5,10 +5,10 @@ v1 scope, per the October 2026 auth research:
   the secret only), and revocable (delete the line).
 - Keys live in a file (``TMRDS_API_KEYS_FILE``), never as secret values in the
   environment — environment values are visible via ``docker inspect``.
-- Fail-closed: if ``TMRDS_API_KEYS_FILE`` is set but the file is missing,
-  unreadable, or malformed, the process refuses to start rather than running
-  open. When unset, the public research API stays open (public data) and the
-  posture is logged as such.
+- Resilient: if ``TMRDS_API_KEYS_FILE`` is set but the file is missing,
+  unreadable, or malformed, the API still starts and serves — it runs OPEN and
+  reports the degraded posture loudly (CRITICAL log + ops posture endpoint)
+  instead of refusing to start. Nothing fails silently.
 - Denials are logged with the key_id only. Raw keys/secrets are never logged.
 - 401 vs 403: missing/invalid key -> 401. (Per-key scopes are future work;
   v1 grants the single research scope or nothing.)
@@ -58,12 +58,28 @@ def load_api_keys(path: str) -> dict[str, str]:
 
 
 def check_startup_posture() -> dict[str, Any]:
-    """Validate auth configuration at startup. Raises RuntimeError to refuse start."""
+    """Validate auth configuration at startup.
+
+    Resilient by design: the system always starts and serves. If
+    ``TMRDS_API_KEYS_FILE`` is set but the file is missing, unreadable, or
+    malformed, the API runs OPEN and the degraded posture is made loud — a
+    CRITICAL log line and a visible warning in the ops posture endpoint —
+    instead of refusing to start. Public research data stays reachable;
+    nothing fails silently.
+    """
     keys_file = os.environ.get("TMRDS_API_KEYS_FILE", "").strip()
     if not keys_file:
         logger.info("auth posture: open (TMRDS_API_KEYS_FILE unset; public research data)")
         return {"auth": "open", "keys": None}
-    keys = load_api_keys(keys_file)
+    try:
+        keys = load_api_keys(keys_file)
+    except RuntimeError as exc:
+        logger.critical(
+            "auth posture: DEGRADED-OPEN — %s; serving without API-key gate. "
+            "Fix TMRDS_API_KEYS_FILE to restore key-gating.",
+            exc,
+        )
+        return {"auth": "degraded-open", "keys": None, "warning": str(exc)}
     logger.info("auth posture: key-gated (%d key(s) loaded; file=%s)", len(keys), keys_file)
     return {"auth": "key-gated", "keys": keys}
 
@@ -112,4 +128,6 @@ class ApiKeyGateMiddleware:
             return
 
         scope.setdefault("state", {})["api_key_id"] = key_id
+        # Append-only audit of the auth decision (allow). key_id only — never the secret.
+        logger.info("auth allow key_id=%s path=%s", key_id, scope.get("path", ""))
         await self.app(scope, receive, send)

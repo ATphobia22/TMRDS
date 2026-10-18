@@ -46,11 +46,17 @@ configure_logging()
 setup_metrics(app)
 setup_rate_limiting(app)
 app.add_middleware(SecurityHeadersMiddleware)
-# Fail-closed: if TMRDS_API_KEYS_FILE is set but unreadable/malformed, this raises
-# and the process refuses to start rather than serving open.
+# Resilient: a misconfigured TMRDS_API_KEYS_FILE degrades to loud open
+# (CRITICAL log + visible posture warning) instead of refusing to start.
 _posture = check_startup_posture()
 if _posture["keys"]:
     app.add_middleware(ApiKeyGateMiddleware, keys=_posture["keys"])
+app.state.ops_posture = {
+    "metrics": metrics_enabled(),
+    "rate_limiting": rate_limiting_enabled(),
+    "auth": _posture["auth"],
+    **({"auth_warning": _posture["warning"]} if _posture.get("warning") else {}),
+}
 _ops_logger = logging.getLogger("tmrds.ops")
 _ops_logger.info(
     "startup posture: metrics=%s rate_limiting=%s auth=%s",
@@ -102,6 +108,13 @@ async def readiness() -> dict[str, str]:
 @app.get("/api/v1/research/health")
 async def research_health() -> dict[str, Any]:
     return research_envelope({"cdc": "configured", "openneuro": "configured", "clinicaltrials": "configured", "openfda": "configured", "nlm": "configured", "europepmc": "configured", "pubmed": pubmed.status()}, "TMRDS")
+
+
+@app.get("/api/v1/ops/posture")
+async def ops_posture(request: Request) -> dict[str, Any]:
+    """Visible ops posture: metrics, rate limiting, auth mode, and any degradation warnings."""
+    posture = dict(getattr(request.app.state, "ops_posture", {}))
+    return research_envelope(posture, "TMRDS")
 
 
 @app.get("/api/v1/research/datasets/cdc")

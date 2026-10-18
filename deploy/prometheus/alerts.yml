@@ -1,0 +1,41 @@
+# TMRDS alert rules. Tune thresholds to the deployment; these are sane defaults.
+groups:
+  - name: tmrds-api
+    rules:
+      - alert: TmrdsApiDown
+        expr: up{job="tmrds-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TMRDS API is not responding to Prometheus scrapes"
+
+      - alert: TmrdsHighErrorRate
+        expr: |
+          sum(rate(http_requests_total{job="tmrds-api",status=~"5.."}[5m]))
+          / sum(rate(http_requests_total{job="tmrds-api"}[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TMRDS API 5xx rate above 5% for 5 minutes"
+
+      - alert: TmrdsHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="tmrds-api"}[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TMRDS API p95 latency above 2s for 5 minutes"
+
+      - alert: TmrdsRateLimitSpike
+        expr: |
+          sum(rate(http_requests_total{job="tmrds-api",status="429"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "Sustained 429 rate limiting on the TMRDS API — review limits or abuse"

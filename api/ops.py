@@ -47,6 +47,21 @@ except ImportError:  # pragma: no cover - depends on installed extras
         return "127.0.0.1"
 
 
+def _rate_limit_key(request: Any) -> str:
+    """Key rate limits on API identity when the key gate is active, else client IP.
+
+    The ApiKeyGateMiddleware runs outer (added later) and stores api_key_id in
+    scope state before SlowAPIMiddleware evaluates this function.
+    """
+    try:
+        key_id = request.scope.get("state", {}).get("api_key_id")
+    except Exception:
+        key_id = None
+    if key_id:
+        return f"apikey:{key_id}"
+    return get_remote_address(request)
+
+
 # Shared limiter so route modules can apply per-route tiers with @limiter.limit(...).
 # slowapi decorators require the route to accept `request: Request`.
 # When slowapi is not installed, `limiter` is a no-op shim so route modules
@@ -66,7 +81,7 @@ if _slowapi_available:
     # fragile with this codebase's plain-dict routes. Clients still get
     # Retry-After on every 429 from our custom handler below.
     limiter = Limiter(
-        key_func=get_remote_address,
+        key_func=_rate_limit_key,
         default_limits=[DEFAULT_RATE_LIMIT],
     )
 else:

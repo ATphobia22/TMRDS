@@ -131,21 +131,27 @@ def test_api_key_gate_allows_valid_key_and_denies_without_leak(tmp_path: Path) -
     assert resp.status_code == 200
 
 
-def test_startup_posture_open_by_default_and_fail_closed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_startup_posture_open_by_default_and_degraded_not_fail_closed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The system always starts: a bad key file degrades loudly, never refuses."""
     monkeypatch.delenv("TMRDS_API_KEYS_FILE", raising=False)
     posture = check_startup_posture()
     assert posture["auth"] == "open"
     assert posture["keys"] is None
 
     monkeypatch.setenv("TMRDS_API_KEYS_FILE", str(tmp_path / "nope.txt"))
-    with pytest.raises(RuntimeError):
-        check_startup_posture()
+    posture = check_startup_posture()
+    assert posture["auth"] == "degraded-open"
+    assert posture["keys"] is None
+    assert "warning" in posture
 
     bad = tmp_path / "bad.txt"
     bad.write_text("garbage\n", encoding="utf-8")
     monkeypatch.setenv("TMRDS_API_KEYS_FILE", str(bad))
-    with pytest.raises(RuntimeError):
-        check_startup_posture()
+    posture = check_startup_posture()
+    assert posture["auth"] == "degraded-open"
+    assert "warning" in posture
 
     monkeypatch.setenv("TMRDS_API_KEYS_FILE", str(_write_key_file(tmp_path)))
     posture = check_startup_posture()
@@ -156,13 +162,11 @@ def test_startup_posture_open_by_default_and_fail_closed(monkeypatch: pytest.Mon
 def test_main_app_wires_ops_without_import_side_effects() -> None:
     # Importing api.main must not raise even with no keys configured.
     os.environ.pop("TMRDS_API_KEYS_FILE", None)
-    import importlib
+    from api import main as main_module
 
-    import api.main
-
-    importlib.reload(api.main)
     assert isinstance(ops.metrics_enabled(), bool)
     assert isinstance(ops.rate_limiting_enabled(), bool)
+    assert main_module.app.state.ops_posture["auth"] in {"open", "key-gated", "degraded-open"}
 
 
 def test_retry_after_parsing() -> None:
