@@ -15,7 +15,7 @@ httpcore==1.0.9
 httptools==0.9.0
 httpx==0.28.1
 idna==3.20
-neo4j==6.4.0
+neo4j==6.4.1
 numpy==2.4.6
 opentelemetry-api==1.45.1
 pycparser==3.11
