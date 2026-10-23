@@ -27,17 +27,26 @@ from typing import Any
 import httpx
 
 from engines.arxiv_pipeline import ArxivPipeline
+from engines.biorxiv_pipeline import BiorxivPipeline
 from engines.chembl_pipeline import ChEMBLPipeline
 from engines.clinical_trials_pipeline import ClinicalTrialsPipeline
+from engines.clinvar_pipeline import ClinVarPipeline
 from engines.crossref_pipeline import CrossrefPipeline
 from engines.dailymed_pipeline import DailyMedPipeline
+from engines.ensembl_pipeline import EnsemblPipeline
 from engines.europe_pmc_pipeline import EuropePMCPipeline
+from engines.mesh_pipeline import MeshPipeline
+from engines.monarch_pipeline import MonarchPipeline
+from engines.ncats_pipeline import NcatsPipeline
 from engines.openalex_pipeline import OpenAlexPipeline
 from engines.openfda_pipeline import OpenFDAPipeline
+from engines.opentargets_pipeline import OpenTargetsPipeline
 from engines.pubchem_pipeline import PubChemPipeline
 from engines.pubmed_literature_bridge import PubMedLiteratureBridge
+from engines.reactome_pipeline import ReactomePipeline
 from engines.rxnorm_pipeline import RxNormPipeline
 from engines.semantic_scholar_pipeline import SemanticScholarPipeline
+from engines.string_pipeline import StringPipeline
 
 AFDB_API = "https://alphafold.ebi.ac.uk/api/prediction"
 
@@ -55,6 +64,15 @@ COVERAGE = {
     "chembl": "ChEMBL: bioactivity data, CC BY-SA 3.0; values are literature-curated and assay-heterogeneous.",
     "dailymed": "DailyMed: FDA SPL labels; labeler-specific; regulatory verbatim, not curated indications.",
     "rxnorm": "RxNorm/RxNav: drug terminology/normalization only; interaction API dead since Jan 2024.",
+    "opentargets": "Open Targets Platform: target-disease associations, data CC0; scores are relative rankings, not calibrated confidence; release-based freshness.",
+    "string": "STRING: protein functional associations, CC BY 4.0; courtesy ~1 call/sec; per-call protein limits.",
+    "reactome": "Reactome Content Service: curated pathways, CC0; curated coverage only, stale between releases.",
+    "clinvar": "ClinVar: published variant interpretations with review status; conflicting interpretations common — stars surfaced, not just labels.",
+    "ensembl": "Ensembl REST: genomic reference data; 55k req/hour; VEP predictions are computational, not clinical assertions.",
+    "biorxiv": "bioRxiv/medRxiv: preprints, NOT peer-reviewed; metadata-only, browse-by-date with local filtering.",
+    "ncats": "NCATS Node Normalization + Name Resolution: identifier mappings only; rate limits unverified.",
+    "monarch": "Monarch v3: phenotype/disease knowledge graph; integrated-KG license mixed — redistribution unverified.",
+    "mesh": "MeSH (NLM): controlled vocabulary lookup; terminology bridge, not an evidence corpus.",
     "lens_patents": "Lens Patents: requires an API token; unavailable without credentials. Not legal advice.",
     "ibm_quantum": "IBM Quantum: requires API key + instance CRN; unavailable without credentials.",
 }
@@ -126,6 +144,15 @@ class FederatedEvidenceSearch:
         self.chembl = ChEMBLPipeline()
         self.dailymed = DailyMedPipeline()
         self.rxnorm = RxNormPipeline()
+        self.opentargets = OpenTargetsPipeline()
+        self.string = StringPipeline()
+        self.reactome = ReactomePipeline()
+        self.clinvar = ClinVarPipeline()
+        self.ensembl = EnsemblPipeline()
+        self.biorxiv = BiorxivPipeline()
+        self.ncats = NcatsPipeline()
+        self.monarch = MonarchPipeline()
+        self.mesh = MeshPipeline()
 
     async def _guard(self, source: str, coro) -> SourceResult:
         try:
@@ -152,6 +179,15 @@ class FederatedEvidenceSearch:
             self._guard("chembl", self._search_chembl(query, per_source)),
             self._guard("dailymed", self._search_dailymed(query, per_source)),
             self._guard("rxnorm", self._search_rxnorm(query, per_source)),
+            self._guard("opentargets", self._search_opentargets(query, per_source)),
+            self._guard("string", self._search_string(query, per_source)),
+            self._guard("reactome", self._search_reactome(query, per_source)),
+            self._guard("clinvar", self._search_clinvar(query, per_source)),
+            self._guard("ensembl", self._search_ensembl(query, per_source)),
+            self._guard("biorxiv", self._search_biorxiv(query, per_source)),
+            self._guard("ncats", self._search_ncats(query, per_source)),
+            self._guard("monarch", self._search_monarch(query, per_source)),
+            self._guard("mesh", self._search_mesh(query, per_source)),
         )
         envelopes: list[dict[str, Any]] = []
         source_status: dict[str, dict[str, Any]] = {}
@@ -345,6 +381,101 @@ class FederatedEvidenceSearch:
             env = _make_envelope("rxnorm", "RxNorm", c, "terminology")
             env["rxcui"] = c.get("rxcui")
             env["warnings"].append("Terminology/normalization only; the interaction API has been dead since Jan 2024.")
+            out.append(env)
+        return out
+
+    async def _search_opentargets(self, query: str, n: int) -> list[dict[str, Any]]:
+        assocs = await self.opentargets.associated_diseases(query, n)
+        out = []
+        for a in assocs:
+            env = _make_envelope("opentargets", "Open Targets", a, "association")
+            env["target_id"] = a.get("target_id")
+            env["disease_id"] = a.get("disease_id")
+            env["association_score"] = a.get("association_score")
+            env["warnings"].append("Score is a relative ranking (0-1), not calibrated confidence; not a clinical assertion.")
+            out.append(env)
+        return out
+
+    async def _search_string(self, query: str, n: int) -> list[dict[str, Any]]:
+        edges = await self.string.interactions(query, n)
+        out = []
+        for e in edges:
+            env = _make_envelope("string", "STRING", e, "interaction")
+            env["association_score"] = e.get("association_score")
+            env["warnings"].append("Functional-association confidence; CC BY 4.0 — attribution required.")
+            out.append(env)
+        return out
+
+    async def _search_reactome(self, query: str, n: int) -> list[dict[str, Any]]:
+        entries = await self.reactome.search_pathways(query, page_size=n)
+        out = []
+        for e in entries:
+            env = _make_envelope("reactome", "Reactome", e, "pathway")
+            env["stable_id"] = e.get("stable_id")
+            env["warnings"].append("Curated pathways only; coverage is release-based, not exhaustive.")
+            out.append(env)
+        return out
+
+    async def _search_clinvar(self, query: str, n: int) -> list[dict[str, Any]]:
+        records = await self.clinvar.search_variants(query, n)
+        out = []
+        for r in records:
+            env = _make_envelope("clinvar", "ClinVar", r, "variant_interpretation")
+            env["variation_id"] = r.get("variation_id")
+            env["classification"] = r.get("classification")
+            env["review_status"] = r.get("review_status")
+            env["warnings"].append(
+                "Published interpretation with review status shown; conflicting interpretations are common — "
+                "not per-patient variant interpretation."
+            )
+            out.append(env)
+        return out
+
+    async def _search_ensembl(self, query: str, n: int) -> list[dict[str, Any]]:
+        gene = await self.ensembl.lookup_gene(query)
+        if gene is None:
+            return []
+        env = _make_envelope("ensembl", "Ensembl", gene, "reference")
+        env["ensembl_id"] = gene.get("ensembl_id")
+        env["warnings"].append("Reference annotation (GRCh38); consequence predictions are computational, not clinical.")
+        return [env]
+
+    async def _search_biorxiv(self, query: str, n: int) -> list[dict[str, Any]]:
+        papers = await self.biorxiv.search_recent(query, days_back=60, max_pages=3)
+        out = []
+        for p in papers[:n]:
+            env = _make_envelope("biorxiv", "bioRxiv", p, "preprint")
+            env["warnings"].append("PREPRINT — not peer-reviewed; check version and published-linkage before citing.")
+            out.append(env)
+        return out
+
+    async def _search_ncats(self, query: str, n: int) -> list[dict[str, Any]]:
+        hits = await self.ncats.resolve_name(query, n)
+        out = []
+        for h in hits:
+            env = _make_envelope("ncats", "NCATS", h, "terminology")
+            env["curie"] = h.get("curie")
+            env["warnings"].append("Identifier mapping only — not evidence of any association.")
+            out.append(env)
+        return out
+
+    async def _search_monarch(self, query: str, n: int) -> list[dict[str, Any]]:
+        entities = await self.monarch.search(query, page_size=n)
+        out = []
+        for e in entities:
+            env = _make_envelope("monarch", "Monarch", e, "association")
+            env["curie"] = e.get("curie")
+            env["warnings"].append("Published KG annotations; integrated-KG license is mixed — redistribution unverified.")
+            out.append(env)
+        return out
+
+    async def _search_mesh(self, query: str, n: int) -> list[dict[str, Any]]:
+        descriptors = await self.mesh.lookup(query)
+        out = []
+        for d in descriptors[:n]:
+            env = _make_envelope("mesh", "MeSH", d, "terminology")
+            env["descriptor_id"] = d.get("descriptor_id")
+            env["warnings"].append("Controlled-vocabulary term for query expansion — not an evidence corpus.")
             out.append(env)
         return out
 

@@ -593,6 +593,186 @@ def build_default_registry() -> Dict[str, SourceDefinition]:
         notes="Terminology/normalization ONLY. The drug-drug Interaction API has been DEAD since Jan 2024 - never rebuild interaction checking. Native identifier: RxCUI.",
     ))
 
+    # 22. Open Targets Platform
+    add(SourceDefinition(
+        key="opentargets",
+        display_name="Open Targets Platform",
+        api_endpoint="https://api.platform.opentargets.org/api/v4/graphql",
+        permitted_use=PermittedUse.METADATA_ONLY,
+        license_class=LicenseClass.OPEN,
+        identifier_types=[IdentifierType.DOI],
+        query_params={"query": "GraphQL: search(queryString) then target(ensemblId){associatedDiseases}"},
+        update_cadence=UpdateCadence.ON_DEMAND,
+        attribution="Open Targets Platform. Data CC0 1.0.",
+        retention_policy="Store target/disease IDs, association score, retrieval timestamp. Scores are relative rankings.",
+        adapter_owner="engines/opentargets_pipeline.py",
+        version="1.0.0",
+        docs_url="https://platform-docs.opentargets.org/",
+        rate_limit="None published — client stays modest (>=1s between calls)",
+        evidence_class="observed",
+        notes="Association scores are relative rankings (0-1 harmonic sums), NOT calibrated confidence. Release-based freshness. GraphQL is not a bulk route.",
+    ))
+
+    # 23. STRING
+    add(SourceDefinition(
+        key="string",
+        display_name="STRING",
+        api_endpoint="https://string-db.org/api/json",
+        permitted_use=PermittedUse.METADATA_ONLY,
+        license_class=LicenseClass.CUSTOM,
+        identifier_types=[],
+        query_params={"identifiers": "protein name", "species": 9606, "required_score": 400, "limit": 50},
+        update_cadence=UpdateCadence.ON_DEMAND,
+        attribution="STRING. CC BY 4.0 — attribution required.",
+        retention_policy="Store STRING IDs, partner names, scores, retrieval timestamp.",
+        adapter_owner="engines/string_pipeline.py",
+        version="1.0.0",
+        docs_url="https://string-db.org/help/api/",
+        rate_limit="Courtesy ~1 call/second; per-call protein-count limits",
+        evidence_class="observed",
+        notes="Functional-association confidences, not clinical assertions. Resolve names to STRING IDs first (ambiguity).",
+    ))
+
+    # 24. Reactome
+    add(SourceDefinition(
+        key="reactome",
+        display_name="Reactome",
+        api_endpoint="https://reactome.org/ContentService",
+        permitted_use=PermittedUse.METADATA_ONLY,
+        license_class=LicenseClass.OPEN,
+        identifier_types=[],
+        query_params={"query": "keyword", "species": "Homo sapiens"},
+        update_cadence=UpdateCadence.ON_DEMAND,
+        attribution="Reactome. Data CC0; illustrations CC BY 4.0.",
+        retention_policy="Store stable IDs (R-HSA-*), names, retrieval timestamp.",
+        adapter_owner="engines/reactome_pipeline.py",
+        version="1.0.0",
+        docs_url="https://reactome.org/dev/content-service",
+        rate_limit="None published — client stays modest (>=1s between calls)",
+        evidence_class="observed",
+        notes="Curated coverage only; stale between releases; non-human content mostly inferred orthology.",
+    ))
+
+    # 25. ClinVar
+    add(SourceDefinition(
+        key="clinvar",
+        display_name="ClinVar",
+        api_endpoint="https://eutils.ncbi.nlm.nih.gov/entrez/eutils",
+        permitted_use=PermittedUse.METADATA_ONLY,
+        license_class=LicenseClass.OPEN,
+        identifier_types=[],
+        query_params={"db": "clinvar", "term": "search string", "retmax": 50},
+        update_cadence=UpdateCadence.ON_DEMAND,
+        attribution="ClinVar, National Library of Medicine.",
+        retention_policy="Store variation ID, classification, review status, conditions, retrieval timestamp. Always keep stars with labels.",
+        adapter_owner="engines/clinvar_pipeline.py",
+        version="1.0.0",
+        docs_url="https://www.ncbi.nlm.nih.gov/clinvar/docs/programmatic_access/",
+        rate_limit="3 req/s keyless, 10 req/s with free NCBI API key (E-utilities policy)",
+        evidence_class="observed",
+        notes="Conflicting interpretations common — review status MUST surface with every label. Published interpretations only; never per-patient interpretation.",
+    ))
+
+    # 26. Ensembl REST
+    add(SourceDefinition(
+        key="ensembl",
+        display_name="Ensembl REST",
+        api_endpoint="https://rest.ensembl.org",
+        permitted_use=PermittedUse.METADATA_ONLY,
+        license_class=LicenseClass.OPEN,
+        identifier_types=[],
+        query_params={"symbol": "gene symbol", "species": "homo_sapiens"},
+        update_cadence=UpdateCadence.ON_DEMAND,
+        attribution="Ensembl (EBI/EMBL). Free for all uses; cite Ensembl.",
+        retention_policy="Store Ensembl stable ID, symbol, assembly, location, retrieval timestamp.",
+        adapter_owner="engines/ensembl_pipeline.py",
+        version="1.0.0",
+        docs_url="https://rest.ensembl.org/",
+        rate_limit="55,000 requests/hour per IP; 429 + Retry-After on exceed",
+        evidence_class="observed",
+        notes="GRCh38 by default; GRCh37 via grch37.rest.ensembl.org. VEP predictions are computational, not clinical assertions.",
+    ))
+
+    # 27. bioRxiv / medRxiv
+    add(SourceDefinition(
+        key="biorxiv",
+        display_name="bioRxiv / medRxiv",
+        api_endpoint="https://api.biorxiv.org",
+        permitted_use=PermittedUse.METADATA_ONLY,
+        license_class=LicenseClass.CUSTOM,
+        identifier_types=[IdentifierType.DOI],
+        query_params={"server": "biorxiv|medrxiv", "interval": "date range", "cursor": 0},
+        update_cadence=UpdateCadence.DAILY,
+        attribution="bioRxiv/medRxiv (Cold Spring Harbor Laboratory). Per-paper license field.",
+        retention_policy="Store DOI, version, license, published-linkage, retrieval timestamp. Always label un-peer-reviewed.",
+        adapter_owner="engines/biorxiv_pipeline.py",
+        version="1.0.0",
+        docs_url="https://api.biorxiv.org/",
+        rate_limit="None published — client stays modest (>=1s between calls)",
+        evidence_class="observed",
+        notes="Metadata-only; NO keyword search — client downloads a date window and filters locally. Every record is_preprint=True. License is per-paper; no blanket corpus license.",
+    ))
+
+    # 28. NCATS Translator (Node Normalization + Name Resolution)
+    add(SourceDefinition(
+        key="ncats",
+        display_name="NCATS Translator (Node Normalization + Name Resolution)",
+        api_endpoint="https://nodenormalization-sri.renci.org",
+        permitted_use=PermittedUse.METADATA_ONLY,
+        license_class=LicenseClass.OPEN,
+        identifier_types=[],
+        query_params={"curies": ["CURIE list"], "string": "lexical name"},
+        update_cadence=UpdateCadence.ON_DEMAND,
+        attribution="NCATS Biomedical Data Translator (NIH).",
+        retention_policy="Store input, preferred CURIE, equivalents, Biolink types, retrieval timestamp.",
+        adapter_owner="engines/ncats_pipeline.py",
+        version="1.0.0",
+        docs_url="https://github.com/NCATSTranslator/ReasonerAPI",
+        rate_limit="None published — client stays modest (>=1s between calls)",
+        evidence_class="observed",
+        notes="Identifier mappings only — not evidence of any association. Some upstream components carry distinct licenses (mixed).",
+    ))
+
+    # 29. Monarch Initiative
+    add(SourceDefinition(
+        key="monarch",
+        display_name="Monarch Initiative",
+        api_endpoint="https://api.monarchinitiative.org/v3/api",
+        permitted_use=PermittedUse.METADATA_ONLY,
+        license_class=LicenseClass.CUSTOM,
+        identifier_types=[],
+        query_params={"q": "search string", "category": "optional", "limit": 50},
+        update_cadence=UpdateCadence.ON_DEMAND,
+        attribution="Monarch Initiative. Code 3-Clause BSD; integrated-KG license mixed.",
+        retention_policy="Store CURIE, name, category, retrieval timestamp. Do not redistribute bulk without license review.",
+        adapter_owner="engines/monarch_pipeline.py",
+        version="1.0.0",
+        docs_url="https://monarch-initiative.github.io/monarch-documentation/",
+        rate_limit="None published — client stays modest (>=1s between calls)",
+        evidence_class="observed",
+        notes="Schema pinned to v3. Integrated-KG license mixed/inconsistent — bulk redistribution UNVERIFIED. Published annotations, not clinical assertions.",
+    ))
+
+    # 30. MeSH
+    add(SourceDefinition(
+        key="mesh",
+        display_name="MeSH (NLM)",
+        api_endpoint="https://id.nlm.nih.gov/mesh",
+        permitted_use=PermittedUse.METADATA_ONLY,
+        license_class=LicenseClass.CUSTOM,
+        identifier_types=[],
+        query_params={"label": "descriptor label", "match": "exact"},
+        update_cadence=UpdateCadence.ON_DEMAND,
+        attribution="MeSH, National Library of Medicine.",
+        retention_policy="Store descriptor ID, label, tree numbers, retrieval timestamp.",
+        adapter_owner="engines/mesh_pipeline.py",
+        version="1.0.0",
+        docs_url="https://id.nlm.nih.gov/mesh/",
+        rate_limit="None published — client stays modest (>=1s between calls)",
+        evidence_class="observed",
+        notes="Terminology bridge for query expansion — not an evidence corpus. NLM T&C specifics UNVERIFIED. ASCII serialization discontinued Jan 2026; JSON/RDF used.",
+    ))
+
     return reg
 
 # ---------------------------------------------------------------------------
