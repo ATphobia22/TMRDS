@@ -4,6 +4,10 @@
 
 > **Status:** Research software. TMRDS is not FDA-cleared Software as a Medical Device (SaMD), does not replace clinical judgment, and is not a diagnostic or prescribing system.
 
+## Explore TMRDS
+
+**[TMRDS 2 — public research workspace](https://muse.ai/s/tmrds-2-xxd6j1fn9xyxwxf/DtP0Ir8DQV7MepeJdlvuTQBszwBcsygUi_QoYBYFruw)** — the public, static companion to this repository: federated evidence search across 22 live sources, the Quantum Research Navigation Cube, the Care Evidence Brief, and the development roadmap. Research-advisory only; human clinical authority final.
+
 ## Security baseline
 
 TMRDS does not commit production passwords, API keys, tokens, private keys, or local runtime data. Deployment credentials are supplied through an external secret manager or environment variables. Production password/PIN authentication has no built-in fallback, and local password material is protected with memory-hard scrypt. Machine-to-machine trust uses asymmetric JWT validation against explicit issuer/audience/JWKS configuration when enabled. The repository also runs deterministic automated secret scanning in `.github/workflows/security.yml`.
@@ -14,7 +18,7 @@ TMRDS does not commit production passwords, API keys, tokens, private keys, or l
 
 TMRDS is a Python/FastAPI research platform for connecting public biomedical evidence to a governed evidence model. The current implementation combines:
 
-- **Public biomedical source adapters** for CDC, OpenNeuro, ClinicalTrials.gov, openFDA, NLM Clinical Tables, Europe PMC, and PubMed.
+- **Federated evidence search across 22 live public sources** — literature (Europe PMC, PubMed, OpenAlex, Semantic Scholar, Crossref, arXiv, bioRxiv/medRxiv), trials and labels (ClinicalTrials.gov, openFDA, DailyMed), chemistry and drugs (PubChem, ChEMBL, RxNorm terminology), genomics and variants (Ensembl, ClinVar with review stars, AlphaFold DB), knowledge graphs and pathways (Open Targets Platform, STRING, Reactome, Monarch, NCATS Node Normalization, MeSH). Every source runs isolated with per-source failure warnings and honest coverage statements; Lens Patents and IBM Quantum are credential-gated and reported as unavailable, never mocked.
 - **Real-world real-time data fabric** for bounded, provenance-first synchronization of authoritative public feeds, including USGS, NOAA/NWS, FEMA, and CDC sources.
 - **Evidence governance** with registered sources, provenance-bearing entities/assertions, conflict handling, ingestion state, and audit-oriented evidence records.
 - **FHIR R4 / US Core interoperability boundary** with SMART discovery, PKCE S256 primitives, structural resource validation, Provenance/AuditEvent builders, and configurable service-to-service identity.
@@ -27,6 +31,14 @@ TMRDS is a Python/FastAPI research platform for connecting public biomedical evi
 The design principle is:
 
 **Evidence → Provenance → Interoperability → Graph → AI Governance**
+
+## What's new (October 2026)
+
+- **15 new evidence pipelines** (Tier 1 + Tier 2), each verified live against its official service before coding: Semantic Scholar, Crossref, PubChem, ChEMBL, DailyMed, RxNorm, Open Targets Platform, STRING, Reactome, ClinVar, Ensembl, bioRxiv/medRxiv, NCATS, Monarch, MeSH. See `engines/federated_evidence_search.py`.
+- **Operations hardening** — Prometheus RED metrics at `/metrics`, slowapi rate limiting (120/min default, 20/min on federated search), sanitized 429s with `Retry-After`, baseline security headers, and an optional API-key gate (`TMRDS_API_KEYS_FILE`) that degrades loudly to open instead of refusing to start. Ops posture is visible at `GET /api/v1/ops/posture`.
+- **Deploy stack** — `docker-compose.obs.yml` overlay: Caddy with automatic TLS, Prometheus + Alertmanager + Grafana, and Keycloak as the OIDC identity provider for the existing service-JWT validator. Secrets via Compose file secrets (`*_FILE`), never environment values.
+- **Research-only intended use** — `docs/INTENDED_USE.md` v1.0.0 maps the four Cures Act §520(o)(1)(E) criteria, plus a per-feature SaMD classification checklist (`docs/SAMD_CLASSIFICATION_CHECKLIST.md`).
+- **Verified open-source medical software catalog** — 32 projects checked against primary sources (`docs/reference/open-source-medical-software.md`).
 
 ## Current architecture
 
