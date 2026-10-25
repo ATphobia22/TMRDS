@@ -23,7 +23,11 @@ from api.ops import (
     setup_metrics,
     setup_rate_limiting,
 )
-from api.api_key_auth import ApiKeyGateMiddleware, check_startup_posture
+from api.api_key_auth import (
+    ApiKeyConfigurationUnavailableMiddleware,
+    ApiKeyGateMiddleware,
+    check_startup_posture,
+)
 
 from api.ai_governance_routes import router as ai_governance_router
 from api.evidence_retrieval_routes import router as evidence_retrieval_router
@@ -46,10 +50,12 @@ configure_logging()
 setup_metrics(app)
 setup_rate_limiting(app)
 app.add_middleware(SecurityHeadersMiddleware)
-# Resilient: a misconfigured TMRDS_API_KEYS_FILE degrades to loud open
-# (CRITICAL log + visible posture warning) instead of refusing to start.
+# Deliberately public only when the API-key file is unset. An explicitly
+# configured but invalid key file must never expose previously gated routes.
 _posture = check_startup_posture()
-if _posture["keys"]:
+if _posture["auth"] == "unavailable":
+    app.add_middleware(ApiKeyConfigurationUnavailableMiddleware)
+elif _posture["keys"] is not None:
     app.add_middleware(ApiKeyGateMiddleware, keys=_posture["keys"])
 app.state.ops_posture = {
     "metrics": metrics_enabled(),
@@ -89,7 +95,9 @@ async def liveness() -> dict[str, str]:
 
 @app.get("/health/ready")
 async def readiness() -> dict[str, str]:
-    """Readiness requires the authoritative PostgreSQL evidence schema."""
+    """Readiness requires usable API authentication and the PostgreSQL schema."""
+    if _posture["auth"] == "unavailable":
+        raise HTTPException(status_code=503, detail="API authentication is not configured correctly")
     try:
         pool = await evidence_repository._pool()
         async with pool.acquire() as conn:

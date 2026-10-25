@@ -5,10 +5,10 @@ v1 scope, per the October 2026 auth research:
   the secret only), and revocable (delete the line).
 - Keys live in a file (``TMRDS_API_KEYS_FILE``), never as secret values in the
   environment — environment values are visible via ``docker inspect``.
-- Resilient: if ``TMRDS_API_KEYS_FILE`` is set but the file is missing,
-  unreadable, or malformed, the API still starts and serves — it runs OPEN and
-  reports the degraded posture loudly (CRITICAL log + ops posture endpoint)
-  instead of refusing to start. Nothing fails silently.
+- If ``TMRDS_API_KEYS_FILE`` is configured but cannot be loaded, API paths
+  fail closed with HTTP 503. Liveness and monitoring paths remain accessible
+  so operators can repair the configuration without exposing protected routes.
+  Leaving the variable unset intentionally permits public research access.
 - Denials are logged with the key_id only. Raw keys/secrets are never logged.
 - 401 vs 403: missing/invalid key -> 401. (Per-key scopes are future work;
   v1 grants the single research scope or nothing.)
@@ -60,12 +60,10 @@ def load_api_keys(path: str) -> dict[str, str]:
 def check_startup_posture() -> dict[str, Any]:
     """Validate auth configuration at startup.
 
-    Resilient by design: the system always starts and serves. If
-    ``TMRDS_API_KEYS_FILE`` is set but the file is missing, unreadable, or
-    malformed, the API runs OPEN and the degraded posture is made loud — a
-    CRITICAL log line and a visible warning in the ops posture endpoint —
-    instead of refusing to start. Public research data stays reachable;
-    nothing fails silently.
+    The public research API is deliberately open when no key file is set.
+    A configured but invalid key file is a deployment error: report the
+    problem without exposing sensitive filesystem details to API clients,
+    and make API routes unavailable rather than silently disabling auth.
     """
     keys_file = os.environ.get("TMRDS_API_KEYS_FILE", "").strip()
     if not keys_file:
@@ -75,11 +73,15 @@ def check_startup_posture() -> dict[str, Any]:
         keys = load_api_keys(keys_file)
     except RuntimeError as exc:
         logger.critical(
-            "auth posture: DEGRADED-OPEN — %s; serving without API-key gate. "
-            "Fix TMRDS_API_KEYS_FILE to restore key-gating.",
+            "auth posture: UNAVAILABLE — configured API-key file invalid; "
+            "all /api/* requests will return 503 until repaired: %s",
             exc,
         )
-        return {"auth": "degraded-open", "keys": None, "warning": str(exc)}
+        return {
+            "auth": "unavailable",
+            "keys": None,
+            "warning": "Configured API-key authentication is unavailable; API requests are denied.",
+        }
     logger.info("auth posture: key-gated (%d key(s) loaded; file=%s)", len(keys), keys_file)
     return {"auth": "key-gated", "keys": keys}
 
@@ -93,6 +95,27 @@ def _unauthorized() -> dict[str, Any]:
 
 
 _UNAUTHORIZED_BODY = b'{"detail":{"code":"UNAUTHORIZED","message":"Valid API key required."}}'
+
+
+class ApiKeyConfigurationUnavailableMiddleware:
+    """Deny API requests when an explicitly configured key file cannot load."""
+
+    def __init__(self, app: Callable[..., Any]) -> None:
+        self.app = app
+
+    async def __call__(self, scope: dict[str, Any], receive: Callable[..., Any], send: Callable[..., Any]) -> None:
+        if scope.get("type") != "http" or not str(scope.get("path", "")).startswith("/api/"):
+            await self.app(scope, receive, send)
+            return
+        await send({
+            "type": "http.response.start",
+            "status": 503,
+            "headers": [(b"content-type", b"application/json"), (b"cache-control", b"no-store")],
+        })
+        await send({
+            "type": "http.response.body",
+            "body": b'{"detail":{"code":"AUTH_UNAVAILABLE","message":"API authentication is temporarily unavailable."}}',
+        })
 
 
 class ApiKeyGateMiddleware:
