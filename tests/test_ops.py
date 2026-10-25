@@ -10,7 +10,12 @@ from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from api import ops
-from api.api_key_auth import ApiKeyGateMiddleware, check_startup_posture, load_api_keys
+from api.api_key_auth import (
+    ApiKeyConfigurationUnavailableMiddleware,
+    ApiKeyGateMiddleware,
+    check_startup_posture,
+    load_api_keys,
+)
 from api.ops import SecurityHeadersMiddleware, setup_metrics, setup_rate_limiting
 
 
@@ -131,10 +136,10 @@ def test_api_key_gate_allows_valid_key_and_denies_without_leak(tmp_path: Path) -
     assert resp.status_code == 200
 
 
-def test_startup_posture_open_by_default_and_degraded_not_fail_closed(
+def test_startup_posture_open_by_default_and_fail_closed_on_invalid_config(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """The system always starts: a bad key file degrades loudly, never refuses."""
+    """An explicitly configured invalid key file must never disable the key gate."""
     monkeypatch.delenv("TMRDS_API_KEYS_FILE", raising=False)
     posture = check_startup_posture()
     assert posture["auth"] == "open"
@@ -142,21 +147,40 @@ def test_startup_posture_open_by_default_and_degraded_not_fail_closed(
 
     monkeypatch.setenv("TMRDS_API_KEYS_FILE", str(tmp_path / "nope.txt"))
     posture = check_startup_posture()
-    assert posture["auth"] == "degraded-open"
+    assert posture["auth"] == "unavailable"
     assert posture["keys"] is None
     assert "warning" in posture
+    assert str(tmp_path) not in posture["warning"]
 
     bad = tmp_path / "bad.txt"
     bad.write_text("garbage\n", encoding="utf-8")
     monkeypatch.setenv("TMRDS_API_KEYS_FILE", str(bad))
     posture = check_startup_posture()
-    assert posture["auth"] == "degraded-open"
+    assert posture["auth"] == "unavailable"
     assert "warning" in posture
 
     monkeypatch.setenv("TMRDS_API_KEYS_FILE", str(_write_key_file(tmp_path)))
     posture = check_startup_posture()
     assert posture["auth"] == "key-gated"
     assert posture["keys"] == {"doc001": hashlib.sha256(b"s3cret-value_123").hexdigest()}
+
+
+def test_invalid_key_configuration_returns_503_without_leaking_details() -> None:
+    app = _mini_app()
+
+    @app.get("/api/v1/research/health")
+    async def protected() -> dict[str, str]:
+        return {"status": "should-not-be-served"}
+
+    app.add_middleware(ApiKeyConfigurationUnavailableMiddleware)
+    client = TestClient(app)
+
+    response = client.get("/api/v1/research/health")
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "AUTH_UNAVAILABLE"
+    assert response.headers["cache-control"] == "no-store"
+    assert "TMRDS_API_KEYS_FILE" not in response.text
+    assert client.get("/ping").status_code == 200
 
 
 def test_main_app_wires_ops_without_import_side_effects() -> None:
@@ -166,7 +190,7 @@ def test_main_app_wires_ops_without_import_side_effects() -> None:
 
     assert isinstance(ops.metrics_enabled(), bool)
     assert isinstance(ops.rate_limiting_enabled(), bool)
-    assert main_module.app.state.ops_posture["auth"] in {"open", "key-gated", "degraded-open"}
+    assert main_module.app.state.ops_posture["auth"] in {"open", "key-gated", "unavailable"}
 
 
 def test_retry_after_parsing() -> None:
