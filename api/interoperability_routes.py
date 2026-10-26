@@ -8,7 +8,6 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from engines.fhir_interoperability import FHIRInteroperabilityConfig, FHIRResourceValidator
-from engines.smart_security import SmartConfiguration
 
 router = APIRouter(tags=["interoperability"])
 
@@ -28,13 +27,14 @@ def fhir_config() -> FHIRInteroperabilityConfig:
 
 @router.get("/.well-known/smart-configuration")
 async def smart_configuration() -> dict[str, object]:
-    base_url = os.getenv("TMRDS_BASE_URL", "http://localhost:8000").rstrip("/")
-    return SmartConfiguration(
-        issuer=base_url,
-        authorization_endpoint=f"{base_url}/oauth/authorize",
-        token_endpoint=f"{base_url}/oauth/token",
-        jwks_uri=f"{base_url}/.well-known/jwks.json",
-    ).as_dict()
+    """Do not advertise OAuth endpoints that this research gateway does not serve."""
+    raise HTTPException(
+        status_code=503,
+        detail={
+            "code": "SMART_NOT_CONFIGURED",
+            "message": "SMART App Launch authorization endpoints are not available.",
+        },
+    )
 
 
 @router.get("/api/v1/interoperability/status")
@@ -44,8 +44,9 @@ async def interoperability_status() -> dict[str, object]:
         "fhir_version": config.fhir_version,
         "us_core_version": config.us_core_version,
         "terminology_version": config.terminology_version,
-        "smart_pkce": "S256",
-        "backend_authentication": "private_key_jwt/JWKS when configured",
+        "smart_app_launch": "NOT_CONFIGURED",
+        "pkce_helper": "S256_ONLY",
+        "backend_authentication": "service JWT when configured; SMART OAuth not implemented",
         "live_phi_exchange": False,
         "institutional_access": False,
     }
