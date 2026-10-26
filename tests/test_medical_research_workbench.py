@@ -175,3 +175,9 @@ def test_demo_stays_disabled_in_production_even_when_flagged(monkeypatch) -> Non
     with pytest.raises(HTTPException) as exc:
         _require_synthetic_demo()
     assert exc.value.status_code == 403
+
+def test_static_synthetic_research_demo_is_served() -> None:
+    response = TestClient(app).get("/research/medical-demo")
+    assert response.status_code == 200
+    assert "SYNTHETIC DATA ONLY" in response.text
+    assert "patient" in response.text.lower()
