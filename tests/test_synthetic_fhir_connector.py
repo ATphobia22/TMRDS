@@ -95,7 +95,7 @@ async def test_synthetic_observation_read_maps_to_safe_public_shape(monkeypatch:
         result = await fetch_synthetic_fhir("Observation", "synthetic-cbc-1", client=client)
     assert len(observed) == 1
     assert observed[0].url.path == "/fhir/Observation/synthetic-cbc-1"
-    assert observed[0].headers["Authorization"] == "Bearer local-fake-token-test-only"
+    assert observed[0].headers["Authorization"].split(" ", 1) == ["Bearer", "local-fake-token-test-only"]
     assert result["patient_data_accepted"] is False
     assert result["external_data_transmitted"] is False
     assert result["trends"][0]["measurements"][0]["value"] == 13.2
