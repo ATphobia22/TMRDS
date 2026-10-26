@@ -18,6 +18,7 @@ from engines.medical_research_workbench import (
     synthetic_imaging_index, synthetic_lab_trends,
 )
 from engines.medical_stack_catalog import medical_stack_catalog
+from engines.synthetic_fhir_connector import fetch_synthetic_fhir, SyntheticFHIRDisabled, SyntheticFHIRUnavailable
 
 router = APIRouter(prefix="/api/v1/medical", tags=["medical-research-workbench"])
 
@@ -114,3 +115,20 @@ async def synthetic_imaging_review(request: SyntheticImagingRequest) -> dict[str
         return synthetic_imaging_index(request.studies)
     except (ValueError, TypeError, KeyError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get(
+    "/synthetic/fhir/{resource_type}/{synthetic_id}",
+    dependencies=[Depends(require_service_identity)],
+)
+async def synthetic_fhir_resource(resource_type: str, synthetic_id: str) -> dict[str, object]:
+    """HTTPS test-fixture retrieval. Never returns raw upstream medical records."""
+    _require_synthetic_demo()
+    try:
+        return await fetch_synthetic_fhir(resource_type, synthetic_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="invalid synthetic test resource request") from exc
+    except SyntheticFHIRDisabled as exc:
+        raise HTTPException(status_code=503, detail="synthetic FHIR upstream is not configured") from exc
+    except SyntheticFHIRUnavailable as exc:
+        raise HTTPException(status_code=502, detail="synthetic FHIR upstream unavailable or rejected") from exc

@@ -74,5 +74,8 @@ class OpenSourceMedicalCore:
             "fhir_endpoint": self.fhir_endpoint(),
             "dicom_endpoint": self.dicom_endpoint(),
             "mode": "local_sovereign",
-            "status": "READY",
+            "status": "NOT_CONNECTED",
+            "institutional_connection_verified": False,
+            "patient_data_exchange_enabled": False,
+            "note": "Configured addresses are reference placeholders, not successful health checks.",
         }

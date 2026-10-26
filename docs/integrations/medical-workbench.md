@@ -42,6 +42,34 @@ Sample synthetic Observation POST:
 
 **Security:** Labels and IDs alone cannot prove de-identification. Never submit real or pseudonymized patient information, scan metadata, accession numbers, clinical notes or variant-level personal genomic data. A schema guard is not a HIPAA protection program.
 
+## Optional real HTTPS connection to a *synthetic* FHIR test server
+
+The backend includes `engines/synthetic_fhir_connector.py` and
+`GET /api/v1/medical/synthetic/fhir/{resource_type}/{synthetic_id}`.
+
+This is an actual **read-only HTTP client** for `Observation` and `ImagingStudy`
+fixtures, not just a placeholder adapter. It is off unless **all** of these
+nonproduction operator-owned environment settings are supplied:
+
+    TMRDS_ENV=development
+    TMRDS_SYNTHETIC_WORKBENCH_ENABLED=true
+    TMRDS_SYNTHETIC_FHIR_FETCH_ENABLED=true
+    TMRDS_SYNTHETIC_FHIR_BASE_URL=https://test-fhir.example.org/fhir
+    TMRDS_SYNTHETIC_FHIR_ALLOWED_HOSTS=test-fhir.example.org
+    TMRDS_SYNTHETIC_FHIR_TOKEN=<test-only-bearer-token>
+
+The example hostname and bearer token are placeholders, not working credentials.
+Do not commit actual bearer tokens or connect to a production EHR, PACS or LIS.
+The server must be **dedicated to synthetic data**, use valid TLS and accept
+only approved test fixture IDs (prefixed `synthetic-`). The client disables
+redirects and environment proxy inheritance; requires exact operator-allowlisted
+hostnames; enforces a bounded, JSON-only response; and returns only transformed,
+strictly validated synthetic fields. HTTP errors and rejected payloads are not
+returned verbatim.
+
+This is **not** a patient data privacy guarantee: synthetic labels do not prove
+that data are de-identified. Live clinical integrations remain out of scope.
+
 ## Integration status / rollout map
 
 | Project group | Integrated here | Future clinical requirements |
