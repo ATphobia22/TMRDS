@@ -342,3 +342,14 @@ app.include_router(ai_governance_router)
 app.include_router(evidence_retrieval_router)
 app.include_router(interoperability_router)
 app.include_router(medical_workbench_router)
+
+# Static, no-data demonstration UI. Never accepts patient files or patient fields.
+from pathlib import Path
+from fastapi.responses import FileResponse
+
+
+@app.get("/research/medical-demo", include_in_schema=False)
+async def medical_research_demo() -> FileResponse:
+    demo = Path(__file__).resolve().parents[1] / "frontend" / "medical_research_workbench_demo.html"
+    return FileResponse(demo, media_type="text/html", headers={"Cache-Control": "no-store"})
+
