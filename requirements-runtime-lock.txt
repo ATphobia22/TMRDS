@@ -27,7 +27,7 @@ pytz==2026.5
 PyYAML==6.0.3
 requests==2.34.2
 slowapi==0.1.10
-starlette==1.8.0
+starlette==1.9.0
 typing-inspection==0.4.4
 typing-extensions==4.16.0
 urllib3==2.8.0
