@@ -32,6 +32,7 @@ from api.api_key_auth import (
 from api.ai_governance_routes import router as ai_governance_router
 from api.evidence_retrieval_routes import router as evidence_retrieval_router
 from api.interoperability_routes import router as interoperability_router
+from api.medical_workbench_routes import router as medical_workbench_router
 from engines.cdc_data_pipeline import CDCDataPipeline
 from engines.clinical_trials_pipeline import ClinicalTrialsPipeline
 from engines.europe_pmc_pipeline import EuropePMCPipeline
@@ -340,3 +341,15 @@ app.include_router(tmrds_cube_router, prefix="/api/v1/cube")
 app.include_router(ai_governance_router)
 app.include_router(evidence_retrieval_router)
 app.include_router(interoperability_router)
+app.include_router(medical_workbench_router)
+
+# Static, no-data demonstration UI. Never accepts patient files or patient fields.
+from pathlib import Path
+from fastapi.responses import FileResponse
+
+
+@app.get("/research/medical-demo", include_in_schema=False)
+async def medical_research_demo() -> FileResponse:
+    demo = Path(__file__).resolve().parents[1] / "frontend" / "medical_research_workbench_demo.html"
+    return FileResponse(demo, media_type="text/html", headers={"Cache-Control": "no-store"})
+
