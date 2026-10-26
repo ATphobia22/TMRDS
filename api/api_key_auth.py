@@ -130,8 +130,19 @@ class ApiKeyGateMiddleware:
             await self.app(scope, receive, send)
             return
 
-        headers = dict(scope.get("headers", []))
-        presented = headers.get(b"x-api-key", b"").decode("ascii", errors="ignore").strip()
+        # ASGI headers can contain duplicates and mixed-case names. Do not
+        # let dictionary coercion silently pick one credential, and do not
+        # discard non-ASCII bytes to turn an invalid header into a valid key.
+        key_values = [
+            value for name, value in scope.get("headers", [])
+            if name.lower() == b"x-api-key"
+        ]
+        presented = ""
+        if len(key_values) == 1 and len(key_values[0]) <= 180:
+            try:
+                presented = key_values[0].decode("ascii").strip()
+            except UnicodeDecodeError:
+                pass
         match = PRESENTED_RE.fullmatch(presented)
         key_id = match.group(1) if match else None
 
@@ -152,5 +163,6 @@ class ApiKeyGateMiddleware:
 
         scope.setdefault("state", {})["api_key_id"] = key_id
         # Append-only audit of the auth decision (allow). key_id only — never the secret.
-        logger.info("auth allow key_id=%s path=%s", key_id, scope.get("path", ""))
+        # Paths may contain patient identifiers or other sensitive values.
+        logger.info("auth allow key_id=%s", key_id)
         await self.app(scope, receive, send)
