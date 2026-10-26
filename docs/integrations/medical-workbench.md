@@ -15,6 +15,8 @@ This implementation does **not** constitute a clinical deployment, validated med
 
 The existing interoperability route, PubMed/Europe PMC/ClinicalTrials.gov/openFDA data pipelines, OHDSI/OMOP research code and FHIR R4 structural checks remain in place. This is additive, not a reimplementation.
 
+The demonstration UI is served at `/research/medical-demo` by the FastAPI gateway; it contains no user-supplied patient input, external scripts or diagnostic inference. Its lab/imaging action buttons invoke the synthetic endpoints only when those are explicitly enabled in development.
+
 ## How to run the sandbox
 
 By default, both POST endpoints return HTTP 403. Only a **nonproduction** test deployment with explicit opt-in enables them.
