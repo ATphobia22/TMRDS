@@ -208,3 +208,46 @@ def test_retry_after_parsing() -> None:
         detail = "unparseable"
 
     assert ops._retry_after_seconds(FakeExc3()) == 60  # type: ignore[arg-type]
+
+
+def test_api_key_gate_rejects_duplicate_case_insensitive_headers(tmp_path: Path) -> None:
+    secret = "s3cret-value_123"
+    keys = load_api_keys(str(_write_key_file(tmp_path, secret=secret)))
+    client = TestClient(_gated_app(keys))
+    valid = f"tmrds_doc001_{secret}"
+    response = client.get(
+        "/api/v1/research/health",
+        headers=[("X-API-Key", valid), ("x-api-key", valid)],
+    )
+    assert response.status_code == 401
+    assert response.json()["detail"]["code"] == "UNAUTHORIZED"
+
+
+def test_api_key_gate_does_not_log_sensitive_path(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    secret = "s3cret-value_123"
+    keys = load_api_keys(str(_write_key_file(tmp_path, secret=secret)))
+    app = _gated_app(keys)
+
+    @app.get("/api/private/{patient_identifier}")
+    async def lookup(patient_identifier: str) -> dict[str, str]:
+        return {"status": "ok"}
+
+    client = TestClient(app)
+    with caplog.at_level("INFO", logger="tmrds.auth"):
+        response = client.get(
+            "/api/private/synthetic-patient-identifier",
+            headers={"X-API-Key": f"tmrds_doc001_{secret}"},
+        )
+    assert response.status_code == 200
+    auth_messages = [record.getMessage() for record in caplog.records if record.name == "tmrds.auth"]
+    assert any("auth allow key_id=doc001" in message for message in auth_messages)
+    assert all("synthetic-patient-identifier" not in message for message in auth_messages)
+
+
+def test_api_key_gate_rejects_oversized_credential(tmp_path: Path) -> None:
+    keys = load_api_keys(str(_write_key_file(tmp_path)))
+    response = TestClient(_gated_app(keys)).get(
+        "/api/v1/research/health",
+        headers={"X-API-Key": "tmrds_doc001_" + "a" * 1000},
+    )
+    assert response.status_code == 401
