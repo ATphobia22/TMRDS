@@ -32,6 +32,7 @@ from api.api_key_auth import (
 from api.ai_governance_routes import router as ai_governance_router
 from api.evidence_retrieval_routes import router as evidence_retrieval_router
 from api.interoperability_routes import router as interoperability_router
+from api.medical_workbench_routes import router as medical_workbench_router
 from engines.cdc_data_pipeline import CDCDataPipeline
 from engines.clinical_trials_pipeline import ClinicalTrialsPipeline
 from engines.europe_pmc_pipeline import EuropePMCPipeline
@@ -340,3 +341,4 @@ app.include_router(tmrds_cube_router, prefix="/api/v1/cube")
 app.include_router(ai_governance_router)
 app.include_router(evidence_retrieval_router)
 app.include_router(interoperability_router)
+app.include_router(medical_workbench_router)
