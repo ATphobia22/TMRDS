@@ -1,67 +1,47 @@
-"""
-MONAI (Medical Open Network for AI) — Imaging / Radiology Integration.
-Loads 3-D volumes and applies diffusion-based denoising or segmentation.
-Production module for TMRDS.
+"""Inactive medical-imaging adapter.
+
+No medical image is read and no inference is performed. This explicit
+placeholder must never emit invented dimensions, lesions or confidence values.
+Real medical-image processing needs its own intended-use and safety review.
 """
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 
 class MONAIVisionNode:
-    """3-D medical volume loader + diffusion-based lesion detection pipeline."""
+    """Research imaging integration point, not an operational imaging model."""
 
     def __init__(self) -> None:
-        # Scales to PyCUDA / TensorRT in production
-        self.device: str = "CPU_MOCK"
+        self.device = "NOT_CONFIGURED"
 
-    def load_3d_volume(self, dicom_path: str) -> Dict[str, Any]:
-        """
-        Simulates loading a high-resolution DICOM CT/MRI sequence.
-
-        Parameters
-        ----------
-        dicom_path : str
-            Path or URI to the DICOM series.
-
-        Returns
-        -------
-        dict
-            Volume metadata and load status.
-        """
-        if not dicom_path or not isinstance(dicom_path, str):
+    def load_3d_volume(self, dicom_path: str) -> dict[str, Any]:
+        """Report unavailable imaging support without opening or echoing the path."""
+        if not isinstance(dicom_path, str) or not dicom_path.strip():
             raise ValueError("dicom_path must be a non-empty string")
-
         return {
-            "file": dicom_path,
-            "dimensions": (512, 512, 120),
-            "spacing_mm": [0.5, 0.5, 1.0],
-            "status": "VOLUME_LOADED",
+            "status": "NOT_CONFIGURED",
+            "image_ingested": False,
+            "dimensions": None,
+            "spacing_mm": None,
             "device": self.device,
+            "research_advisory": True,
+            "reason": "Medical-image ingestion is not configured or validated.",
         }
 
     def run_diffusion_denoise_and_segment(
-        self, volume_data: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Simulates lesion detection via MONAI-based diffusion models.
-
-        Parameters
-        ----------
-        volume_data : dict
-            Output of load_3d_volume or compatible volume descriptor.
-
-        Returns
-        -------
-        dict
-            Updated volume with segmentation findings.
-        """
+        self, volume_data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Never convert caller-supplied metadata into a fictional lesion result."""
         if not isinstance(volume_data, dict):
             raise TypeError("volume_data must be a dict")
-
-        result = dict(volume_data)
-        result["status"] = "DENOISED_AND_SEGMENTED"
-        result["detected_anomalies"] = 1
-        result["anomaly_confidence_plddt"] = 91.4
-        result["finding"] = "Interstitial Consolidation Trait"
-        return result
+        return {
+            "status": "NOT_CONFIGURED",
+            "segmentation_performed": False,
+            "detected_anomalies": None,
+            "anomaly_confidence_plddt": None,
+            "finding": None,
+            "research_advisory": True,
+            "human_review_required": True,
+            "reason": "No validated imaging model or inference pipeline is configured.",
+        }

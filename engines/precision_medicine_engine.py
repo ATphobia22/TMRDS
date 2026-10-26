@@ -1,95 +1,51 @@
-"""
-Integrated Genomics Engine & Molecular Freedom-to-Operate.
-Parses VCF streams and flags generic / zero-cost pharmaceutical targets.
-Production module for TMRDS.
+"""Research-only VCF parsing and unconfigured patent/compound review.
+
+Variant-to-drug matching and patent freedom-to-operate opinions require
+independently sourced evidence and expert review. This adapter issues neither.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 
 class PrecisionMedicineEngine:
-    """VCF parser + patent-expired compound repurposing screen."""
+    """Parse research variant rows; never infer clinical or patent conclusions."""
 
-    def __init__(self) -> None:
-        # Simulated database of patent-expired, high-efficacy compounds
-        self.repurposing_map: Dict[str, Dict[str, str]] = {
-            "RS7412": {
-                "drug": "Metformin",
-                "indication": "Metabolic Path Protection",
-            },
-            "RS429358": {
-                "drug": "Atorvastatin",
-                "indication": "Neuro-Vascular Stability",
-            },
-            "BRAF_V600E": {
-                "drug": "Vemurafenib",
-                "indication": "Kinase Inhibition",
-            },
-        }
-
-    def digest_variant_payload(self, raw_vcf_rows: List[str]) -> List[Dict[str, str]]:
-        """
-        Translates raw VCF sequences into actionable variant dictionaries.
-
-        Parameters
-        ----------
-        raw_vcf_rows : list[str]
-            Lines from a VCF file (header lines are skipped).
-
-        Returns
-        -------
-        list[dict]
-            Parsed variants with chromosome, position, id, ref, alt.
-        """
-        mutations: List[Dict[str, str]] = []
+    def digest_variant_payload(self, raw_vcf_rows: list[str]) -> list[dict[str, str]]:
+        """Parse basic five-column VCF data without interpreting pathogenicity."""
+        if not isinstance(raw_vcf_rows, list):
+            raise TypeError("raw_vcf_rows must be a list")
+        mutations: list[dict[str, str]] = []
         for line in raw_vcf_rows:
+            if not isinstance(line, str):
+                raise TypeError("VCF lines must be strings")
             if line.startswith("#") or not line.strip():
                 continue
-            segments = line.strip().split("\t")
-            if len(segments) >= 5:
-                mutations.append(
-                    {
-                        "chromosome": segments[0],
-                        "position": segments[1],
-                        "variant_id": segments[2],
-                        "ref": segments[3],
-                        "alt": segments[4],
-                    }
-                )
+            fields = line.rstrip("\r\n").split("\t")
+            if len(fields) >= 5:
+                mutations.append({
+                    "chromosome": fields[0],
+                    "position": fields[1],
+                    "variant_id": fields[2],
+                    "ref": fields[3],
+                    "alt": fields[4],
+                })
         return mutations
 
-    def screen_patent_freedom_to_operate(self, variant_id: str) -> Dict[str, Any]:
-        """
-        Resolves target against the patent landscape for zero-cost solutions.
-
-        Parameters
-        ----------
-        variant_id : str
-            rsID or HGVS-style identifier.
-
-        Returns
-        -------
-        dict
-            Freedom-to-operate status and recommended compound.
-        """
-        if not variant_id or not isinstance(variant_id, str):
+    def screen_patent_freedom_to_operate(self, variant_id: str) -> dict[str, Any]:
+        """Return an explicit non-determination; no patent or drug lookup occurs."""
+        if not isinstance(variant_id, str) or not variant_id.strip():
             raise ValueError("variant_id must be a non-empty string")
-
-        lookup = variant_id.upper()
-        if lookup in self.repurposing_map:
-            match = self.repurposing_map[lookup]
-            return {
-                "variant_id": variant_id,
-                "repurposed_compound": match["drug"],
-                "target_indication": match["indication"],
-                "patent_status": "EXPIRED_PUBLIC_DOMAIN",
-                "freedom_to_operate_confirmed": True,
-            }
-
+        if len(variant_id) > 256:
+            raise ValueError("variant_id exceeds permitted length")
         return {
             "variant_id": variant_id,
-            "repurposed_compound": "Standard Protocol",
-            "patent_status": "ACTIVE_RESTRICTION",
+            "status": "NOT_EVALUATED",
+            "repurposed_compound": None,
+            "target_indication": None,
+            "patent_status": "NOT_EVALUATED",
             "freedom_to_operate_confirmed": False,
+            "research_advisory": True,
+            "human_review_required": True,
+            "reason": "No verified patent landscape or clinical evidence evaluation was performed.",
         }
