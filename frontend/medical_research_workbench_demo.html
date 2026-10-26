@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TMRDS | Synthetic medical research workbench</title>
+<style>
+:root{color-scheme:dark;--bg:#09141c;--surface:#11232d;--soft:#193441;--ink:#e9f6fb;--muted:#b2c9d2;--line:#31515e;--teal:#6bd9d0;--gold:#efc477;font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 5% 0%,#1c4050,transparent 38%),var(--bg);color:var(--ink)}header,main,footer{max-width:1140px;margin:auto;padding:22px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line)}header strong{letter-spacing:.15em}h1{font-size:clamp(1.75rem,3.5vw,2.8rem);line-height:1.12;margin:.3em 0}h2{font-size:1.12rem;margin:0 0 12px}p{margin:.6em 0}small,.muted{color:var(--muted)}.intro{max-width:800px;margin-bottom:22px}.tag{border:1px solid #7d6f50;border-radius:30px;color:var(--gold);padding:5px 10px;font-size:.75rem;font-weight:700;white-space:nowrap}.layout{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}.panel{padding:21px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 16px 40px #0002}.wide{grid-column:1/-1}.buttonrow{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}button{border:1px solid #40877f;background:#214d4e;color:#f5fffe;padding:10px 14px;border-radius:8px;font-weight:650;cursor:pointer}button:hover{background:#2e6865}button:focus-visible{outline:3px solid var(--gold)}button:disabled{opacity:.6;cursor:not-allowed}.status{border-left:3px solid var(--gold);padding:8px 12px;background:#262d2d;color:#fee4aa}.status.ok{border-color:var(--teal);color:var(--teal);background:#183637}.result{border-top:1px solid var(--line);margin-top:15px;padding-top:14px;min-height:60px;overflow-wrap:anywhere}.data{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px}.datum{padding:12px;border:1px solid var(--line);border-radius:9px;background:var(--soft)}.datum b{display:block;font-size:1.22rem;color:var(--teal)}.datum span{font-size:.78rem;color:var(--muted)}a{color:#a4efe7}.sr-only{position:absolute;left:-9999px}.axis{display:flex;align-items:flex-end;gap:25px;min-height:150px;border-left:1px solid var(--muted);border-bottom:1px solid var(--muted);padding:15px}.bar{width:38px;background:linear-gradient(#6bd9d0,#286c78);border-radius:5px 5px 0 0;min-height:10px;position:relative}.bar span{position:absolute;bottom:-30px;left:0;font-size:.8rem}.bar strong{position:absolute;top:-24px;left:0;font-size:.8rem}.sources{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}.source{border:1px solid var(--line);border-radius:8px;padding:10px}.source strong{display:block}.source em{font-style:normal;font-size:.75rem;color:var(--gold)}footer{color:var(--muted);font-size:.8rem;padding-bottom:40px}@media(max-width:730px){.layout{grid-template-columns:1fr}header{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<header><strong>TMRDS / RESEARCH</strong><span class="tag">SYNTHETIC DATA ONLY · NOT FOR CARE</span></header>
+<main>
+<section class="intro"><small>OPEN SOURCE MEDICAL RESEARCH / V1 DEMO</small>
+<h1>Medical research workbench</h1>
+<p>Explore laboratory timelines, imaging-study metadata and open-source medical integration targets. All test records below are fictional. This display is not a diagnostic system and contains no patient-care recommendations.</p></section>
+<div class="layout">
+<section class="panel"><h2>01 — Laboratory trend example</h2><p class="muted">LOINC 4548-4 · hemoglobin A1c · synthetic test data. Comparisons are arithmetic, not clinical interpretations.</p>
+<div class="buttonrow"><button id="labs-btn">Run synthetic FHIR demo</button><a href="https://loinc.org/4548-4/" rel="noopener noreferrer">LOINC reference</a></div>
+<div id="lab-state" class="status" role="status" aria-live="polite">Demo calls are disabled by default and in production.</div>
+<div id="lab-result" class="result"><small>No data fetched.</small></div></section>
+<section class="panel"><h2>02 — Imaging metadata example</h2><p class="muted">A fictional digital radiography (DX) study index. No X-ray pixels, findings or identifiable accession numbers are present.</p>
+<div class="buttonrow"><button id="images-btn">Validate synthetic study</button><a href="https://github.com/OHIF/Viewers" rel="noopener noreferrer">OHIF source</a></div>
+<div id="image-state" class="status" role="status" aria-live="polite">No image viewer or DICOM transfer connected.</div>
+<div id="image-result" class="result"><small>Not yet indexed.</small></div></section>
+<section class="panel wide"><h2>03 — Source and connection inventory</h2><p class="muted">Actual project catalog metadata, not evidence of installed or running clinical services.</p>
+<div class="buttonrow"><button id="catalog-btn">Load TMRDS catalog</button><button id="status-btn">Check integration posture</button></div>
+<div id="catalog-state" class="status" role="status" aria-live="polite">Gateway status not yet requested.</div>
+<div id="catalog-result" class="result"><small>Connect to a running TMRDS development API to load the current inventory.</small></div></section>
+<section class="panel wide"><h2>04 — Human review and patient-safe explanations</h2><div class="data">
+<div class="datum"><b>Source first</b><span>Every result needs a traceable record or literature reference</span></div>
+<div class="datum"><b>No diagnosis</b><span>No model inference, triage or clinical status labels</span></div>
+<div class="datum"><b>Review required</b><span>Professional clinical use requires separate authorization and validation</span></div>
+<div class="datum"><b>No PHI</b><span>This gateway must not receive real patient-identifiable data</span></div></div></section>
+</div></main>
+<footer>© TMRDS research interface. Demonstration only · TMRDS intended-use and privacy restrictions apply. For original literature use the existing PubMed and Europe PMC API endpoints.</footer>
+<script>
+"use strict";
+const meta={tag:[{system:"urn:tmrds:data-classification",code:"synthetic"}]};
+function lab(id, date, value){return {resourceType:"Observation",id:id,meta:meta,status:"final",code:{coding:[{system:"http://loinc.org",code:"4548-4"}]},effectiveDateTime:date,valueQuantity:{value:value,system:"http://unitsofmeasure.org",code:"%",unit:"%"}};}
+const demoLabs={resources:[lab("synthetic-a1c-one","2026-01-10T12:00:00Z",5.1),lab("synthetic-a1c-two","2026-04-10T12:00:00Z",5.5)]};
+const demoImages={studies:[{resourceType:"ImagingStudy",id:"synthetic-imaging-one",meta:meta,status:"available",started:"2026-02-01T12:00:00Z",series:[{modality:{system:"http://dicom.nema.org/resources/ontology/DCM",code:"DX"},numberOfInstances:2}]}]};
+const el=id=>document.getElementById(id);
+function node(tag,value,cls){const x=document.createElement(tag);if(cls)x.className=cls;if(value!==undefined)x.textContent=String(value);return x;}
+function message(id,msg,ok){const x=el(id);x.textContent=msg;x.classList.toggle("ok",Boolean(ok));}
+async function request(path,opts){const r=await fetch(path,{...opts,headers:{"content-type":"application/json",...(opts&&opts.headers?opts.headers:{})},credentials:"same-origin",cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status+" (demo unavailable or request rejected)");return r.json();}
+async function run(id,state,task){const b=el(id);b.disabled=true;try{await task();message(state,"Synthetic sandbox responded; not clinically reviewed.",true);}catch(e){message(state,e.message+" — production and default deployments deliberately disable synthetic POSTs.",false);}finally{b.disabled=false;}}
+el("labs-btn").addEventListener("click",()=>run("labs-btn","lab-state",async()=>{
+const r=await request("/api/v1/medical/synthetic/labs/trends",{method:"POST",body:JSON.stringify(demoLabs)});
+const root=el("lab-result");root.replaceChildren();
+for(const trend of r.trends){root.append(node("p",trend.label+" · "+trend.ucum_code+" · interpretation NOT EVALUATED"));const axis=node("div",undefined,"axis");const values=trend.measurements;
+for(let i=0;i<values.length;i++){const bar=node("div",undefined,"bar");bar.style.height=String(Math.max(14,Math.min(130,values[i].value*17)))+"px";bar.append(node("strong",values[i].value));bar.append(node("span","Test "+(i+1)));axis.append(bar);}root.append(axis);root.append(node("p","Arithmetic delta: "+trend.arithmetic_delta+" "+trend.ucum_code+" (not clinical change classification)."));}});
+el("images-btn").addEventListener("click",()=>run("images-btn","image-state",async()=>{
+const r=await request("/api/v1/medical/synthetic/imaging/index",{method:"POST",body:JSON.stringify(demoImages)});
+const root=el("image-result");root.replaceChildren();for(const study of r.studies){root.append(node("p","Study "+study.synthetic_id+" · "+study.status));for(const series of study.series)root.append(node("p",series.modality+" · "+series.number_of_instances+" synthetic instances (pixels not loaded)"));}});
+el("catalog-btn").addEventListener("click",()=>run("catalog-btn","catalog-state",async()=>{
+const r=await request("/api/v1/medical/stack");const root=el("catalog-result");root.replaceChildren();
+root.append(node("p",r.projects.length+" projects documented; most are integration targets rather than installed services."));
+const wrap=node("div",undefined,"sources");for(const p of r.projects){const c=node("div",undefined,"source");c.append(node("strong",p.name));c.append(node("em",p.state));c.append(node("p",p.purpose));wrap.append(c);}root.append(wrap);
+}));
+el("status-btn").addEventListener("click",()=>run("status-btn","catalog-state",async()=>{
+const r=await request("/api/v1/medical/integration-status");message("catalog-state","Live patient exchange: "+r.live_patient_exchange+" | clinical services connected: "+r.external_clinical_services_connected+" | synthetic demo enabled: "+r.synthetic_demo_enabled,true);
+}));
+</script>
+</body></html>
