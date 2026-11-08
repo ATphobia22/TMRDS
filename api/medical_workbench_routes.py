@@ -132,3 +132,26 @@ async def synthetic_fhir_resource(resource_type: str, synthetic_id: str) -> dict
         raise HTTPException(status_code=503, detail="synthetic FHIR upstream is not configured") from exc
     except SyntheticFHIRUnavailable as exc:
         raise HTTPException(status_code=502, detail="synthetic FHIR upstream unavailable or rejected") from exc
+
+
+class PublicRecordPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    public_research_metadata_only: bool
+    records: list[dict[str, Any]] = Field(min_length=1, max_length=100)
+
+
+@router.get("/plugin-capabilities")
+async def plugin_capabilities() -> dict:
+    from engines.biomedical_provider_registry import PLUGIN_CAPABILITIES
+    return PLUGIN_CAPABILITIES
+
+
+@router.post("/research-records/preview", dependencies=[Depends(require_service_identity)])
+async def preview_public_records(request: PublicRecordPreviewRequest) -> dict:
+    from engines.plugin_record_exchange import preview_records
+    if request.public_research_metadata_only is not True:
+        raise HTTPException(status_code=422, detail="public research metadata attestation required")
+    try:
+        return preview_records(request.records)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=422, detail="invalid public research metadata") from exc

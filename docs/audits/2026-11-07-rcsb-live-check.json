@@ -1,0 +1,29 @@
+{
+  "source": "rcsb_pdb",
+  "source_id": "4HHB",
+  "source_url": "https://www.rcsb.org/structure/4HHB",
+  "retrieved_at": "2026-11-08T03:29:57.252495+00:00",
+  "title": "THE CRYSTAL STRUCTURE OF HUMAN DEOXYHAEMOGLOBIN AT 1.74 ANGSTROMS RESOLUTION",
+  "experimental_methods": [
+    "X-RAY DIFFRACTION"
+  ],
+  "experimental_status": "source_reports_method",
+  "source_version": {
+    "deposit_date": "1984-03-07T00:00:00.000+00:00",
+    "has_released_experimental_data": "N",
+    "initial_release_date": "1984-07-17T00:00:00.000+00:00",
+    "major_revision": 4,
+    "minor_revision": 3,
+    "revision_date": "2026-08-12T00:00:00.000+00:00",
+    "status_code": "REL"
+  },
+  "record_sha256": "a4410a71c1e6d7fb31823bf074c40945a5573ab6652eaff457ddbd0f0806562e",
+  "hash_scope": "parsed_upstream_json",
+  "hash_is_signature": false,
+  "research_advisory": true,
+  "clinical_promotion_allowed": false,
+  "limitations": [
+    "Metadata only; coordinates not downloaded.",
+    "Experimental structure does not establish treatment efficacy."
+  ]
+}
