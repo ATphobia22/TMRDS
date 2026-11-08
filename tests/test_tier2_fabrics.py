@@ -477,6 +477,11 @@ def test_orchestrator_failure_isolation():
         async def boom(query, n=10):
             raise ConnectionError("simulated outage")
 
+        async def empty(*args):
+            return []
+        for name in dir(search):
+            if name.startswith("_search_") and name != "_search_opentargets":
+                setattr(search, name, empty)
         search.opentargets.associated_diseases = boom
         result = await search.search_all("TP53", per_source=2)
         status = result["source_status"]["opentargets"]

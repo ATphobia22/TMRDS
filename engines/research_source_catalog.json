@@ -1,0 +1,171 @@
+{
+  "schema_version": "1.0",
+  "research_advisory": true,
+  "human_authority_final": true,
+  "clinical_promotion_allowed": false,
+  "catalog_is_not_live_health": true,
+  "sources": [
+    {
+      "source_id": "europe_pmc_integrity",
+      "name": "Europe PMC publication integrity",
+      "domain": "publication_integrity",
+      "implementation_status": "metadata_preserved",
+      "documentation_url": "https://europepmc.org/RestfulWebService",
+      "discovery_or_api_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
+      "license_notes": "source-specific; metadata first",
+      "gap_addressed": "Retraction publication types and correction links previously discarded.",
+      "limitations": [
+        "No flag does not establish absence of retraction; review required."
+      ],
+      "reviewed_on": "2026-11-07",
+      "runtime_health": "not_checked",
+      "background_or_compute_execution_enabled": false
+    },
+    {
+      "source_id": "uniprot",
+      "name": "UniProtKB",
+      "domain": "protein_annotation",
+      "implementation_status": "implemented_adapter",
+      "documentation_url": "https://github.com/ebi-uniprot/uniprot-manual/blob/main/notebooks/uniprot_rest_tutorial.ipynb",
+      "discovery_or_api_url": "https://rest.uniprot.org/uniprotkb/search",
+      "license_notes": "CC-BY-4.0 for copyrightable data; third-party rights may apply",
+      "gap_addressed": "Protein identifiers, review status, taxonomy and entry versions.",
+      "limitations": [
+        "Annotations do not establish drug efficacy; query scope may include nonhuman organisms."
+      ],
+      "reviewed_on": "2026-11-07",
+      "runtime_health": "not_checked",
+      "background_or_compute_execution_enabled": false
+    },
+    {
+      "source_id": "gwas_catalog_v2",
+      "name": "GWAS Catalog v2",
+      "domain": "genetic_association",
+      "implementation_status": "candidate",
+      "documentation_url": "https://www.ebi.ac.uk/gwas/docs/programmatic-access/rest-api/",
+      "discovery_or_api_url": "https://www.ebi.ac.uk/gwas/rest/api/v2/",
+      "license_notes": "Review current data terms before ingestion",
+      "gap_addressed": "Direct curated variant-trait and ancestry metadata, beyond aggregated target scores.",
+      "limitations": [
+        "Use v2; v1 retired August 2026. No current summary-statistics API. Association is not causality."
+      ],
+      "reviewed_on": "2026-11-07",
+      "runtime_health": "not_checked",
+      "background_or_compute_execution_enabled": false
+    },
+    {
+      "source_id": "depmap_prism",
+      "name": "DepMap / PRISM",
+      "domain": "experimental_drug_response",
+      "implementation_status": "access_review_required",
+      "documentation_url": "https://depmap.org/repurposing/",
+      "discovery_or_api_url": "https://depmap.org/portal/api/no-captcha/download/files",
+      "license_notes": "Release-specific terms; newer data have research/commercial-use restrictions",
+      "gap_addressed": "Cell-line viability and genetic dependency validation for repurposing hypotheses.",
+      "limitations": [
+        "Catalog metadata endpoint is not a data download. Do not bypass CAPTCHA; pin release DOI, license, assay units and cell IDs."
+      ],
+      "reviewed_on": "2026-11-07",
+      "runtime_health": "not_checked",
+      "background_or_compute_execution_enabled": false
+    },
+    {
+      "source_id": "lincs_l1000",
+      "name": "LINCS L1000 / GEO GSE70138",
+      "domain": "perturbation_expression",
+      "implementation_status": "candidate",
+      "documentation_url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE70138",
+      "discovery_or_api_url": "https://clue.io/",
+      "license_notes": "Inspect per-dataset terms and citation requirements",
+      "gap_addressed": "Experimental transcriptional responses for hypothesis generation.",
+      "limitations": [
+        "Pin cell line, concentration, duration and processing level; distinguish measured from inferred genes. Signature reversal is not clinical benefit."
+      ],
+      "reviewed_on": "2026-11-07",
+      "runtime_health": "not_checked",
+      "background_or_compute_execution_enabled": false
+    },
+    {
+      "source_id": "cellxgene_census",
+      "name": "CZ CELLxGENE Census",
+      "domain": "single_cell_expression",
+      "implementation_status": "candidate",
+      "documentation_url": "https://chanzuckerberg.github.io/cellxgene-census/",
+      "discovery_or_api_url": "https://cellxgene.cziscience.com/",
+      "license_notes": "Per-dataset license and citation review required",
+      "gap_addressed": "Cell-type and tissue context for target expression.",
+      "limitations": [
+        "Pin an LTS release and is_primary_data filter; avoid double counting cells. Expression does not establish therapeutic effect."
+      ],
+      "reviewed_on": "2026-11-07",
+      "runtime_health": "not_checked",
+      "background_or_compute_execution_enabled": false
+    },
+    {
+      "source_id": "clinpgx",
+      "name": "ClinPGx",
+      "domain": "pharmacogenomics",
+      "implementation_status": "access_review_required",
+      "documentation_url": "https://api.clinpgx.org/",
+      "discovery_or_api_url": "https://api.clinpgx.org/",
+      "license_notes": "CC-BY-SA-4.0 plus data usage terms; CPIC content has separate terms",
+      "gap_addressed": "Gene-drug-response annotations and guideline provenance.",
+      "limitations": [
+        "API documentation warns schema may change; respect 2 requests/second. No patient-specific dosing or automatic application."
+      ],
+      "reviewed_on": "2026-11-07",
+      "runtime_health": "not_checked",
+      "background_or_compute_execution_enabled": false
+    },
+    {
+      "source_id": "arca_regulatory",
+      "name": "Arca FDA / Trials / PubMed",
+      "domain": "regulatory_context",
+      "implementation_status": "connector_discovered",
+      "documentation_url": "https://www.fda.gov/drugs/drug-approvals-and-databases",
+      "discovery_or_api_url": "https://api.fda.gov/",
+      "license_notes": "Verify provider and originating dataset terms separately",
+      "gap_addressed": "Discover regulatory review, approval and safety records beyond drug labels.",
+      "limitations": [
+        "Mirrored source lanes do not prove complete or current coverage. Clinical-guideline lane currently reports no mirrored results."
+      ],
+      "reviewed_on": "2026-11-07",
+      "runtime_health": "not_checked",
+      "background_or_compute_execution_enabled": false,
+      "documentation_scope": "Underlying FDA data authority; not an Arca backend API contract"
+    },
+    {
+      "source_id": "genomic_intelligence",
+      "name": "Genomic Intelligence splice models",
+      "domain": "research_compute",
+      "implementation_status": "connector_discovered",
+      "documentation_url": "https://www.ensembl.org/",
+      "discovery_or_api_url": null,
+      "license_notes": "Model/provider entitlement and terms not verified for backend use",
+      "gap_addressed": "Optional sequence-based splice hypothesis generation.",
+      "limitations": [
+        "Catalog lists g0-splice-bigbird, 15000-bp context and 500000-bp request maximum; predictions are not clinical variant interpretation."
+      ],
+      "reviewed_on": "2026-11-07",
+      "runtime_health": "not_checked",
+      "background_or_compute_execution_enabled": false,
+      "documentation_scope": "Ensembl reference-sequence source only; provider model metadata obtained from connected list_models tool"
+    },
+    {
+      "source_id": "quantum_compute",
+      "name": "qBraid / IBM research compute",
+      "domain": "research_compute",
+      "implementation_status": "connector_discovered",
+      "documentation_url": "https://account.qbraid.com/explore",
+      "discovery_or_api_url": "https://account.qbraid.com/explore",
+      "license_notes": "Provider-specific entitlement and execution costs",
+      "gap_addressed": "Possible later simulation benchmarking against classical baselines.",
+      "limitations": [
+        "Community demos are not validated biomedical solvers. No job submission or quantum advantage established."
+      ],
+      "reviewed_on": "2026-11-07",
+      "runtime_health": "not_checked",
+      "background_or_compute_execution_enabled": false
+    }
+  ]
+}

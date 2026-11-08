@@ -1,0 +1,51 @@
+{
+  "checked_at": "2026-11-08T03:04:19.901606+00:00",
+  "checks": [
+    {
+      "source": "uniprot",
+      "status": "passed",
+      "source_url": "https://www.uniprot.org/uniprotkb/P04637/entry",
+      "accession": "P04637",
+      "source_release": "2026_04",
+      "entry_audit": {
+        "lastAnnotationUpdateDate": "2026-11-04",
+        "entryVersion": 316
+      },
+      "record_hash": "8666734b37a1b9d8795d9692a1d6ecfa288d08321c43c9d95f259e942357a9f2"
+    },
+    {
+      "source": "europe_pmc",
+      "status": "passed",
+      "source_url": "https://europepmc.org/article/MED/42550576",
+      "pmid": "42550576",
+      "publication_integrity": {
+        "provider": "europe_pmc",
+        "publication_types": [
+          "Retracted Publication",
+          "Editorial"
+        ],
+        "correction_links": [
+          {
+            "source": "MED",
+            "id": "42715445",
+            "reference": "J Psychosoc Nurs Ment Health Serv. 2026 Sep;64(9):1. doi: 10.3928/02793695-20260817-01.",
+            "type": "Retraction in",
+            "orderIn": 1
+          }
+        ],
+        "retraction_status": "retraction_reported",
+        "is_retraction_notice": false,
+        "is_expression_of_concern": false,
+        "assessment_scope": "source_metadata_only",
+        "limitation": "Absence of a flag is not proof that a publication is unretracted or reliable."
+      },
+      "record_hash": "fd7c8aaaf7413112c194609e97caead44f3b700f7d1b2feff6fcef10896f44a9"
+    }
+  ],
+  "implementation_sha256": {
+    "engines/uniprot_pipeline.py": "05f0b15d2442edad94cd1503609c6d366516c32ed013b5f789c2f0cc40975864",
+    "engines/publication_integrity.py": "0b83283da3f80392b09b4924edcf33faffb7f1951c39e3a312297c99244de84f",
+    "engines/federated_evidence_search.py": "657465b25068ef81610509ca02b852c492b85c964ac2f031caad55fa61ad1284"
+  },
+  "scope": "Two read-only live adapter checks; not all-source health, clinical validation or therapeutic benefit."
+}
