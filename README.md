@@ -10,7 +10,7 @@
 
 TMRDS is a research workspace for answering "what does the evidence say?" — with every answer traceable to its source.
 
-- **One search across 23 public sources.** Ask about a drug, gene, variant, trial, or condition and get results from the biomedical literature (PubMed, Europe PMC, OpenAlex, Semantic Scholar, Crossref, arXiv, bioRxiv/medRxiv), trials and drug labels (ClinicalTrials.gov, openFDA, DailyMed), chemistry (PubChem, ChEMBL, RxNorm), genomics and variants (Ensembl — including variant-consequence predictions — ClinVar with review stars, UniProtKB, AlphaFold DB), and knowledge graphs and pathways (Open Targets, STRING, Reactome, Monarch, NCATS, MeSH). Each result keeps its source, its date, and its limits. If a source is down or throttled, you see a warning for that source — never a silent gap.
+- **One search across 25 public sources.** Ask about a drug, gene, variant, trial, or condition and get results from the biomedical literature (PubMed, Europe PMC, OpenAlex, Semantic Scholar, Crossref, arXiv, bioRxiv/medRxiv), trials and drug labels (ClinicalTrials.gov, openFDA, DailyMed), chemistry (PubChem, ChEMBL, RxNorm), genomics and variants (Ensembl — including variant-consequence predictions — ClinVar with review stars, UniProtKB, AlphaFold DB, gnomAD population frequencies, GTEx tissue eQTLs), and knowledge graphs and pathways (Open Targets, STRING, Reactome, Monarch, NCATS, MeSH). Each result keeps its source, its date, and its limits. If a source is down or throttled, you see a warning for that source — never a silent gap.
 - **A research dossier with citations.** `GET /api/v1/research/dossier` turns a search into a structured export: exact DOI/PMID matches, each record's provenance, retraction flags, and what is still unreviewed. Discovery material, not proof of a treatment or cure.
 - **A synthetic lab-trends workbench.** A FHIR R4 research workbench for reviewing laboratory trends (values, units, dates, statuses, reference ranges) and imaging metadata — **synthetic test data only**. No real patient records, no real images, no diagnosis, no reference-range interpretation. It exists so workflows can be tested safely before any real data is ever involved.
 - **Imaging research, kept separate from interpretation.** A local Orthanc/OHIF recipe lets researchers view test DICOM studies, and offline MONAI tools can evaluate segmentation masks. AI output is always labeled as AI output — never mixed with the original image or a radiologist's reading. Nothing here is validated for patient-care use.
@@ -37,17 +37,17 @@ TMRDS is built to be evaluated as a research platform first, with clear boundari
 
 ## Evidence sources
 
-**23 live public sources**, each queried in isolation so one failure never blocks the rest. Two more are credential-gated and reported as unavailable, never mocked: Lens Patents and IBM Quantum.
+**25 live public sources**, each queried in isolation so one failure never blocks the rest. Two more are credential-gated and reported as unavailable, never mocked: Lens Patents and IBM Quantum.
 
 | Group | Sources |
 |---|---|
 | Literature | PubMed, Europe PMC, OpenAlex, Semantic Scholar, Crossref, arXiv, bioRxiv/medRxiv |
 | Trials, labels, safety | ClinicalTrials.gov, openFDA, DailyMed |
 | Chemistry and drugs | PubChem, ChEMBL, RxNorm |
-| Genomics and variants | Ensembl, ClinVar (review status shown with every classification), UniProtKB, AlphaFold DB |
+| Genomics and variants | Ensembl, ClinVar (review status shown with every classification), UniProtKB, AlphaFold DB, gnomAD, GTEx |
 | Knowledge and pathways | Open Targets Platform, STRING, Reactome, Monarch, NCATS Node Normalization, MeSH |
 
-Per-source limits are stated in the code (`engines/federated_evidence_search.py`) — for example, Semantic Scholar runs on the shared request pool without a free API key, and Ensembl VEP predictions are computational, not clinical assertions. gnomAD and GTEx appear in the source registry as candidates; their adapters are not yet implemented, so they are not counted among the 23.
+Per-source limits are stated in the code (`engines/federated_evidence_search.py`) — for example, Semantic Scholar runs on the shared request pool without a free API key, and Ensembl VEP predictions are computational, not clinical assertions.
 
 ## How it works
 
@@ -57,7 +57,7 @@ Public sources are queried by isolated adapters, normalized into a common eviden
 
 ## What's new
 
-**November 2026** — Synthetic FHIR R4 research workbench (lab trends, imaging metadata, terminology; synthetic data only); local Orthanc/OHIF imaging research sandbox; research evidence dossiers with retraction flags; a 30-surface research-plugin capability registry with a read-only RCSB PDB metadata route; source telemetry; opt-in IBM Quantum adapter with a bounded reconciliation worker and job ledger.
+**November 2026** — gnomAD and GTEx adapters wired into federated search (population frequencies, tissue eQTLs; 25 live sources); degraded-open API-key posture restored per the standing directive; synthetic FHIR R4 research workbench (lab trends, imaging metadata, terminology; synthetic data only); local Orthanc/OHIF imaging research sandbox; research evidence dossiers with retraction flags; a 30-surface research-plugin capability registry with a read-only RCSB PDB metadata route; source telemetry; opt-in IBM Quantum adapter with a bounded reconciliation worker and job ledger.
 
 **October 2026** — 15 new evidence pipelines (Tier 1: Semantic Scholar, Crossref, PubChem, ChEMBL, DailyMed, RxNorm; Tier 2: Open Targets, STRING, Reactome, ClinVar, Ensembl, bioRxiv/medRxiv, NCATS, Monarch, MeSH), each verified live against its official service before coding. Operations hardening: Prometheus metrics, rate limiting, sanitized errors, optional API-key gate, and a deploy stack (Caddy + TLS, Prometheus/Alertmanager/Grafana, Keycloak). Research-only intended use (`docs/INTENDED_USE.md`, mapping the four Cures Act §520(o)(1)(E) criteria). Verified open-source medical software catalog (`docs/reference/open-source-medical-software.md`).
 
@@ -109,7 +109,7 @@ TMRDS_SERVICE_AUDIENCE
 TMRDS_SERVICE_JWKS_JSON
 ```
 
-`TMRDS_HMAC_SECRET` must be at least 32 characters. Production Compose requires database, Neo4j, interoperability, and service-auth configuration to be present. `TMRDS_SERVICE_AUTH_REQUIRED=true` is the production default; ingestion and synchronization endpoints then require a valid asymmetric service token with the configured scope. The optional API-key gate (`TMRDS_API_KEYS_FILE`) denies API traffic with a 503 if a configured key file cannot be loaded, while intentionally public routes stay open when no key file is set. Ops posture is visible at `GET /api/v1/ops/posture`.
+`TMRDS_HMAC_SECRET` must be at least 32 characters. Production Compose requires database, Neo4j, interoperability, and service-auth configuration to be present. `TMRDS_SERVICE_AUTH_REQUIRED=true` is the production default; ingestion and synchronization endpoints then require a valid asymmetric service token with the configured scope. The optional API-key gate (`TMRDS_API_KEYS_FILE`) degrades to loud open if a configured key file cannot be loaded (CRITICAL log + `"auth": "degraded-open"` in the ops posture) — the API keeps serving and never denies traffic over a bad key file — while intentionally public routes stay open when no key file is set. Ops posture is visible at `GET /api/v1/ops/posture`.
 
 ## Safety and provenance
 
