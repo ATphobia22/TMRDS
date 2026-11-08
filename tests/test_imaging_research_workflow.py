@@ -21,7 +21,7 @@ def checkpoint(tmp_path):
 def test_review_refuses_tampering_missing_review_and_paths(tmp_path):
     manifest = checkpoint(tmp_path)
     assert review_bundle(tmp_path, manifest)['state'] == 'research_reviewed'
-    for delta in ({'license': 'unknown'}, {'reviewer': ''}, {'model_card_reviewed': False},
+    for delta in ({'license': 'unknown'}, {'reviewer': ''}, {'reviewer': None}, {'model_card_reviewed': False},
                   {'files': {'../outside': 'abc'}}):
         with pytest.raises(ValueError):
             review_bundle(tmp_path, {**manifest, **delta})

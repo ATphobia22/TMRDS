@@ -12,7 +12,8 @@ MAX_WEIGHTS_BYTES = 512 * 1024 * 1024
 def review_bundle(directory: Path, manifest: dict) -> dict:
     if manifest.get("license") not in ALLOWED_LICENSES:
         raise ValueError("license requires review or is unsupported")
-    if manifest.get("intended_use") != "research" or not str(manifest.get("reviewer", "")).strip():
+    reviewer = manifest.get("reviewer")
+    if manifest.get("intended_use") != "research" or not isinstance(reviewer, str) or not reviewer.strip():
         raise ValueError("research use and named human reviewer required")
     if manifest.get("license_reviewed") is not True or manifest.get("model_card_reviewed") is not True:
         raise ValueError("license and model card review attestations required")
