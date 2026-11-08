@@ -1,0 +1,19 @@
+# Synthetic research sandbox only. No host DICOM listener, hospital peers or cloud storage.
+services:
+  imaging:
+    image: orthancteam/orthanc:26.11.0-full@sha256:643d1f5f5622dfcfe3817933e80b52fb666f585cf5071c5c795e8f2a2a3b7919
+    ports:
+      - "127.0.0.1:8042:8042"
+    environment:
+      DICOM_WEB_PLUGIN_ENABLED: "true"
+      OHIF_PLUGIN_ENABLED: "true"
+    volumes:
+      - ../../data/imaging-demo/orthanc.json:/etc/orthanc/orthanc.json:ro
+      - imaging-data:/var/lib/orthanc/db
+    networks: [imaging]
+    security_opt: [no-new-privileges:true]
+networks:
+  imaging:
+    internal: true
+volumes:
+  imaging-data:
