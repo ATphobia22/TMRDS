@@ -28,6 +28,10 @@ def run() -> dict:
             except requests.RequestException:
                 pass
             if time.monotonic() >= deadline:
+                import subprocess
+                logs = subprocess.run(['docker', 'compose', '-f', 'deploy/imaging/compose.yml', 'logs', '--no-color', '--tail', '80'], capture_output=True, text=True)
+                password = config['RegisteredUsers']['research']
+                print((logs.stdout + logs.stderr).replace(password, '[REDACTED]'))
                 raise RuntimeError('Orthanc startup check failed')
             time.sleep(1)
         anonymous = session.get(base + '/system', auth=('', ''), timeout=5, allow_redirects=False)
