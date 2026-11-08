@@ -1,0 +1,171 @@
+{
+  "base_main": "ba0e2328bc4fc4dc9506489e8d9672dbdab93b92",
+  "policy": "Retain current main for superseded branch content; recover unique live-population adapter; include all inventoried heads in reconciliation ancestry. This is not a promise to reinstate every historical version.",
+  "branches": [
+    {
+      "branch": "codex/tmrds-actions-current-pins-20261017",
+      "head_sha": "ac9c5e1b8624dd067350b6afd8c1f730dbfc424a",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "codex/tmrds-alphafold-input-hardening-2026-10-17",
+      "head_sha": "ffa49d5e8a65d5f42de2dd99aeafd4976202a35c",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "codex/tmrds-audit-followup-20261017",
+      "head_sha": "e12aed020015ec7ea4324009bf0615b8a874b0a7",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "codex/tmrds-live-population-annotations-2026-10-17",
+      "head_sha": "dbb0a9a7153785e4ed789172fd455f2793f2669a",
+      "decision": "Recovered unique gnomAD/GTEx adapter and tests via cherry-pick; no live validity claim"
+    },
+    {
+      "branch": "codex/tmrds-post-merge-audit-2026-10-15",
+      "head_sha": "da81c967f9def23ddd513f9dc87a6f1261ef57ee",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "codex/tmrds-release-gates-2026-10-17",
+      "head_sha": "f0f002e57f929eff3fbee265ad2864a3e12ba8f6",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "codex/tmrds-release-gates-audit-20261017",
+      "head_sha": "168eacb838592de76e84f287b81bca966f105cc3",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "codex/tmrds-remediation-rebased-2026-10-15",
+      "head_sha": "3e43eb20a13c2b4a9ba8a0b46b6ee7b89efe6325",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "codex/tmrds-repository-remediation-2026-10-15",
+      "head_sha": "bdd05e66aed2c17703a12507564c1b5ce14ddc72",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "codex/tmrds-scientific-backend-truth-2026-10-17",
+      "head_sha": "6a3ea2e9e99c95836527be136a5b5eeca984e538",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "dependabot/github_actions/actions/setup-python-7.1.0",
+      "head_sha": "88ad53d565a062dae599a6e4249ce7c6bbafd30b",
+      "decision": "Integrated version bumps; canonical and alias locks synchronized"
+    },
+    {
+      "branch": "dependabot/github_actions/github/codeql-action/analyze-4.39.1",
+      "head_sha": "dccab871cfbf98e8b964d75e251c7ee850bc595a",
+      "decision": "Integrated version bumps; canonical and alias locks synchronized"
+    },
+    {
+      "branch": "dependabot/github_actions/github/codeql-action/init-4.39.1",
+      "head_sha": "8703a19a6b6091881f3bb064147ad3258b466a79",
+      "decision": "Integrated version bumps; canonical and alias locks synchronized"
+    },
+    {
+      "branch": "dependabot/pip/fastapi-0.162.0",
+      "head_sha": "caaeaee0622a2c92a857bdaa49db4343f7130b40",
+      "decision": "Integrated version bumps; canonical and alias locks synchronized"
+    },
+    {
+      "branch": "dependabot/pip/pycparser-3.12",
+      "head_sha": "36ce8060ac54e3bbdb4b942b8c7dbff2dcb552ec",
+      "decision": "Integrated version bumps; canonical and alias locks synchronized"
+    },
+    {
+      "branch": "dependabot/pip/pytest-asyncio-1.4.1",
+      "head_sha": "0cb5f78c13058d2896418fb5019dd3b63402d257",
+      "decision": "Integrated version bumps; canonical and alias locks synchronized"
+    },
+    {
+      "branch": "dependabot/pip/starlette-1.10.0",
+      "head_sha": "daed5943d1172dc769f555dbe9d39d763713219d",
+      "decision": "Integrated version bumps; canonical and alias locks synchronized"
+    },
+    {
+      "branch": "dependabot/pip/websockets-17.3",
+      "head_sha": "a56146790cba30aa33d31a310ebf574c35bce6cd",
+      "decision": "Integrated version bumps; canonical and alias locks synchronized"
+    },
+    {
+      "branch": "deps/fastapi-coordinated-20261025",
+      "head_sha": "a256d8e71f1f8fde8e8521cb71838c80fccc1035",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "docs/clinician-patient-safety-roadmap-20261025",
+      "head_sha": "2fae42eda3a2ed4c390efe754bb653ada72ebdeb",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "feat/biomedical-provider-registry-20261026",
+      "head_sha": "71f84af6961fa05d1efd7aeca5854f20da565b5f",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "feat/imaging-research-sandbox",
+      "head_sha": "9590a1767b8b70bf28299e6507bc27400d8da7d1",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "feat/research-evidence-display-contract-20261025",
+      "head_sha": "bab2868595a8cea5a5366fb2105c194784c01aab",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "feat/research-evidence-dossier",
+      "head_sha": "6e6e43355b0488aeaa633ef244901ae59ff37790",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "feat/research-medical-workbench-20261026",
+      "head_sha": "22833f0e98d3f76faffb80275a06a8958d39bf33",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "fix/api-key-auth-fail-closed-20261025",
+      "head_sha": "43427561cb95f0f04e891a468d55a4cd12bc3ceb",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "fix/api-key-header-and-log-safety-20261025",
+      "head_sha": "23445d6cfca82093cea72a05293575b751a3a5e5",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "fix/coordinated-dependency-pins-20261025",
+      "head_sha": "189a34623d41bde51026848b86f2b4393c8caa15",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "fix/medical-connectors-truthful-synthetic-fhir-20261026",
+      "head_sha": "fbde7f12807ee5ffff7144da2defa145f2203207",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "fix/research-stub-scientific-integrity-20261025",
+      "head_sha": "9b53e4ac6495f4d2d6837d9bbc7851d82705a942",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "fix/smart-discovery-truthful-20261025",
+      "head_sha": "892a73ca1589e07d45ec9812f9d45c78722f850f",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "quantum-integration",
+      "head_sha": "d6ca0c59fd4f9c0845602cad94cbd4c36abb3997",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    },
+    {
+      "branch": "test/fastapi-request-compatibility-20261025",
+      "head_sha": "0b34d6b34810dea9e971fcf7090d71463747d173",
+      "decision": "Reconciled historical branch; retain current validated implementations, updated dependencies and safety controls over superseded snapshots"
+    }
+  ]
+}

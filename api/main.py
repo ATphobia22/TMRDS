@@ -373,3 +373,23 @@ async def medical_research_demo() -> FileResponse:
     demo = Path(__file__).resolve().parents[1] / "frontend" / "medical_research_workbench_demo.html"
     return FileResponse(demo, media_type="text/html", headers={"Cache-Control": "no-store"})
 
+
+
+# Observations are separate from the static research-source inventory.
+from engines.source_telemetry import SourceMonitor
+from api.security_dependencies import require_service_identity
+from fastapi import Depends
+source_monitor = SourceMonitor()
+
+
+@app.get("/api/v1/sources/catalog")
+async def sources_catalog() -> dict:
+    return source_monitor.snapshot()
+
+
+@app.post("/api/v1/sources/{provider}/probe", dependencies=[Depends(require_service_identity)])
+@limiter.limit("5/minute")
+async def probe_source(request: Request, provider: str) -> dict:
+    if provider not in {"tamarind", "patsnap"}:
+        raise HTTPException(status_code=422, detail="unknown provider")
+    return await source_monitor.probe(provider)
