@@ -298,6 +298,15 @@ class _Stub:
 
 def _stubbed_searcher():
     f = FederatedEvidenceSearch()
+    async def empty(*args):
+        return []
+    # Keep this unit test offline as new source adapters are added.
+    tier1 = {"_search_europepmc", "_search_pubmed", "_search_trials", "_search_openfda",
+             "_search_openalex", "_search_arxiv", "_search_semantic_scholar", "_search_crossref",
+             "_search_pubchem", "_search_chembl", "_search_dailymed", "_search_rxnorm"}
+    for name in dir(f):
+        if name.startswith("_search_") and name not in tier1:
+            setattr(f, name, empty)
     f.europepmc = _Stub({"resultList": {"result": []}})
     f.pubmed = _Stub({"status": "OK", "pmids": []})
     f.trials = _Stub({"studies": []})

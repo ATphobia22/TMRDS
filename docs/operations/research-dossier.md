@@ -16,8 +16,10 @@ remain attached to their respective records. These hashes are not a signature
 or independent verification of source accuracy.
 
 `records_retrieved`, `no_records` and `unavailable` describe retrieval only.
-No efficacy, quality score, clinical conflict, retraction determination, patient
-eligibility or cure is inferred. Metadata discrepancies are exposed for review.
+No efficacy, quality score, clinical conflict, independent retraction determination,
+patient eligibility or cure is inferred. Europe PMC publication types and correction
+links are preserved. Explicit retraction reports are flagged; absent flags never
+establish that an article is unretracted or reliable. Metadata discrepancies are exposed for review.
 Retrieved abstracts remain untrusted data; this endpoint runs no LLM and obeys
 no instructions in source text. JSON exports are not rendered HTML.
 

@@ -229,6 +229,13 @@ async def search_pubmed(query: str = Query(..., min_length=1), limit: int = Quer
         raise safe_upstream_error("PubMed", exc) from exc
 
 
+@app.get("/api/v1/research/source-catalog")
+async def get_research_source_catalog() -> dict[str, Any]:
+    """Reviewed priorities and access limits; not a provider-health claim."""
+    from engines.research_source_catalog import research_source_catalog
+    return research_source_catalog()
+
+
 @app.get("/api/v1/research/dossier")
 @limiter.limit(FEDERATED_SEARCH_RATE_LIMIT)
 async def research_dossier(request: Request, query: str = Query(..., min_length=2, max_length=500), limit: int = Query(default=5, ge=1, le=25)) -> dict[str, Any]:

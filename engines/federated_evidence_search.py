@@ -47,10 +47,13 @@ from engines.reactome_pipeline import ReactomePipeline
 from engines.rxnorm_pipeline import RxNormPipeline
 from engines.semantic_scholar_pipeline import SemanticScholarPipeline
 from engines.string_pipeline import StringPipeline
+from engines.uniprot_pipeline import UniProtPipeline
+from engines.publication_integrity import europe_pmc_integrity
 
 AFDB_API = "https://alphafold.ebi.ac.uk/api/prediction"
 
 COVERAGE = {
+    "uniprot": "UniProtKB REST: curated and unreviewed protein annotations; per-entry review status retained; not evidence of clinical efficacy. One bounded page only.",
     "europe_pmc": "Europe PMC REST: open metadata + OA subset; check per-item license; not all biomedical literature.",
     "pubmed": "PubMed/Entrez E-utilities: MEDLINE subset; rate-limited; not all biomedical literature.",
     "clinicaltrials_gov": "ClinicalTrials.gov API v2: registry-native statuses/identifiers; protocol data only; not an outcomes guarantee.",
@@ -91,7 +94,6 @@ def _record_hash(payload: Any) -> str:
 
 
 def _make_envelope(source: str, source_name: str, record: dict[str, Any], evidence_class: str) -> dict[str, Any]:
-    core = {k: record.get(k) for k in ("title", "abstract", "authors", "published", "doi", "pmid", "nct_id", "arxiv_id", "source_url", "journal")}
     stable_seed = record.get("doi") or record.get("pmid") or record.get("nct_id") or record.get("arxiv_id") or record.get("source_url") or record.get("title")
     return {
         "stable_id": f"{source}:{_record_hash(stable_seed)[:16]}",
@@ -112,9 +114,12 @@ def _make_envelope(source: str, source_name: str, record: dict[str, Any], eviden
         "source_url": record.get("source_url"),
         "open_access_url": record.get("open_access_url"),
         "retrieved_at": _utcnow(),
-        "record_hash": _record_hash(core),
+        "record_hash": _record_hash(record),
+        "record_hash_scope": "normalized_source_record",
+        **{k: record[k] for k in ("publication_integrity", "protein_metadata", "source_release", "source_release_date", "has_more") if k in record},
         "coverage": COVERAGE.get(source, ""),
-        "warnings": [],
+        "warnings": (["Source metadata reports a retraction; independent review required."]
+                     if (record.get("publication_integrity") or {}).get("retraction_status") == "retraction_reported" else []),
     }
 
 
@@ -153,13 +158,14 @@ class FederatedEvidenceSearch:
         self.ncats = NcatsPipeline()
         self.monarch = MonarchPipeline()
         self.mesh = MeshPipeline()
+        self.uniprot = UniProtPipeline()
 
     async def _guard(self, source: str, coro) -> SourceResult:
         try:
-            envelopes = await coro
+            envelopes = await asyncio.wait_for(coro, timeout=self.timeout)
             return SourceResult(source=source, ok=True, envelopes=envelopes, count=len(envelopes))
         except Exception as exc:  # noqa: BLE001 — isolate per source, report honestly
-            return SourceResult(source=source, ok=False, warning=f"{source} unavailable: {type(exc).__name__}: {str(exc)[:160]}")
+            return SourceResult(source=source, ok=False, warning=f"{source} unavailable: {type(exc).__name__}")
 
     async def search_all(self, query: str, per_source: int = 10, *, preserve_source_records: bool = False) -> dict[str, Any]:
         """Search every live source concurrently. Never raises for a single-source failure."""
@@ -188,6 +194,7 @@ class FederatedEvidenceSearch:
             self._guard("ncats", self._search_ncats(query, per_source)),
             self._guard("monarch", self._search_monarch(query, per_source)),
             self._guard("mesh", self._search_mesh(query, per_source)),
+            self._guard("uniprot", self._search_uniprot(query, per_source)),
         )
         envelopes: list[dict[str, Any]] = []
         source_status: dict[str, dict[str, Any]] = {}
@@ -227,6 +234,15 @@ class FederatedEvidenceSearch:
 
     # ---- per-source adapters (live HTTP only) ----
 
+    async def _search_uniprot(self, query: str, n: int) -> list[dict[str, Any]]:
+        data = await self.uniprot.search(query, n)
+        return [_make_envelope("uniprot", "UniProtKB", {
+            **self.uniprot.normalize(r),
+            "source_release": data["source_release"],
+            "source_release_date": data["source_release_date"],
+            "has_more": data["has_more"],
+        }, "protein_annotation") for r in data["results"]]
+
     async def _search_europepmc(self, query: str, n: int) -> list[dict[str, Any]]:
         data = await self.europepmc.search(query, n)
         out = []
@@ -234,6 +250,7 @@ class FederatedEvidenceSearch:
             rec = {
                 "title": r.get("title"),
                 "abstract": r.get("abstractText"),
+                "publication_integrity": europe_pmc_integrity(r),
                 "authors": [a.get("fullName") for a in (r.get("authorList") or {}).get("author") or [] if a.get("fullName")],
                 "published": r.get("firstPublicationDate") or r.get("pubYear"),
                 "doi": r.get("doi"),

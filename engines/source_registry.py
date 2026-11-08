@@ -179,6 +179,23 @@ def build_default_registry() -> Dict[str, SourceDefinition]:
     def add(sd: SourceDefinition):
         reg[sd.key] = sd
 
+    add(SourceDefinition(
+        key="uniprot",
+        display_name="UniProtKB",
+        api_endpoint="https://rest.uniprot.org/uniprotkb/search",
+        permitted_use=PermittedUse.METADATA_ONLY,
+        license_class=LicenseClass.CC_BY_4_0,
+        identifier_types=[IdentifierType.UNIPROT],
+        query_params={"query": "string", "size": 25, "format": "json"},
+        update_cadence=UpdateCadence.VERSIONED_RELEASE,
+        attribution="UniProt Consortium; CC BY 4.0 for copyrightable database content.",
+        retention_policy="Retain accession, taxonomy, review status, entry/release versions and normalized-record hash; third-party rights may apply.",
+        adapter_owner="engines/uniprot_pipeline.py",
+        docs_url="https://www.uniprot.org/help/api_queries",
+        evidence_class="derived",
+        notes="Protein annotations are not therapeutic effectiveness evidence; source release is recorded when returned.",
+    ))
+
     # 1. PubMed
     add(SourceDefinition(
         key="pubmed",

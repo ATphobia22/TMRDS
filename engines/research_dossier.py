@@ -4,6 +4,8 @@ from __future__ import annotations
 from copy import deepcopy
 from urllib.parse import unquote
 
+from engines.publication_integrity import summarize_integrity
+
 
 def _identity(record: dict) -> tuple[str, str]:
     doi = str(record.get("doi") or "").strip().lower()
@@ -22,8 +24,8 @@ def _identity(record: dict) -> tuple[str, str]:
 def build_research_dossier(search: dict) -> dict:
     """Group exact identifiers without dropping conflicting source metadata.
 
-    No study design, effect size, retraction state or clinical conclusion is
-    inferred from titles/abstracts. Hashes identify retrieved records only.
+    No study design, effect size or clinical conclusion is inferred from
+    titles/abstracts. Retraction reports retain their source metadata. Hashes identify retrieved records only.
     """
     groups: dict[tuple[str, str], list[dict]] = {}
     for record in search["envelopes"]:
@@ -39,7 +41,7 @@ def build_research_dossier(search: dict) -> dict:
                                        if len({str(r.get(name)) for r in records if r.get(name)}) > 1],
             "missing_metadata": gaps,
             "study_design": "not_assessed", "effect_size": "not_extracted",
-            "retraction_status": "not_checked", "review_status": "pending",
+            **summarize_integrity(records), "review_status": "pending",
         })
     statuses = deepcopy(search["source_status"])
     available = any(s.get("ok") for s in statuses.values())
@@ -53,7 +55,7 @@ def build_research_dossier(search: dict) -> dict:
             "Discovery results do not establish efficacy, safety or a cure.",
             "Exact DOI or PMID grouping only; duplicate works with different identifiers may remain.",
             "Metadata disagreement is not evidence of conflicting clinical findings.",
-            "Study quality, population applicability and retractions require independent review.",
+            "Study quality, population applicability and publication integrity require independent review; absent retraction flags do not establish reliability.",
             "Retrieved text is untrusted source content, not executable instructions.",
         ],
         "research_advisory": True, "human_authority_final": True,

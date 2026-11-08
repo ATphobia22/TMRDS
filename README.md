@@ -18,7 +18,7 @@ TMRDS does not commit production passwords, API keys, tokens, private keys, or l
 
 TMRDS is a Python/FastAPI research platform for connecting public biomedical evidence to a governed evidence model. The current implementation combines:
 
-- **Federated evidence search across 22 live public sources** — literature (Europe PMC, PubMed, OpenAlex, Semantic Scholar, Crossref, arXiv, bioRxiv/medRxiv), trials and labels (ClinicalTrials.gov, openFDA, DailyMed), chemistry and drugs (PubChem, ChEMBL, RxNorm terminology), genomics and variants (Ensembl, ClinVar with review stars, AlphaFold DB), knowledge graphs and pathways (Open Targets Platform, STRING, Reactome, Monarch, NCATS Node Normalization, MeSH). Every source runs isolated with per-source failure warnings and honest coverage statements; Lens Patents and IBM Quantum are credential-gated and reported as unavailable, never mocked.
+- **Adapters for 23 public research sources** — literature (Europe PMC, PubMed, OpenAlex, Semantic Scholar, Crossref, arXiv, bioRxiv/medRxiv), trials and labels (ClinicalTrials.gov, openFDA, DailyMed), chemistry and drugs (PubChem, ChEMBL, RxNorm terminology), genomics and variants (Ensembl, ClinVar with review stars, UniProtKB protein metadata, AlphaFold DB), knowledge graphs and pathways (Open Targets Platform, STRING, Reactome, Monarch, NCATS Node Normalization, MeSH). Every source runs isolated with per-source failure warnings and honest coverage statements; Lens Patents and IBM Quantum are credential-gated and reported as unavailable, never mocked.
 - **Real-world real-time data fabric** for bounded, provenance-first synchronization of authoritative public feeds, including USGS, NOAA/NWS, FEMA, and CDC sources.
 - **Evidence governance** with registered sources, provenance-bearing entities/assertions, conflict handling, ingestion state, and audit-oriented evidence records.
 - **FHIR R4 / US Core interoperability boundary** with SMART discovery, PKCE S256 primitives, structural resource validation, Provenance/AuditEvent builders, and configurable service-to-service identity.
@@ -166,6 +166,13 @@ failures and metadata gaps, and leaves clinical appraisal pending. Use public
 research terms only; queries are sent to external providers. See the
 [dossier contract and remaining gates](docs/operations/research-dossier.md).
 Retrieved records are discovery material, not proof of a treatment or cure.
+
+The dossier now preserves Europe PMC publication types and correction links,
+flags source-reported retractions, and includes a bounded UniProtKB metadata
+adapter with entry/release versions. `GET /api/v1/research/source-catalog` lists
+reviewed gaps and clearly separates implemented adapters from candidates and
+access-dependent integrations. See the [source gap review](docs/reference/biomedical-source-gap-review-2026-11-07.md)
+for GWAS v2, DepMap/PRISM, LINCS, CELLxGENE and ClinPGx priorities and terms.
 
 ## Optional IBM Quantum integration
 
