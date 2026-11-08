@@ -364,16 +364,17 @@ def build_default_registry() -> Dict[str, SourceDefinition]:
         permitted_use=PermittedUse.GENOMIC_ANNOTATION,
         license_class=LicenseClass.APACHE_2_0,
         identifier_types=[IdentifierType.ENSEMBL_GENE, IdentifierType.ENSEMBL_VARIANT, IdentifierType.UNIPROT],
-        query_params={"species": "homo_sapiens", "id": "ENSG000...", "content-type": "application/json", "assembly": "GRCh38"},
+        query_params={"species": "homo_sapiens", "id": "ENSG000...", "content-type": "application/json", "assembly": "GRCh38", "vep_hgvs": "ENST00000269305:c.215C>G"},
         update_cadence=UpdateCadence.VERSIONED_RELEASE,
         attribution="Ensembl REST. Pin release, assembly, transcript versions.",
         retention_policy="Store Ensembl release (e.g., 112), GRCh38, transcript version. Versioned crosswalk.",
-        adapter_owner="engines/adapters/ensembl_adapter.py",
+        adapter_owner="engines/ensembl_pipeline.py",
         version="2.0.0",
         upstream_version_pinned="Ensembl 112 / GRCh38",
         docs_url="https://rest.ensembl.org/",
         rate_limit="15 req/s",
         evidence_class="observed",
+        notes="VEP via POST /vep/human/hgvs (ENST… HGVS only; RefSeq NM_ rejected by Ensembl) and GET /vep/human/region; predictions are computational, not clinical assertions.",
     ))
 
     # 10. gnomAD
@@ -707,7 +708,7 @@ def build_default_registry() -> Dict[str, SourceDefinition]:
         docs_url="https://rest.ensembl.org/",
         rate_limit="55,000 requests/hour per IP; 429 + Retry-After on exceed",
         evidence_class="observed",
-        notes="GRCh38 by default; GRCh37 via grch37.rest.ensembl.org. VEP predictions are computational, not clinical assertions.",
+        notes="GRCh38 by default; GRCh37 via grch37.rest.ensembl.org. VEP predictions are computational, not clinical assertions. VEP methods: annotate_hgvs (POST /vep/human/hgvs, ENST… HGVS only) and annotate_region (GET /vep/human/region); wired into federated search as the same ensembl source, not a second source.",
     ))
 
     # 27. bioRxiv / medRxiv

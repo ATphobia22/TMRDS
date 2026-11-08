@@ -73,7 +73,7 @@ COVERAGE = {
     "string": "STRING: protein functional associations, CC BY 4.0; courtesy ~1 call/sec; per-call protein limits.",
     "reactome": "Reactome Content Service: curated pathways, CC0; curated coverage only, stale between releases.",
     "clinvar": "ClinVar: published variant interpretations with review status; conflicting interpretations common — stars surfaced, not just labels.",
-    "ensembl": "Ensembl REST: genomic reference data; 55k req/hour; VEP predictions are computational, not clinical assertions.",
+    "ensembl": "Ensembl REST: genomic reference data (gene lookup) + VEP variant-consequence prediction; 55k req/hour; VEP predictions are computational, not clinical assertions. HGVS input must use Ensembl transcript IDs (ENST…); RefSeq NM_ accessions are rejected by Ensembl.",
     "biorxiv": "bioRxiv/medRxiv: preprints, NOT peer-reviewed; metadata-only, browse-by-date with local filtering.",
     "ncats": "NCATS Node Normalization + Name Resolution: identifier mappings only; rate limits unverified.",
     "monarch": "Monarch v3: phenotype/disease knowledge graph; integrated-KG license mixed — redistribution unverified.",
@@ -457,13 +457,25 @@ class FederatedEvidenceSearch:
         return out
 
     async def _search_ensembl(self, query: str, n: int) -> list[dict[str, Any]]:
-        gene = await self.ensembl.lookup_gene(query)
-        if gene is None:
-            return []
-        env = _make_envelope("ensembl", "Ensembl", gene, "reference")
-        env["ensembl_id"] = gene.get("ensembl_id")
-        env["warnings"].append("Reference annotation (GRCh38); consequence predictions are computational, not clinical.")
-        return [env]
+        # VEP and gene lookup are two capabilities of the same Ensembl REST
+        # source — one _guard call, one COVERAGE entry, no double counting.
+        records = await self.ensembl.search(query)
+        out = []
+        for rec in records[:n]:
+            if "most_severe_consequence" in rec:
+                env = _make_envelope("ensembl", "Ensembl VEP", rec, "variant_consequence")
+                env["most_severe_consequence"] = rec.get("most_severe_consequence")
+                env["assembly"] = rec.get("assembly")
+                env["warnings"].append(
+                    "Computational consequence prediction (SIFT/PolyPhen) — "
+                    "not a clinical interpretation; clinician review required."
+                )
+            else:
+                env = _make_envelope("ensembl", "Ensembl", rec, "reference")
+                env["ensembl_id"] = rec.get("ensembl_id")
+                env["warnings"].append("Reference annotation (GRCh38); consequence predictions are computational, not clinical.")
+            out.append(env)
+        return out
 
     async def _search_biorxiv(self, query: str, n: int) -> list[dict[str, Any]]:
         papers = await self.biorxiv.search_recent(query, days_back=60, max_pages=3)

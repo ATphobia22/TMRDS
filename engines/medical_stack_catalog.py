@@ -27,6 +27,7 @@ class MedicalProject:
 
 PROJECTS: tuple[MedicalProject, ...] = (
     MedicalProject("hapi_fhir", "interoperability", "HAPI FHIR", "https://github.com/hapifhir/hapi-fhir", "FHIR R4 REST", CONTRACT, "FHIR server target", "No patient exchange enabled."),
+    MedicalProject("hapi_fhir_test_server", "interoperability", "HAPI FHIR Public Test Server", "https://hapi.fhir.org/baseR4", "FHIR R4 REST (metadata probe)", CONTRACT, "Public test-server identity probe for the synthetic workbench", "Synthetic test data only; no SLA; no PHI. No synthetic-* resources exist on it (verified 2026-11-08), so live resource fetch fails honestly."),
     MedicalProject("openelis", "laboratory", "OpenELIS Global", "https://github.com/DIGI-UW/OpenELIS-Global-2", "FHIR R4 / institution-specific APIs", CONTRACT, "LIS and final lab reports", "Verify institutional interface and permissions."),
     MedicalProject("openemr", "ehr", "OpenEMR", "https://github.com/openemr/openemr", "FHIR R4 / REST", CONTRACT, "EHR reference target", "Standalone security and license review required."),
     MedicalProject("bahmni", "ehr", "Bahmni", "https://github.com/Bahmni", "FHIR / REST", REFERENCE, "Integrated hospital workflows", "Copyleft and instance-specific APIs."),
