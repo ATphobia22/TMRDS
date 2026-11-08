@@ -298,3 +298,7 @@ The repository now defines CI, secret/security/interoperability, supply-chain, C
 ## Scientific adapter readiness
 
 The genetics and molecular-computation boundary is explicitly fail-closed: Ensembl gene/transcript data must originate from a live source response; missing Qiskit Nature/PySCF dependencies no longer return hard-coded Hamiltonian coefficients; and optional quantum-research scaffolding does not claim simulations, scores, or hardware jobs that did not run. See [Research Compute and Genetics Readiness](docs/operations/research-compute-readiness.md). HGVS-based VEP lookup is supported; SPDI-to-HGVS normalization and an actual VQE/classical-baseline solver remain staged work.
+
+## Optional imaging research sandbox
+
+A [local Orthanc/OHIF recipe and synthetic MR-to-FHIR tooling](docs/operations/imaging-research-sandbox.md) are available for research testing. pydicom is optional, credentials are generated locally, and the archive binds to loopback with its DICOM listener disabled. Container startup and viewer rendering still require separate verification. No real-patient ingestion or validated de-identification is enabled.

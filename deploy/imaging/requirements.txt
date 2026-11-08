@@ -1,0 +1,2 @@
+# Optional local fixture tooling; not imported by the core API.
+pydicom==3.0.2
