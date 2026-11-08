@@ -1,0 +1,120 @@
+{
+  "$defs": {
+    "CircuitPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "failure_threshold": {
+          "default": 3,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Failure Threshold",
+          "type": "integer"
+        },
+        "recovery_timeout_seconds": {
+          "default": 60,
+          "maximum": 3600,
+          "minimum": 1,
+          "title": "Recovery Timeout Seconds",
+          "type": "integer"
+        }
+      },
+      "title": "CircuitPolicy",
+      "type": "object"
+    },
+    "SourceState": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "default": "not_checked",
+          "enum": [
+            "not_checked",
+            "operational",
+            "degraded",
+            "auth_blocked",
+            "balance_exhausted",
+            "circuit_open",
+            "not_configured",
+            "stale"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "timeout_seconds": {
+          "default": 15,
+          "maximum": 60,
+          "minimum": 1,
+          "title": "Timeout Seconds",
+          "type": "integer"
+        },
+        "max_retries": {
+          "const": 0,
+          "default": 0,
+          "title": "Max Retries",
+          "type": "integer"
+        },
+        "circuit_breaker": {
+          "$ref": "#/$defs/CircuitPolicy"
+        },
+        "checked_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checked At"
+        },
+        "latency_ms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latency Ms"
+        }
+      },
+      "title": "SourceState",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "research_advisory": {
+      "const": true,
+      "default": true,
+      "title": "Research Advisory",
+      "type": "boolean"
+    },
+    "telemetry_scope": {
+      "const": "process_local",
+      "default": "process_local",
+      "title": "Telemetry Scope",
+      "type": "string"
+    },
+    "upstream_sources": {
+      "additionalProperties": {
+        "$ref": "#/$defs/SourceState"
+      },
+      "title": "Upstream Sources",
+      "type": "object"
+    }
+  },
+  "required": [
+    "upstream_sources"
+  ],
+  "title": "SourceCatalog",
+  "type": "object"
+}
