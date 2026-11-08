@@ -3,7 +3,9 @@
 Implements the October 2026 ops research: RED metrics via
 prometheus-fastapi-instrumentator at /metrics, sliding-window rate limiting via
 slowapi keyed on client IP with Retry-After on 429, baseline security headers,
-structured startup logging, and fail-closed startup checks.
+structured startup logging, and loud degraded-open startup posture (a bad auth
+configuration is logged CRITICAL and reported in /api/v1/ops/posture; the API
+never refuses to start over it).
 
 Research-advisory only. Not SaMD.
 """

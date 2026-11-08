@@ -24,7 +24,6 @@ from api.ops import (
     setup_rate_limiting,
 )
 from api.api_key_auth import (
-    ApiKeyConfigurationUnavailableMiddleware,
     ApiKeyGateMiddleware,
     check_startup_posture,
 )
@@ -51,18 +50,18 @@ configure_logging()
 setup_metrics(app)
 setup_rate_limiting(app)
 app.add_middleware(SecurityHeadersMiddleware)
-# Deliberately public only when the API-key file is unset. An explicitly
-# configured but invalid key file must never expose previously gated routes.
+# The API is deliberately public when the key file is unset. A configured
+# but invalid key file degrades LOUD OPEN (CRITICAL log + "degraded-open"
+# posture) and never denies traffic — see api/api_key_auth.py.
 _posture = check_startup_posture()
-if _posture["auth"] == "unavailable":
-    app.add_middleware(ApiKeyConfigurationUnavailableMiddleware)
-elif _posture["keys"] is not None:
+if _posture["keys"] is not None:
     app.add_middleware(ApiKeyGateMiddleware, keys=_posture["keys"])
 app.state.ops_posture = {
     "metrics": metrics_enabled(),
     "rate_limiting": rate_limiting_enabled(),
     "auth": _posture["auth"],
     **({"auth_warning": _posture["warning"]} if _posture.get("warning") else {}),
+    **({"auth_reason": _posture["reason"]} if _posture.get("reason") else {}),
 }
 _ops_logger = logging.getLogger("tmrds.ops")
 _ops_logger.info(
@@ -96,9 +95,11 @@ async def liveness() -> dict[str, str]:
 
 @app.get("/health/ready")
 async def readiness() -> dict[str, str]:
-    """Readiness requires usable API authentication and the PostgreSQL schema."""
-    if _posture["auth"] == "unavailable":
-        raise HTTPException(status_code=503, detail="API authentication is not configured correctly")
+    """Readiness requires the PostgreSQL evidence schema.
+
+    Auth posture never blocks readiness: a misconfigured key file degrades
+    to loud open and is reported at GET /api/v1/ops/posture instead.
+    """
     try:
         pool = await evidence_repository._pool()
         async with pool.acquire() as conn:

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 from pathlib import Path
 
@@ -11,7 +12,6 @@ from fastapi.testclient import TestClient
 
 from api import ops
 from api.api_key_auth import (
-    ApiKeyConfigurationUnavailableMiddleware,
     ApiKeyGateMiddleware,
     check_startup_posture,
     load_api_keys,
@@ -136,27 +136,35 @@ def test_api_key_gate_allows_valid_key_and_denies_without_leak(tmp_path: Path) -
     assert resp.status_code == 200
 
 
-def test_startup_posture_open_by_default_and_fail_closed_on_invalid_config(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+def test_startup_posture_open_by_default_and_degraded_open_on_invalid_config(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """An explicitly configured invalid key file must never disable the key gate."""
+    """An explicitly configured invalid key file degrades to loud open, never denies traffic."""
     monkeypatch.delenv("TMRDS_API_KEYS_FILE", raising=False)
     posture = check_startup_posture()
     assert posture["auth"] == "open"
     assert posture["keys"] is None
 
     monkeypatch.setenv("TMRDS_API_KEYS_FILE", str(tmp_path / "nope.txt"))
-    posture = check_startup_posture()
-    assert posture["auth"] == "unavailable"
+    with caplog.at_level(logging.CRITICAL, logger="tmrds.auth"):
+        posture = check_startup_posture()
+    assert posture["auth"] == "degraded-open"
     assert posture["keys"] is None
+    assert posture["reason"] == "unreadable"
     assert "warning" in posture
     assert str(tmp_path) not in posture["warning"]
+    assert any(
+        "DEGRADED-OPEN" in record.getMessage()
+        for record in caplog.records
+        if record.name == "tmrds.auth" and record.levelno >= logging.CRITICAL
+    )
 
     bad = tmp_path / "bad.txt"
     bad.write_text("garbage\n", encoding="utf-8")
     monkeypatch.setenv("TMRDS_API_KEYS_FILE", str(bad))
     posture = check_startup_posture()
-    assert posture["auth"] == "unavailable"
+    assert posture["auth"] == "degraded-open"
+    assert posture["reason"] == "malformed"
     assert "warning" in posture
 
     monkeypatch.setenv("TMRDS_API_KEYS_FILE", str(_write_key_file(tmp_path)))
@@ -165,22 +173,39 @@ def test_startup_posture_open_by_default_and_fail_closed_on_invalid_config(
     assert posture["keys"] == {"doc001": hashlib.sha256(b"s3cret-value_123").hexdigest()}
 
 
-def test_invalid_key_configuration_returns_503_without_leaking_details() -> None:
-    app = _mini_app()
+def test_degraded_open_serves_api_and_reports_posture(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Misconfigured key file: the API still serves and posture reports degraded-open.
 
-    @app.get("/api/v1/research/health")
-    async def protected() -> dict[str, str]:
-        return {"status": "should-not-be-served"}
+    Reloads api.main so the module-level startup wiring runs with the bad key
+    file set, then restores the open posture.
+    """
+    import importlib
 
-    app.add_middleware(ApiKeyConfigurationUnavailableMiddleware)
-    client = TestClient(app)
+    from api import main as main_module
 
-    response = client.get("/api/v1/research/health")
-    assert response.status_code == 503
-    assert response.json()["detail"]["code"] == "AUTH_UNAVAILABLE"
-    assert response.headers["cache-control"] == "no-store"
-    assert "TMRDS_API_KEYS_FILE" not in response.text
-    assert client.get("/ping").status_code == 200
+    monkeypatch.setenv("TMRDS_API_KEYS_FILE", str(tmp_path / "nope.txt"))
+    with caplog.at_level(logging.CRITICAL, logger="tmrds.auth"):
+        importlib.reload(main_module)
+    try:
+        assert main_module.app.state.ops_posture["auth"] == "degraded-open"
+        assert main_module.app.state.ops_posture.get("auth_reason") == "unreadable"
+        assert any(
+            "DEGRADED-OPEN" in record.getMessage()
+            for record in caplog.records
+            if record.name == "tmrds.auth" and record.levelno >= logging.CRITICAL
+        )
+        client = TestClient(main_module.app)
+        resp = client.get("/api/v1/research/health")
+        assert resp.status_code == 200
+        posture = client.get("/api/v1/ops/posture")
+        assert posture.status_code == 200
+        assert posture.json()["data"]["auth"] == "degraded-open"
+        assert posture.json()["data"]["auth_reason"] == "unreadable"
+    finally:
+        monkeypatch.delenv("TMRDS_API_KEYS_FILE", raising=False)
+        importlib.reload(main_module)
 
 
 def test_main_app_wires_ops_without_import_side_effects() -> None:
@@ -190,7 +215,7 @@ def test_main_app_wires_ops_without_import_side_effects() -> None:
 
     assert isinstance(ops.metrics_enabled(), bool)
     assert isinstance(ops.rate_limiting_enabled(), bool)
-    assert main_module.app.state.ops_posture["auth"] in {"open", "key-gated", "unavailable"}
+    assert main_module.app.state.ops_posture["auth"] in {"open", "key-gated", "degraded-open"}
 
 
 def test_retry_after_parsing() -> None:

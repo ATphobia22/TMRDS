@@ -5,10 +5,13 @@ v1 scope, per the October 2026 auth research:
   the secret only), and revocable (delete the line).
 - Keys live in a file (``TMRDS_API_KEYS_FILE``), never as secret values in the
   environment — environment values are visible via ``docker inspect``.
-- If ``TMRDS_API_KEYS_FILE`` is configured but cannot be loaded, API paths
-  fail closed with HTTP 503. Liveness and monitoring paths remain accessible
-  so operators can repair the configuration without exposing protected routes.
-  Leaving the variable unset intentionally permits public research access.
+- If ``TMRDS_API_KEYS_FILE`` is configured but cannot be loaded, the API
+  degrades LOUDLY OPEN (October 19, 2026 resilience directive, reaffirmed
+  November 7, 2026): a CRITICAL log line records the failure, requests keep
+  being served, and GET /api/v1/ops/posture reports ``"auth":
+  "degraded-open"`` with the reason. The API never refuses to start or
+  denies traffic over a bad key file. Leaving the variable unset
+  intentionally permits public research access.
 - Denials are logged with the key_id only. Raw keys/secrets are never logged.
 - 401 vs 403: missing/invalid key -> 401. (Per-key scopes are future work;
   v1 grants the single research scope or nothing.)
@@ -32,12 +35,17 @@ PRESENTED_RE = re.compile(r"tmrds_([a-z0-9]{4,32})_([A-Za-z0-9._-]{16,128})\Z")
 
 
 def load_api_keys(path: str) -> dict[str, str]:
-    """Load ``key_id -> sha256(secret)`` from a key file. Fail closed on any problem."""
+    """Load ``key_id -> sha256(secret)`` from a key file.
+
+    Strict loader: raises RuntimeError on any problem. Callers degrade to
+    loud open (see check_startup_posture); the loader itself never decides
+    availability policy.
+    """
     keys: dict[str, str] = {}
     try:
         raw = open(path, encoding="utf-8").read()
     except OSError as exc:
-        raise RuntimeError(f"fail-closed: cannot read TMRDS_API_KEYS_FILE at {path}: {exc}") from exc
+        raise RuntimeError(f"cannot read TMRDS_API_KEYS_FILE at {path}: {exc}") from exc
     for line_number, raw_line in enumerate(raw.splitlines(), start=1):
         line = raw_line.strip()
         if not line or line.startswith("#"):
@@ -45,25 +53,44 @@ def load_api_keys(path: str) -> dict[str, str]:
         parts = line.split(":", 1)
         if len(parts) != 2 or not KEY_ID_RE.fullmatch(parts[0]) or not SHA256_RE.fullmatch(parts[1].lower()):
             raise RuntimeError(
-                f"fail-closed: malformed key entry at {path}:{line_number} "
+                f"malformed key entry at {path}:{line_number} "
                 "(expected 'key_id:sha256_hex', key_id [a-z0-9]{4,32})"
             )
         key_id = parts[0]
         if key_id in keys:
-            raise RuntimeError(f"fail-closed: duplicate key_id '{key_id}' at {path}:{line_number}")
+            raise RuntimeError(f"duplicate key_id '{key_id}' at {path}:{line_number}")
         keys[key_id] = parts[1].lower()
     if not keys:
-        raise RuntimeError(f"fail-closed: no usable keys in TMRDS_API_KEYS_FILE at {path}")
+        raise RuntimeError(f"no usable keys in TMRDS_API_KEYS_FILE at {path}")
     return keys
+
+
+def _classify_key_file_error(message: str) -> str:
+    """Coarse, path-free error class for the client-visible posture.
+
+    The full detail (path, line number) goes to the CRITICAL log only; the
+    posture endpoint reports this category so operators can see the kind of
+    failure without filesystem details leaking to API clients.
+    """
+    if message.startswith("cannot read"):
+        return "unreadable"
+    if message.startswith("malformed"):
+        return "malformed"
+    if message.startswith("duplicate"):
+        return "duplicate-key"
+    return "empty"
 
 
 def check_startup_posture() -> dict[str, Any]:
     """Validate auth configuration at startup.
 
     The public research API is deliberately open when no key file is set.
-    A configured but invalid key file is a deployment error: report the
-    problem without exposing sensitive filesystem details to API clients,
-    and make API routes unavailable rather than silently disabling auth.
+    A configured but invalid key file is a deployment error that degrades
+    LOUDLY OPEN (October 19, 2026 resilience directive, reaffirmed
+    November 7, 2026): a CRITICAL log line records the failure with full
+    detail, the API keeps serving requests, and GET /api/v1/ops/posture
+    reports ``"auth": "degraded-open"`` with a path-free reason. The API
+    never refuses to start or denies traffic over a bad key file.
     """
     keys_file = os.environ.get("TMRDS_API_KEYS_FILE", "").strip()
     if not keys_file:
@@ -73,14 +100,15 @@ def check_startup_posture() -> dict[str, Any]:
         keys = load_api_keys(keys_file)
     except RuntimeError as exc:
         logger.critical(
-            "auth posture: UNAVAILABLE — configured API-key file invalid; "
-            "all /api/* requests will return 503 until repaired: %s",
+            "auth posture: DEGRADED-OPEN — configured API-key file invalid; "
+            "API is serving open until repaired: %s",
             exc,
         )
         return {
-            "auth": "unavailable",
+            "auth": "degraded-open",
             "keys": None,
-            "warning": "Configured API-key authentication is unavailable; API requests are denied.",
+            "reason": _classify_key_file_error(str(exc)),
+            "warning": "Configured API-key authentication is unavailable; API is serving open until the key file is repaired.",
         }
     logger.info("auth posture: key-gated (%d key(s) loaded; file=%s)", len(keys), keys_file)
     return {"auth": "key-gated", "keys": keys}
@@ -95,27 +123,6 @@ def _unauthorized() -> dict[str, Any]:
 
 
 _UNAUTHORIZED_BODY = b'{"detail":{"code":"UNAUTHORIZED","message":"Valid API key required."}}'
-
-
-class ApiKeyConfigurationUnavailableMiddleware:
-    """Deny API requests when an explicitly configured key file cannot load."""
-
-    def __init__(self, app: Callable[..., Any]) -> None:
-        self.app = app
-
-    async def __call__(self, scope: dict[str, Any], receive: Callable[..., Any], send: Callable[..., Any]) -> None:
-        if scope.get("type") != "http" or not str(scope.get("path", "")).startswith("/api/"):
-            await self.app(scope, receive, send)
-            return
-        await send({
-            "type": "http.response.start",
-            "status": 503,
-            "headers": [(b"content-type", b"application/json"), (b"cache-control", b"no-store")],
-        })
-        await send({
-            "type": "http.response.body",
-            "body": b'{"detail":{"code":"AUTH_UNAVAILABLE","message":"API authentication is temporarily unavailable."}}',
-        })
 
 
 class ApiKeyGateMiddleware:
