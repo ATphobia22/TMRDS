@@ -21,3 +21,35 @@ jobs:
       - run: python -m pytest -q tests/test_imaging_synthetic_demo.py
       - run: python scripts/imaging_synthetic_demo.py
       - run: docker compose -f deploy/imaging/compose.yml config --quiet
+      - name: Start synthetic archive and exercise DICOMweb
+        shell: bash
+        run: |
+          set -euo pipefail
+          trap 'docker compose -f deploy/imaging/compose.yml down' EXIT
+          docker compose -f deploy/imaging/compose.yml up -d
+          python scripts/imaging_runtime_smoke.py --live
+  monai-metrics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+      - run: python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -r requirements.lock -r deploy/monai/requirements.txt
+      - run: python -m pytest -q tests/test_research_mask_metrics.py
+  public-documents:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements.lock -r deploy/documents/requirements.txt
+      - run: python -m pytest -q tests/test_public_pdf_extract.py

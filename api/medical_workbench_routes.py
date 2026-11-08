@@ -155,3 +155,10 @@ async def preview_public_records(request: PublicRecordPreviewRequest) -> dict:
         return preview_records(request.records)
     except (ValueError, TypeError) as exc:
         raise HTTPException(status_code=422, detail="invalid public research metadata") from exc
+
+
+@router.get("/open-source-resources")
+async def open_source_resources() -> dict:
+    import json
+    from importlib.resources import files
+    return json.loads(files("engines").joinpath("open_medical_resources.json").read_text())

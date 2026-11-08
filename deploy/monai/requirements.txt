@@ -1,0 +1,2 @@
+# Install a compatible CPU-only PyTorch first; see the free imaging runbook.
+monai==1.6.1

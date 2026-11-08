@@ -2,8 +2,6 @@
 services:
   imaging:
     image: orthancteam/orthanc:26.11.0-full@sha256:643d1f5f5622dfcfe3817933e80b52fb666f585cf5071c5c795e8f2a2a3b7919
-    ports:
-      - "127.0.0.1:8042:8042"
     environment:
       DICOM_WEB_PLUGIN_ENABLED: "true"
       OHIF_PLUGIN_ENABLED: "true"
@@ -12,7 +10,17 @@ services:
       - imaging-data:/var/lib/orthanc/db
     networks: [imaging]
     security_opt: [no-new-privileges:true]
+  proxy:
+    image: nginx:stable-alpine@sha256:583b7f2fce1cdb8da5ad5c39ebd3c33b98b87d493190e548bdee1fa8c619c311
+    depends_on: [imaging]
+    ports:
+      - "127.0.0.1:8042:8080"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [imaging, frontend]
+    security_opt: [no-new-privileges:true]
 networks:
+  frontend: {}
   imaging:
     internal: true
 volumes:

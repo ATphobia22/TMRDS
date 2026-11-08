@@ -306,3 +306,7 @@ A [local Orthanc/OHIF recipe and synthetic MR-to-FHIR tooling](docs/operations/i
 ## Research plugin interoperability
 
 The [30-surface capability registry and public-record exchange](docs/integrations/research-plugins.md) distinguish ChatGPT connectors, standalone backend access, unknown free-tier entitlements and local alternatives. A new read-only RCSB PDB metadata route complements UniProt and AlphaFold. Imported metadata previews remain unreviewed and are not persisted.
+
+## Free offline research tools
+
+[Optional MONAI mask evaluation, local public-PDF extraction and expanded imaging transport checks](docs/integrations/free-imaging-and-documents.md) add useful capabilities without paid API calls. The source review covers the requested curated healthcare/imaging/VLM lists, OpenEMR, Slicer and OHIF, preserving separate software/model/data licensing and validation requirements.
