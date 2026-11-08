@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 import time
 import requests
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def run() -> dict:
@@ -45,7 +47,13 @@ def run() -> dict:
             raise RuntimeError('synthetic upload failed')
         qido = session.get(base + '/dicom-web/studies', params={'StudyInstanceUID':str(ds.StudyInstanceUID)}, timeout=15)
         qido.raise_for_status()
-        records = qido.json()
+        from engines.research_dicomweb import ResearchDICOMweb
+        bounded = ResearchDICOMweb(base + '/dicom-web', local_sandbox=True, auth=session.auth)
+        try:
+            records = bounded.studies(study_uid=str(ds.StudyInstanceUID), limit=1)
+            bounded.metadata(str(ds.StudyInstanceUID), str(ds.SeriesInstanceUID), str(ds.SOPInstanceUID))
+        finally:
+            bounded.close()
         if not isinstance(records, list) or not any(r.get('0020000D', {}).get('Value') == [str(ds.StudyInstanceUID)] for r in records):
             raise RuntimeError('QIDO study identity mismatch')
         frame_url = f'{base}/dicom-web/studies/{ds.StudyInstanceUID}/series/{ds.SeriesInstanceUID}/instances/{ds.SOPInstanceUID}/frames/1'

@@ -310,3 +310,7 @@ The [30-surface capability registry and public-record exchange](docs/integration
 ## Free offline research tools
 
 [Optional MONAI mask evaluation, local public-PDF extraction and expanded imaging transport checks](docs/integrations/free-imaging-and-documents.md) add useful capabilities without paid API calls. The source review covers the requested curated healthcare/imaging/VLM lists, OpenEMR, Slicer and OHIF, preserving separate software/model/data licensing and validation requirements.
+
+### Imaging research workflow
+
+[Optional imaging research tools](docs/integrations/imaging-research-workflow.md) add bounded Python DICOMweb reads, an OHIF source/provenance panel, reviewed/checksummed MONAI weight loading, explicit human label submission to MONAILabel, and synthetic offline DICOM JSON exports. The OHIF source packages require a separate pinned viewer build. Research review does not establish clinical approval; offline browser rendering and a live annotation session require separate runtime evidence.

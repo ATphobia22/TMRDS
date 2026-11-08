@@ -1,0 +1,15 @@
+{
+  "name": "@tmrds/extension-research",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.js",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "@ohif/core": "3.11.0"
+  },
+  "module": "src/index.js",
+  "keywords": [
+    "ohif-extension"
+  ]
+}
