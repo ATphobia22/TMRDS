@@ -1,4 +1,4 @@
-"""Install the research packages into an existing OHIF 3.11.0 source checkout."""
+"""Install the research packages into an existing OHIF 3.12.3 source checkout."""
 import argparse
 import json
 from pathlib import Path
@@ -9,8 +9,8 @@ def install(checkout: Path, evidence=None):
     repo = Path(__file__).resolve().parents[1]
     app = checkout / 'platform/app'
     package = json.loads((app / 'package.json').read_text())
-    if package['version'] != '3.11.0':
-        raise ValueError('research mode currently targets OHIF 3.11.0; review other versions first')
+    if package['version'] != '3.12.3':
+        raise ValueError('research mode currently targets OHIF 3.12.3; review other versions first')
     targets = [(repo / 'extensions/ohif-tmrds-research', checkout / 'extensions/tmrds-research'),
                (repo / 'modes/ohif-tmrds-research', checkout / 'modes/tmrds-research')]
     for _, target in targets:

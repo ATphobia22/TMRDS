@@ -16,13 +16,13 @@ The exact loopback URL is a separate explicit sandbox exception; public sources 
 
 ## OHIF research mode
 
-The original packages in `extensions/ohif-tmrds-research` and `modes/ohif-tmrds-research` target **OHIF 3.11.0**, source commit `522531cc5c97ed05470f55a7a8f6571d9a512bd4`. The mode wraps OHIF's longitudinal mode, preserving its viewport and tool lifecycle. It adds a visible provenance panel showing study, series and SOP instance UIDs, SHA-256, source, reviewer and review state. Missing evidence stays `not evidenced` / `pending`. Evidence must match all three UIDs; a sidecar is a declaration, not independently authenticated evidence. The panel does not change review state or approve treatment.
+The original packages in `extensions/ohif-tmrds-research` and `modes/ohif-tmrds-research` target **OHIF 3.12.3**, source commit `c31db6513b9c72efc47155263da0fa5efff7a223`. 3.12.3 is the latest 3.12.x patch (2026-05-27); 3.12.2 (2026-05-18) is the security release fixing CVE-2026-12473 (SSRF in the DICOMWebProxy/DICOMJSON data sources). Compatibility was verified against the upstream sources at the pinned tag: `@ohif/core` had no code changes in 3.12.x, and the 3.12.0 longitudinal-mode refactor onto `@ohif/mode-basic` preserves the exact contract this mode uses (default export still carries `modeFactory`, routes still carry `layoutTemplate` + `layoutInstance`, `DisplaySetService`/`PubSubService`/panel-module/DICOMweb-config APIs unchanged from 3.11.0). The mode wraps OHIF's longitudinal mode, preserving its viewport and tool lifecycle. It adds a visible provenance panel showing study, series and SOP instance UIDs, SHA-256, source, reviewer and review state. Missing evidence stays `not evidenced` / `pending`. Evidence must match all three UIDs; a sidecar is a declaration, not independently authenticated evidence. The panel does not change review state or approve treatment.
 
 Create a fresh upstream checkout and install the packages before its normal build:
 
 ```bash
 git clone https://github.com/OHIF/Viewers.git /tmp/tmrds-ohif
-git -C /tmp/tmrds-ohif checkout 522531cc5c97ed05470f55a7a8f6571d9a512bd4
+git -C /tmp/tmrds-ohif checkout c31db6513b9c72efc47155263da0fa5efff7a223
 python scripts/imaging_static_export.py
 python scripts/install_ohif_research.py /tmp/tmrds-ohif --evidence data/imaging-static/provenance.json
 cd /tmp/tmrds-ohif
@@ -96,7 +96,7 @@ RadicalImaging Static-DICOMWeb remains an alternative for precomputed WADO/frame
 - https://docs.ohif.org/platform/extensions/modules/panel/
 - https://docs.ohif.org/platform/modes/
 - https://docs.ohif.org/configuration/dataSources/dicom-json/
-- https://github.com/OHIF/Viewers/tree/v3.11.0
+- https://github.com/OHIF/Viewers/tree/v3.12.3
 - https://docs.monai.io/en/stable/bundle.html
 - https://pytorch.org/docs/stable/generated/torch.load.html
 - https://docs.monai.io/projects/label/en/latest/apis.html

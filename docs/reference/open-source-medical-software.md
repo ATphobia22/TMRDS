@@ -47,7 +47,7 @@ names (must never appear in TMRDS materials: "Ambys", "Awesome Medical AI", "Syn
 | Project | License | 2026 status | TMRDS fit |
 |---|---|---|---|
 | Orthanc | Core GPLv3, plugins AGPL | 1.13.0 (Aug 2026) | Best wireable REST/DICOMweb imaging source; mini-PACS |
-| OHIF Viewer | MIT | v3.11; NIH/NCI-funded | Embeddable viewer front-end (pairs with Cornerstone3D) |
+| OHIF Viewer | MIT | v3.12.3 (May 2026; fixes CVE-2026-12473, SSRF); NIH/NCI-funded | Embeddable viewer front-end (pairs with Cornerstone3D) |
 | Cornerstone3D | MIT | v5 line | In-browser rendering for a future image-evidence viewer |
 | pydicom | MIT | 3.0.2 (May 2026; fixed CVE-2026-32711) | DICOM I/O + metadata/provenance extraction |
 | ITK | Apache-2.0 | 5.4.7 (Aug 2026) | Offline registration/segmentation/filtering algorithms |

@@ -65,7 +65,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: OHIF/Viewers
-          ref: 522531cc5c97ed05470f55a7a8f6571d9a512bd4 # v3.11.0
+          ref: c31db6513b9c72efc47155263da0fa5efff7a223 # v3.12.3
           path: .ohif-build
           persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0

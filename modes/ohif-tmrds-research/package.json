@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "license": "MIT",
   "peerDependencies": {
-    "@ohif/mode-longitudinal": "3.11.0",
+    "@ohif/mode-longitudinal": "3.12.3",
     "@tmrds/extension-research": "0.1.0"
   },
   "module": "src/index.js",

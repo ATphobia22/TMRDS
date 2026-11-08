@@ -147,7 +147,7 @@ def test_installer_registers_packages_and_evidence(tmp_path):
     from scripts.install_ohif_research import install
     app = tmp_path / 'platform/app'
     (app / 'public/config').mkdir(parents=True)
-    (app / 'package.json').write_text('{"version":"3.11.0"}')
+    (app / 'package.json').write_text('{"version":"3.12.3"}')
     (app / 'pluginConfig.json').write_text('{"extensions":[],"modes":[]}')
     install(tmp_path, {'1.2.3': {'review': 'pending'}})
     assert (tmp_path / 'extensions/tmrds-research/src/index.js').exists()
