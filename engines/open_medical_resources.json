@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0",
+  "reviewed_on": "2026-11-07",
+  "resources": [
+    {
+      "resource_id": "awesome_healthcare",
+      "kind": "Curated list",
+      "source_url": "https://github.com/kakoni/awesome-healthcare",
+      "license_notes": "CC0 list; linked items have separate terms",
+      "implementation_state": "discovery_only"
+    },
+    {
+      "resource_id": "awesome_medical_imaging",
+      "kind": "Curated list",
+      "source_url": "https://github.com/fepegar/awesome-medical-imaging",
+      "license_notes": "CC0 list; linked items have separate terms",
+      "implementation_state": "discovery_only"
+    },
+    {
+      "resource_id": "awesome_medical_vlm",
+      "kind": "Curated VLM list",
+      "source_url": "https://github.com/yangzhou12/awesome-medical-vision-language-models",
+      "license_notes": "No blanket code, checkpoint or dataset license inferred",
+      "implementation_state": "discovery_only"
+    },
+    {
+      "resource_id": "monai",
+      "kind": "Imaging framework",
+      "source_url": "https://github.com/Project-MONAI/MONAI",
+      "license_notes": "Apache-2.0; model bundle terms separate",
+      "implementation_state": "offline_mask_metric_implemented"
+    },
+    {
+      "resource_id": "openemr",
+      "kind": "EHR",
+      "source_url": "https://github.com/openemr/openemr",
+      "license_notes": "GPL-3.0; version and deployment conditions apply",
+      "implementation_state": "reference_target_not_connected"
+    },
+    {
+      "resource_id": "slicer",
+      "kind": "Desktop imaging",
+      "source_url": "https://github.com/Slicer/Slicer",
+      "license_notes": "Slicer BSD-style custom license; extensions separate",
+      "implementation_state": "reference_target_not_installed"
+    },
+    {
+      "resource_id": "ohif",
+      "kind": "Web imaging",
+      "source_url": "https://github.com/OHIF/Viewers",
+      "license_notes": "MIT; archive/plugins separate",
+      "implementation_state": "orthanc_recipe_and_runtime_test"
+    },
+    {
+      "resource_id": "pypdf",
+      "kind": "Document processing",
+      "source_url": "https://github.com/py-pdf/pypdf",
+      "license_notes": "BSD-3-Clause; document copyright remains separate",
+      "implementation_state": "offline_public_pdf_extraction_implemented"
+    },
+    {
+      "resource_id": "amid",
+      "kind": "Imaging dataset interfaces",
+      "source_url": "https://github.com/neuro-ml/amid",
+      "license_notes": "MIT software; every dataset has its own terms",
+      "implementation_state": "candidate_not_installed"
+    },
+    {
+      "resource_id": "tcia",
+      "kind": "Cancer imaging data",
+      "source_url": "https://www.cancerimagingarchive.net/data-usage-policies-and-restrictions/",
+      "license_notes": "Collection-specific licenses and citation/no-reidentification requirements",
+      "implementation_state": "metadata_reference_no_bulk_download"
+    },
+    {
+      "resource_id": "idc",
+      "kind": "Imaging data",
+      "source_url": "https://portal.imaging.datacommons.cancer.gov/",
+      "license_notes": "Review per-collection metadata/license; compute and cloud use can cost money",
+      "implementation_state": "metadata_reference_no_cloud_resources"
+    }
+  ]
+}
