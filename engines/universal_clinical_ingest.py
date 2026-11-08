@@ -2,7 +2,7 @@
 Universal Clinical Ingest for TMRDS.
 Accepts labs, imaging reports, genomic VCF/panels, sequencing summaries,
 and free-text clinical notes — normalizes to a single patient evidence packet
-for immediate (not days/weeks) handoff to QuantumRubiksCureEngine.
+for immediate (not days/weeks) handoff to QRCEResearchOrchestrator.
 
 Standards targeted: LOINC (Regenstrief), HL7 FHIR Observation/DiagnosticReport,
 VCF 4.x, and discrete pharmacogenomic phenotype codes.

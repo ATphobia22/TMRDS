@@ -41,7 +41,7 @@ KRAGENGraphEngine (in-memory layers)
     → Neo4jKRAGENConnector.push_kragen_nodes
     → Cypher multi-hop retrieval
     → statements / paths → TurboVec or Weaviate
-    → ClinicalLLMRouter / QRCECureOrchestrator
+    → ClinicalLLMRouter / QRCEResearchOrchestrator
 ```
 
 Offline mode remains fully usable without Neo4j (in-memory KRAGEN only).
@@ -73,7 +73,7 @@ Offline mode remains fully usable without Neo4j (in-memory KRAGEN only).
 ```
 UniversalClinicalIngest (labs, genome, scans, notes)
   → EvidenceLedger content_hash
-  → QRCECureOrchestrator + PubMed (public literature)
+  → QRCEResearchOrchestrator + PubMed (public literature)
   → KRAGEN / Neo4j (when available)
 ```
 No HIE credentials required for on-the-spot personal packet + literature search.

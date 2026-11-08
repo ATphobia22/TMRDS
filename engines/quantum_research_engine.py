@@ -197,8 +197,3 @@ class QuantumResearchSandboxFixed:
                 )
             )
         return results
-
-
-# Backward compatibility: these aliases are research scaffolds, not cure engines.
-QuantumCureEngine = QuantumResearchSandboxFixed
-QuantumRubiksCureEngine = QuantumResearchSandboxFixed

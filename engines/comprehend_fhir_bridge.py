@@ -97,7 +97,8 @@ class ComprehendFHIRBridge:
                 entities.append({
                     "text": m.group(0),
                     "category": category,
-                    "score": 0.90,
+                    "score": None,
+                    "score_note": "unscored offline regex match — not a confidence value",
                     "begin_offset": m.start(),
                     "end_offset": m.end(),
                     "source": "OFFLINE_REGEX",

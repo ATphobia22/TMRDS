@@ -94,7 +94,7 @@ Any specialty problem
   → UniversalClinicalIngest (labs/genome/scans)
   → FHIRUSCoreMapper ⇄ OMOPCDMBridge
   → PubMed + KRAGEN/Neo4j
-  → QRCECureOrchestrator
+  → QRCEResearchOrchestrator
   → EvidenceLedger (human review)
 ```
 

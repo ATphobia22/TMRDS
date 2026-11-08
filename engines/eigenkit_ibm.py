@@ -72,7 +72,7 @@ class TMRDS_Eigenkit_IBM_Bridge:
     """
     Bridges TMRDS Quantum Rubik's Cube + eigenkit + IBM Quantum Cloud
     
-    This is the FIXED version of quantum_cure_engine.py + qiskit_nature_bridge.py
+    This is the FIXED version of quantum_research_engine.py + qiskit_nature_bridge.py
     Now using eigenkit as unified provider, with IBM hardware path
     
     Usage:

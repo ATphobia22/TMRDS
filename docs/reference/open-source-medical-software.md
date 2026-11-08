@@ -36,7 +36,7 @@ names (must never appear in TMRDS materials: "Ambys", "Awesome Medical AI", "Syn
 
 | Project | License | 2026 status | TMRDS fit |
 |---|---|---|---|
-| OpenEMR | GPL-2.0 | v8.4.0; ONC-certified (cert #15.05.05.3115.OPEN.02.01.1.260130, Jan 2026) | Reference EHR; on-premise only (cloud edition is AWS) |
+| OpenEMR | GPL-3.0 | v8.4.0; ONC-certified (cert #15.05.05.3115.OPEN.02.01.1.260130, Jan 2026) | Reference EHR; on-premise only (cloud edition is AWS) |
 | GNU Health | GPL-3.0-or-later | 5.0.7 (Apr 2026); official GNU package | Strongest ideological match — no telemetry, full data sovereignty |
 | OpenMRS | MPL-2.0 + Healthcare Disclaimer | Platform 2.8.x | Reference EHR; REST/FHIR APIs are wireable |
 | Bahmni | AGPL-3.0 | Active; 500+ implementations, 50+ countries | Reference stack; wire via APIs (AGPL — do not embed code) |

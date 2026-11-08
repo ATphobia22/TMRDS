@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from engines.quantum_cure_engine import (
+from engines.quantum_research_engine import (
     BackendType,
     ComputationStatus,
     QuantumResearchSandboxFixed,

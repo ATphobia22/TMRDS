@@ -1,8 +1,8 @@
 """
-QRCE Cure / Treatment Orchestrator for TMRDS.
+QRCE Research Orchestrator for TMRDS.
 
 Wires UniversalClinicalIngest + PubMed + KRAGEN (+ optional Neo4j) +
-QuantumRubiksCureEngine into a single advisory pipeline so clinicians and
+QuantumResearchSandboxFixed into a single advisory pipeline so clinicians and
 patients can start from personal labs/genome/scans + verifiable literature
 immediately — not in days or weeks.
 
@@ -21,7 +21,7 @@ from .evidence_ledger import EvidenceLedger
 from .doctor_dignity_ethics import DoctorDignityEthics
 
 
-class QRCECureOrchestrator:
+class QRCEResearchOrchestrator:
     """
     End-to-end advisory search for treatment starting points.
 
@@ -166,21 +166,21 @@ class QRCECureOrchestrator:
         }
 
         self.ledger.append(
-            record_type="qrce_cure_search",
+            record_type="qrce_research_search",
             payload={
                 "patient_ref": patient_ref,
                 "problem": disease_or_problem,
                 "packet_hash": packet.get("content_hash"),
                 "pmid_count": len(lit.get("pmids", [])),
             },
-            source="QRCECureOrchestrator",
+            source="QRCEResearchOrchestrator",
             verification_status="MACHINE_CHECKED",
         )
         return result
 
     def status(self) -> Dict[str, Any]:
         return {
-            "node": "QRCECureOrchestrator",
+            "node": "QRCEResearchOrchestrator",
             "components": [
                 "UniversalClinicalIngest",
                 "PubMedLiteratureBridge",

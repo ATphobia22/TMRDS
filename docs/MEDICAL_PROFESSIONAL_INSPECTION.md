@@ -31,7 +31,7 @@
 **Recommended inspection checklist for clinicians / CMIO / informatics**
 
 1. Read this document and `docs/ARCHITECTURE_SOVEREIGNTY.md`
-2. Review `engines/qrce_cure_orchestrator.py` disclaimer strings
+2. Review `engines/qrce_research_orchestrator.py` disclaimer strings
 3. Confirm no production path bypasses human review for clinical decisions
 4. Verify terminology sources are NLM/HL7/OHDSI-backed (below)
 5. Treat all ranked “starting points” as hypothesis generation only

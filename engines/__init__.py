@@ -32,7 +32,7 @@ _EXPORTS: dict[str, tuple[str, str]] = {
     "UniversalClinicalIngest": ("universal_clinical_ingest", "UniversalClinicalIngest"),
     "PubMedLiteratureBridge": ("pubmed_literature_bridge", "PubMedLiteratureBridge"),
     "Neo4jKRAGENConnector": ("neo4j_kragen_connector", "Neo4jKRAGENConnector"),
-    "QRCECureOrchestrator": ("qrce_cure_orchestrator", "QRCECureOrchestrator"),
+    "QRCEResearchOrchestrator": ("qrce_research_orchestrator", "QRCEResearchOrchestrator"),
     "FHIRUSCoreMapper": ("fhir_us_core_mapper", "FHIRUSCoreMapper"),
     "OMOPCDMBridge": ("omop_cdm_bridge", "OMOPCDMBridge"),
     "SpecialtyCareRouter": ("specialty_care_router", "SpecialtyCareRouter"),
