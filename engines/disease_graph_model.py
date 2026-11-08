@@ -985,6 +985,8 @@ class GnomADAdapter:
         ac = self._count(value.get("ac"), f"{callset}.ac")
         an = self._count(value.get("an"), f"{callset}.an")
         af = self._frequency(value.get("af"), f"{callset}.af")
+        if ac is not None and an is not None and ac > an:
+            raise GnomADLookupError("gnomAD allele count exceeds allele number")
         raw_populations = value.get("populations") or []
         if not isinstance(raw_populations, list):
             raise GnomADLookupError(f"gnomAD returned malformed {callset} populations")
@@ -994,6 +996,8 @@ class GnomADAdapter:
                 raise GnomADLookupError(f"gnomAD returned malformed {callset} population row")
             pop_ac = self._count(item.get("ac"), f"{callset}.population.ac")
             pop_an = self._count(item.get("an"), f"{callset}.population.an")
+            if pop_ac is not None and pop_an is not None and pop_ac > pop_an:
+                raise GnomADLookupError("gnomAD population allele count exceeds allele number")
             pop_af = (pop_ac / pop_an) if pop_ac is not None and pop_an else None
             populations.append(
                 {

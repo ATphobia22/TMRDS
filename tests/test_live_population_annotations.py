@@ -211,3 +211,12 @@ def test_literature_view_does_not_return_placeholder_annotations_by_default() ->
     assert view.gnomad is None
     assert view.gtex is None
     assert any("were not queried" in item for item in view.disclaimers)
+
+
+def test_gnomad_rejects_impossible_allele_counts():
+    from engines.disease_graph_model import GnomADAdapter, GnomADLookupError
+    import pytest
+    with pytest.raises(GnomADLookupError):
+        GnomADAdapter()._normalize_callset({"ac": 2, "an": 1}, "exome")
+    with pytest.raises(GnomADLookupError):
+        GnomADAdapter()._normalize_callset({"populations": [{"id": "synthetic", "ac": 1, "an": 0}]}, "exome")
