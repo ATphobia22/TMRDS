@@ -95,3 +95,14 @@ Further gates: actual browser rendering and keyboard/accessibility review,
 Slicer interchange with verified physical coordinates, dataset-specific review,
 model evaluation on independent datasets and institutional review before patient
 use. Proprietary plugin API access remains subject to its provider's terms.
+
+### Internal-network port correction
+
+Runtime testing found that publishing a port from an exclusively internal Docker
+network did not make the running archive reachable. The recipe now publishes
+`127.0.0.1:8042` from a digest-pinned nginx proxy attached to the internal archive
+network and a frontend bridge. Orthanc remains internal-only; its HTTP
+ authentication remains required and DIMSE remains disabled. The proxy enforces a
+10 MiB request limit for this small synthetic sandbox. See
+https://github.com/moby/moby/discussions/53256 and
+https://docs.docker.com/engine/network/port-publishing/ .

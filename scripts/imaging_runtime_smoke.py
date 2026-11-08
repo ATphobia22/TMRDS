@@ -20,19 +20,22 @@ def run() -> dict:
         session.trust_env = False
         session.auth = ('research', config['RegisteredUsers']['research'])
         deadline = time.monotonic() + 45
+        last_status = None
+        last_error_type = None
         while True:
             try:
                 ready = session.get(base + '/system', timeout=3, allow_redirects=False)
+                last_status = ready.status_code
                 if ready.status_code == 200:
                     break
-            except requests.RequestException:
-                pass
+            except requests.RequestException as exc:
+                last_error_type = type(exc).__name__
             if time.monotonic() >= deadline:
                 import subprocess
                 logs = subprocess.run(['docker', 'compose', '-f', 'deploy/imaging/compose.yml', 'logs', '--no-color', '--tail', '80'], capture_output=True, text=True)
                 password = config['RegisteredUsers']['research']
                 print((logs.stdout + logs.stderr).replace(password, '[REDACTED]'))
-                raise RuntimeError('Orthanc startup check failed')
+                raise RuntimeError(f'Orthanc readiness failed: HTTP {last_status}, transport={last_error_type}')
             time.sleep(1)
         anonymous = session.get(base + '/system', auth=('', ''), timeout=5, allow_redirects=False)
         if anonymous.status_code != 401:

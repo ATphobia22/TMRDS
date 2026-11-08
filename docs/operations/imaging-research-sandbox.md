@@ -84,3 +84,14 @@ Docker is unavailable in the authoring environment: the Compose YAML and securit
 settings were checked statically, but container startup, QIDO/WADO, OHIF rendering,
 mobile memory, MPR, segmentation and GPU performance remain unverified. These
 are explicit next gates before claiming a functioning imaging viewer deployment.
+
+### Internal-network port correction
+
+Runtime testing found that publishing a port from an exclusively internal Docker
+network did not make the running archive reachable. The recipe now publishes
+`127.0.0.1:8042` from a digest-pinned nginx proxy attached to the internal archive
+network and a frontend bridge. Orthanc remains internal-only; its HTTP
+ authentication remains required and DIMSE remains disabled. The proxy enforces a
+10 MiB request limit for this small synthetic sandbox. See
+https://github.com/moby/moby/discussions/53256 and
+https://docs.docker.com/engine/network/port-publishing/ .
