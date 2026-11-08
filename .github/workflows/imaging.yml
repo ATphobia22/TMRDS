@@ -18,7 +18,9 @@ jobs:
         with:
           python-version: "3.11"
       - run: python -m pip install -r requirements.lock -r deploy/imaging/requirements.txt
-      - run: python -m pytest -q tests/test_imaging_synthetic_demo.py
+      - run: python -m pytest -q tests/test_imaging_synthetic_demo.py tests/test_imaging_research_workflow.py
+      - run: node --test tests/ohif/research.test.mjs
+      - run: python scripts/imaging_static_export.py
       - run: python scripts/imaging_synthetic_demo.py
       - run: docker compose -f deploy/imaging/compose.yml config --quiet
       - name: Start synthetic archive and exercise DICOMweb
@@ -40,7 +42,7 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install torch==2.15.0+cpu --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install -r requirements.lock -r deploy/monai/requirements.txt
-      - run: python -m pytest -q tests/test_research_mask_metrics.py
+      - run: python -m pytest -q tests/test_research_mask_metrics.py tests/test_imaging_research_workflow.py
   public-documents:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -53,3 +55,33 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install -r requirements.lock -r deploy/documents/requirements.txt
       - run: python -m pytest -q tests/test_public_pdf_extract.py
+  ohif-research-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: OHIF/Viewers
+          ref: 522531cc5c97ed05470f55a7a8f6571d9a512bd4 # v3.11.0
+          path: .ohif-build
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r deploy/imaging/requirements.txt
+      - run: python scripts/imaging_static_export.py
+      - run: python scripts/install_ohif_research.py .ohif-build --evidence data/imaging-static/provenance.json
+      - run: npm install --global yarn@1.22.22
+      - run: yarn install --frozen-lockfile --non-interactive
+        working-directory: .ohif-build
+      - run: yarn build
+        working-directory: .ohif-build
+        env:
+          APP_CONFIG: config/tmrds.js
+          PUBLIC_URL: /
+          QUICK_BUILD: "true"
+      - name: Verify research mode in built output
+        run: python scripts/verify_ohif_build.py .ohif-build/platform/app/dist

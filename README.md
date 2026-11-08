@@ -153,6 +153,7 @@ TMRDS/
 - [SaMD classification checklist](docs/SAMD_CLASSIFICATION_CHECKLIST.md) — per-feature classification.
 - [Interoperability compliance matrix](docs/INTEROPERABILITY_COMPLIANCE_MATRIX.md) — FHIR/US Core controls and limitations.
 - [Imaging research sandbox](docs/operations/imaging-research-sandbox.md) — local Orthanc/OHIF recipe and synthetic MR-to-FHIR tooling.
+- [Imaging research workflow](docs/integrations/imaging-research-workflow.md) — bounded DICOMweb reads, OHIF provenance panel, reviewed MONAI weight loading, human label submission; research only, no clinical approval.
 - [Research dossier](docs/operations/research-dossier.md) — dossier contract and remaining gates.
 - [Biomedical source gap review](docs/reference/biomedical-source-gap-review-2026-11-07.md) — GWAS v2, DepMap/PRISM, LINCS, CELLxGENE, ClinPGx priorities.
 - [Verified open-source medical software catalog](docs/reference/open-source-medical-software.md) — 32 projects checked against primary sources.
