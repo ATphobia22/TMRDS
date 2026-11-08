@@ -14,7 +14,7 @@ def example():
 
 def test_discovery_never_claims_remote_connection():
     catalog = list_providers()
-    assert len(PROVIDERS) == 12
+    assert len(PROVIDERS) >= 30
     assert all(p["status"] == "NOT_CONNECTED" and not p["execution_enabled"] for p in catalog["providers"])
     assert catalog["clinical_promotion_allowed"] is False
 

@@ -1,0 +1,86 @@
+{
+  "info": {
+    "name": "TMRDS research integration contracts",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Plugin capabilities",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/medical/plugin-capabilities"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Successful response\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public source inventory",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/research/source-catalog"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Successful response\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Observed source status",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/sources/catalog"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Successful response\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PDB core-entry metadata (external GET)",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/research/structures/pdb/4HHB"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Successful response\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -393,3 +393,16 @@ async def probe_source(request: Request, provider: str) -> dict:
     if provider not in {"tamarind", "patsnap"}:
         raise HTTPException(status_code=422, detail="unknown provider")
     return await source_monitor.probe(provider)
+
+
+@app.get("/api/v1/research/structures/pdb/{pdb_id}")
+@limiter.limit(FEDERATED_SEARCH_RATE_LIMIT)
+async def pdb_structure_metadata(request: Request, pdb_id: str) -> dict:
+    from engines.rcsb_pipeline import RCSBPipeline
+    import re
+    if not re.fullmatch(r"[1-9][A-Za-z0-9]{3}", pdb_id):
+        raise HTTPException(status_code=422, detail="four-character PDB accession required")
+    try:
+        return await RCSBPipeline().entry(pdb_id)
+    except Exception as exc:
+        raise safe_upstream_error("RCSB PDB", exc, status_code=502) from exc

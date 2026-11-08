@@ -302,3 +302,7 @@ The genetics and molecular-computation boundary is explicitly fail-closed: Ensem
 ## Optional imaging research sandbox
 
 A [local Orthanc/OHIF recipe and synthetic MR-to-FHIR tooling](docs/operations/imaging-research-sandbox.md) are available for research testing. pydicom is optional, credentials are generated locally, and the archive binds to loopback with its DICOM listener disabled. Container startup and viewer rendering still require separate verification. No real-patient ingestion or validated de-identification is enabled.
+
+## Research plugin interoperability
+
+The [30-surface capability registry and public-record exchange](docs/integrations/research-plugins.md) distinguish ChatGPT connectors, standalone backend access, unknown free-tier entitlements and local alternatives. A new read-only RCSB PDB metadata route complements UniProt and AlphaFold. Imported metadata previews remain unreviewed and are not persisted.

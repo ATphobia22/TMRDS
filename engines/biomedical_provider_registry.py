@@ -21,7 +21,14 @@ PROVIDERS = {
     "genomic_intelligence": ("genomics",),
     "tabulous": ("research_workspace",),
 }
-COMPUTE_PROVIDERS = frozenset({"biohub_esm", "tamarind_bio", "adaptyv_bio", "proto", "genomic_intelligence"})
+# Additional requested connector targets, not live backend credentials.
+from importlib.resources import files
+import json
+PLUGIN_CAPABILITIES = json.loads(files("engines").joinpath("plugin_capabilities.json").read_text())
+for _entry in PLUGIN_CAPABILITIES["providers"]:
+    PROVIDERS.setdefault(_entry["provider_id"], (_entry["domain"],))
+
+COMPUTE_PROVIDERS = frozenset({"biohub_esm", "tamarind_bio", "adaptyv_bio", "proto", "genomic_intelligence", "qbraid"})
 
 
 def list_providers(domain: str | None = None) -> dict:
