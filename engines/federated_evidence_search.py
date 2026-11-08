@@ -35,6 +35,8 @@ from engines.crossref_pipeline import CrossrefPipeline
 from engines.dailymed_pipeline import DailyMedPipeline
 from engines.ensembl_pipeline import EnsemblPipeline
 from engines.europe_pmc_pipeline import EuropePMCPipeline
+from engines.gnomad_pipeline import GnomADPipeline
+from engines.gtex_pipeline import GTExPipeline
 from engines.mesh_pipeline import MeshPipeline
 from engines.monarch_pipeline import MonarchPipeline
 from engines.ncats_pipeline import NcatsPipeline
@@ -76,6 +78,8 @@ COVERAGE = {
     "ncats": "NCATS Node Normalization + Name Resolution: identifier mappings only; rate limits unverified.",
     "monarch": "Monarch v3: phenotype/disease knowledge graph; integrated-KG license mixed — redistribution unverified.",
     "mesh": "MeSH (NLM): controlled vocabulary lookup; terminology bridge, not an evidence corpus.",
+    "gnomad": "gnomAD v4 (gnomad_r4, GRCh38): reference-population allele frequencies; variant-addressed — a gene symbol returns nothing; frequencies are population summaries, not clinical evidence.",
+    "gtex": "GTEx Portal v2: single-tissue eQTL associations (gtex_v10 default); population-level observational statistics, not causal or clinical interpretations.",
     "lens_patents": "Lens Patents: requires an API token; unavailable without credentials. Not legal advice.",
     "ibm_quantum": "IBM Quantum: requires API key + instance CRN; unavailable without credentials.",
 }
@@ -159,6 +163,8 @@ class FederatedEvidenceSearch:
         self.monarch = MonarchPipeline()
         self.mesh = MeshPipeline()
         self.uniprot = UniProtPipeline()
+        self.gnomad = GnomADPipeline()
+        self.gtex = GTExPipeline()
 
     async def _guard(self, source: str, coro) -> SourceResult:
         try:
@@ -195,6 +201,8 @@ class FederatedEvidenceSearch:
             self._guard("monarch", self._search_monarch(query, per_source)),
             self._guard("mesh", self._search_mesh(query, per_source)),
             self._guard("uniprot", self._search_uniprot(query, per_source)),
+            self._guard("gnomad", self._search_gnomad(query, per_source)),
+            self._guard("gtex", self._search_gtex(query, per_source)),
         )
         envelopes: list[dict[str, Any]] = []
         source_status: dict[str, dict[str, Any]] = {}
@@ -493,6 +501,40 @@ class FederatedEvidenceSearch:
             env = _make_envelope("mesh", "MeSH", d, "terminology")
             env["descriptor_id"] = d.get("descriptor_id")
             env["warnings"].append("Controlled-vocabulary term for query expansion — not an evidence corpus.")
+            out.append(env)
+        return out
+
+    async def _search_gnomad(self, query: str, n: int) -> list[dict[str, Any]]:
+        records = await self.gnomad.search(query, n)
+        out = []
+        for r in records:
+            env = _make_envelope("gnomad", "gnomAD", r, "population_frequency")
+            env["variant_id"] = r.get("variant_id")
+            env["rsids"] = r.get("rsids")
+            exome = r.get("exome") or {}
+            genome = r.get("genome") or {}
+            env["exome_af"] = exome.get("af")
+            env["genome_af"] = genome.get("af")
+            env["warnings"].append(
+                "Reference-population allele frequencies — not clinical evidence; "
+                "ancestry and coverage limitations apply."
+            )
+            out.append(env)
+        return out
+
+    async def _search_gtex(self, query: str, n: int) -> list[dict[str, Any]]:
+        records = await self.gtex.search(query, n)
+        out = []
+        for r in records:
+            env = _make_envelope("gtex", "GTEx", r, "eqtl_association")
+            env["snp_id"] = r.get("snp_id")
+            env["p_value"] = r.get("p_value")
+            env["nes"] = r.get("nes")
+            env["tissue"] = r.get("tissue")
+            env["warnings"].append(
+                "Population-level eQTL association — observational, not causal; "
+                "not a clinical interpretation."
+            )
             out.append(env)
         return out
 
