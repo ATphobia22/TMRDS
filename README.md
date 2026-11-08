@@ -157,6 +157,16 @@ No live institutional EHR/INPC/IHIE exchange is enabled by this repository confi
 
 See `docs/INTEROPERABILITY_COMPLIANCE_MATRIX.md` for the technical-control matrix and regulatory limitations.
 
+## Evidence discovery dossiers
+
+`GET /api/v1/research/dossier?query=synthetic%20research&limit=5` wires the
+federated adapters into a structured JSON research export. It groups exact
+DOI/PMID matches, retains each source record and its provenance, reports source
+failures and metadata gaps, and leaves clinical appraisal pending. Use public
+research terms only; queries are sent to external providers. See the
+[dossier contract and remaining gates](docs/operations/research-dossier.md).
+Retrieved records are discovery material, not proof of a treatment or cure.
+
 ## Optional IBM Quantum integration
 
 TMRDS includes an opt-in adapter for the **IBM Quantum Compute Service REST API**. This integration is for research workloads only and is not required to run the core API, PostgreSQL evidence store, or Neo4j projection.

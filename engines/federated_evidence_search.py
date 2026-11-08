@@ -161,7 +161,7 @@ class FederatedEvidenceSearch:
         except Exception as exc:  # noqa: BLE001 — isolate per source, report honestly
             return SourceResult(source=source, ok=False, warning=f"{source} unavailable: {type(exc).__name__}: {str(exc)[:160]}")
 
-    async def search_all(self, query: str, per_source: int = 10) -> dict[str, Any]:
+    async def search_all(self, query: str, per_source: int = 10, *, preserve_source_records: bool = False) -> dict[str, Any]:
         """Search every live source concurrently. Never raises for a single-source failure."""
         if not query or not query.strip():
             raise ValueError("query must not be empty")
@@ -207,7 +207,7 @@ class FederatedEvidenceSearch:
                 "warning": f"{gated} requires credentials; not queried. {COVERAGE[gated]}",
                 "coverage": COVERAGE[gated],
             }
-        deduped = self._dedupe(envelopes)
+        deduped = envelopes if preserve_source_records else self._dedupe(envelopes)
         return {
             "query": query,
             "searched_at": _utcnow(),

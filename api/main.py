@@ -229,6 +229,19 @@ async def search_pubmed(query: str = Query(..., min_length=1), limit: int = Quer
         raise safe_upstream_error("PubMed", exc) from exc
 
 
+@app.get("/api/v1/research/dossier")
+@limiter.limit(FEDERATED_SEARCH_RATE_LIMIT)
+async def research_dossier(request: Request, query: str = Query(..., min_length=2, max_length=500), limit: int = Query(default=5, ge=1, le=25)) -> dict[str, Any]:
+    """Public research terms only: queries are sent to external literature services."""
+    from engines.federated_evidence_search import FederatedEvidenceSearch
+    from engines.research_dossier import build_research_dossier
+
+    if not query.strip():
+        raise HTTPException(status_code=422, detail="research query must not be blank")
+    result = await FederatedEvidenceSearch().search_all(query, limit, preserve_source_records=True)
+    return build_research_dossier(result)
+
+
 @app.get("/api/v1/research/federated-search")
 @limiter.limit(FEDERATED_SEARCH_RATE_LIMIT)
 async def federated_search(request: Request, query: str = Query(..., min_length=2), limit: int = Query(default=10, ge=1, le=25)) -> dict[str, Any]:
