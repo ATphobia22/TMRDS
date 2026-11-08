@@ -48,7 +48,7 @@ TMRDS_SYNTHETIC_WORKBENCH_ENABLED=true
 TMRDS_SYNTHETIC_FHIR_FETCH_ENABLED=true
 TMRDS_SYNTHETIC_FHIR_BASE_URL=https://hapi.fhir.org/baseR4
 TMRDS_SYNTHETIC_FHIR_ALLOWED_HOSTS=hapi.fhir.org
-TMRDS_SYNTHETIC_FHIR_TOKEN=placeholder-token-hapi-test-server-only
+TMRDS_SYNTHETIC_FHIR_TOKEN=placeholder-token
 ```
 
 **Token warning:** the public test server ignores `Authorization` headers.

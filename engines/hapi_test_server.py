@@ -149,5 +149,5 @@ def hapi_test_server_env_hint() -> dict[str, str]:
         "TMRDS_SYNTHETIC_FHIR_FETCH_ENABLED": "true",
         "TMRDS_SYNTHETIC_FHIR_BASE_URL": HAPI_TEST_SERVER_URL,
         "TMRDS_SYNTHETIC_FHIR_ALLOWED_HOSTS": "hapi.fhir.org",
-        "TMRDS_SYNTHETIC_FHIR_TOKEN": "placeholder-token-hapi-test-server-only",
+        "TMRDS_SYNTHETIC_FHIR_TOKEN": "placeholder-token",
     }

@@ -155,7 +155,7 @@ async def test_hapi_opt_in_fetch_works_with_guards_intact(monkeypatch: pytest.Mo
     assert len(observed) == 1
     assert observed[0].url.path == "/baseR4/Observation/synthetic-cbc-1"
     # Placeholder token is sent (connector requires one); it is not a real credential.
-    assert observed[0].headers["Authorization"] == "Bearer placeholder-token-hapi-test-server-only"
+    assert observed[0].headers["Authorization"] == "Bearer placeholder-token"
     assert result["patient_data_accepted"] is False
     assert result["trends"][0]["measurements"][0]["value"] == 13.2
 
