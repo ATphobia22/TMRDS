@@ -299,27 +299,41 @@ class ClinVarAssertion:
 
 @dataclass
 class GnomADAnnotation:
+    """Source-backed gnomAD annotation; None means the field was not returned."""
     variant_id: str
     allele_frequency: Optional[float] = None
     allele_count: Optional[int] = None
     allele_number: Optional[int] = None
-    populations: List[Dict[str,Any]] = field(default_factory=list)  # {id, af, an}
+    populations: List[Dict[str, Any]] = field(default_factory=list)
     popmax_af: Optional[float] = None
     popmax_population: Optional[str] = None
     filters: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)  # population representation warnings
+    warnings: List[str] = field(default_factory=list)
     provenance: Optional[Provenance] = None
-    version: str = "v4.0"
+    version: Optional[str] = None
     license: str = "https://gnomad.broadinstitute.org/about#terms"
+    status: str = "NOT_QUERIED"
+    dataset_id: Optional[str] = None
+    reference_assembly: Optional[str] = None
+    exome: Optional[Dict[str, Any]] = None
+    genome: Optional[Dict[str, Any]] = None
+    error_code: Optional[str] = None
+
 
 @dataclass
 class GTExAnnotation:
+    """Source-backed GTEx QTL records, with paging completeness made explicit."""
     gene_id: Identifier
-    tissue_eqtls: List[Dict[str,Any]] = field(default_factory=list)  # {variantId, tissue, pval, slope, nes}
+    tissue_eqtls: List[Dict[str, Any]] = field(default_factory=list)
     splicing_qtl: bool = False
     provenance: Optional[Provenance] = None
-    version: str = "v8"
-    warnings: List[str] = field(default_factory=list)  # ancestry representation note
+    version: Optional[str] = None
+    warnings: List[str] = field(default_factory=list)
+    status: str = "NOT_QUERIED"
+    dataset_id: Optional[str] = None
+    total_results: Optional[int] = None
+    is_partial: bool = False
+    error_code: Optional[str] = None
 
 # Phenotype HPO
 
@@ -869,44 +883,380 @@ class ClinVarAdapter:
             evidence=ev
         )
 
+class GnomADLookupError(RuntimeError):
+    """Raised when population data cannot be obtained and validated from gnomAD."""
+
+
+class GTExLookupError(RuntimeError):
+    """Raised when QTL data cannot be obtained and validated from GTEx."""
+
+
 class GnomADAdapter:
+    """Query the public gnomAD GraphQL API for a normalized GRCh38 variant ID.
+
+    The accepted variant identifier follows gnomAD's canonical
+    chromosome-position-reference-alternate form, for example 1-55516888-G-A.
+    SPDI, HGVS, rsIDs and GRCh37 inputs are not silently translated.
+    """
+
     BASE = "https://gnomad.broadinstitute.org/api"
     TERMS = "https://gnomad.broadinstitute.org/about#terms"
-    def fetch(self, spdi: str) -> Tuple[GnomADAnnotation, Provenance]:
-        prov = Provenance.now(
+    DATASET = "gnomad_r4"
+    ASSEMBLY = "GRCh38"
+    QUERY = """
+    query TMRDSPopulationFrequency($variantId: String!) {
+      variant(variantId: $variantId, dataset: gnomad_r4) {
+        variant_id
+        chrom
+        pos
+        ref
+        alt
+        rsids
+        exome {
+          ac
+          an
+          af
+          populations { id ac an }
+        }
+        genome {
+          ac
+          an
+          af
+          populations { id ac an }
+        }
+      }
+    }
+    """
+
+    @staticmethod
+    def _validate_timeout(timeout: float) -> float:
+        import math
+
+        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)):
+            raise ValueError("timeout must be a finite number from 0 to 60 seconds")
+        value = float(timeout)
+        if not math.isfinite(value) or not 0 < value <= 60:
+            raise ValueError("timeout must be a finite number from 0 to 60 seconds")
+        return value
+
+    @staticmethod
+    def _normalize_variant_id(variant_id: str) -> str:
+        if not isinstance(variant_id, str):
+            raise ValueError("variant_id must be a string")
+        value = variant_id.strip()
+        if len(value) > 256 or not re.fullmatch(
+            r"(?:[1-9]|1[0-9]|2[0-2]|X|Y|MT)-[1-9][0-9]*-[ACGTN]+-[ACGTN]+",
+            value,
+            flags=re.IGNORECASE,
+        ):
+            raise ValueError(
+                "variant_id must be a normalized GRCh38 gnomAD ID "
+                "(chromosome-position-reference-alternate); SPDI/HGVS conversion is not implemented"
+            )
+        chrom, pos, ref, alt = value.split("-", 3)
+        if chrom.upper() in {"X", "Y", "MT"}:
+            chrom = chrom.upper()
+        return f"{chrom}-{int(pos)}-{ref.upper()}-{alt.upper()}"
+
+    @staticmethod
+    def _count(value: Any, field_name: str) -> Optional[int]:
+        if value is None:
+            return None
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise GnomADLookupError(f"gnomAD returned invalid {field_name}")
+        return value
+
+    @staticmethod
+    def _frequency(value: Any, field_name: str) -> Optional[float]:
+        if value is None:
+            return None
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise GnomADLookupError(f"gnomAD returned invalid {field_name}")
+        frequency = float(value)
+        if not 0.0 <= frequency <= 1.0:
+            raise GnomADLookupError(f"gnomAD returned out-of-range {field_name}")
+        return frequency
+
+    def _normalize_callset(self, value: Any, callset: str) -> Optional[Dict[str, Any]]:
+        if value is None:
+            return None
+        if not isinstance(value, dict):
+            raise GnomADLookupError(f"gnomAD returned malformed {callset} data")
+        ac = self._count(value.get("ac"), f"{callset}.ac")
+        an = self._count(value.get("an"), f"{callset}.an")
+        af = self._frequency(value.get("af"), f"{callset}.af")
+        raw_populations = value.get("populations") or []
+        if not isinstance(raw_populations, list):
+            raise GnomADLookupError(f"gnomAD returned malformed {callset} populations")
+        populations: list[dict[str, Any]] = []
+        for item in raw_populations:
+            if not isinstance(item, dict) or not isinstance(item.get("id"), str):
+                raise GnomADLookupError(f"gnomAD returned malformed {callset} population row")
+            pop_ac = self._count(item.get("ac"), f"{callset}.population.ac")
+            pop_an = self._count(item.get("an"), f"{callset}.population.an")
+            pop_af = (pop_ac / pop_an) if pop_ac is not None and pop_an else None
+            populations.append(
+                {
+                    "id": item["id"],
+                    "ac": pop_ac,
+                    "an": pop_an,
+                    "af": pop_af,
+                    "callset": callset,
+                }
+            )
+        if af is None and ac is not None and an:
+            af = ac / an
+        return {"ac": ac, "an": an, "af": af, "populations": populations}
+
+    def fetch(
+        self,
+        variant_id: str,
+        assembly: str = "GRCh38",
+        timeout: float = 15.0,
+    ) -> Tuple[GnomADAnnotation, Provenance]:
+        """Fetch real exome/genome summary frequency records from gnomAD v4."""
+        normalized_id = self._normalize_variant_id(variant_id)
+        if assembly != self.ASSEMBLY:
+            raise ValueError(
+                "gnomad_r4 is GRCh38; assembly conversion is not implemented, so no request was made"
+            )
+        timeout_value = self._validate_timeout(timeout)
+
+        import requests
+
+        try:
+            response = requests.post(
+                self.BASE,
+                json={"query": self.QUERY, "variables": {"variantId": normalized_id}},
+                headers={"Accept": "application/json", "Content-Type": "application/json"},
+                timeout=timeout_value,
+                allow_redirects=False,
+            )
+        except requests.RequestException as exc:
+            raise GnomADLookupError(
+                f"gnomAD request failed ({type(exc).__name__}); no annotation was accepted"
+            ) from exc
+        if response.status_code != 200:
+            raise GnomADLookupError(f"gnomAD returned HTTP {response.status_code}; no annotation was accepted")
+        try:
+            payload = response.json()
+        except (TypeError, ValueError) as exc:
+            raise GnomADLookupError("gnomAD returned invalid JSON; no annotation was accepted") from exc
+        if not isinstance(payload, dict):
+            raise GnomADLookupError("gnomAD response had an unexpected shape")
+        if payload.get("errors"):
+            raise GnomADLookupError("gnomAD GraphQL query failed; no partial response was accepted")
+        data = payload.get("data")
+        raw_variant = data.get("variant") if isinstance(data, dict) else None
+        if raw_variant is None:
+            raise GnomADLookupError(
+                f"Variant {normalized_id} was not found in dataset {self.DATASET}"
+            )
+        if not isinstance(raw_variant, dict) or raw_variant.get("variant_id") != normalized_id:
+            raise GnomADLookupError("gnomAD returned a mismatched or malformed variant")
+        chrom = str(raw_variant.get("chrom", ""))
+        pos = raw_variant.get("pos")
+        if not chrom or isinstance(pos, bool) or not isinstance(pos, int) or pos < 1:
+            raise GnomADLookupError("gnomAD returned invalid variant coordinates")
+
+        exome = self._normalize_callset(raw_variant.get("exome"), "exome")
+        genome = self._normalize_callset(raw_variant.get("genome"), "genome")
+        populations = [
+            row
+            for callset in (exome, genome)
+            if callset is not None
+            for row in callset["populations"]
+        ]
+        warnings = [
+            "gnomAD population frequencies describe reference-population summaries, not clinical evidence.",
+            "Interpret ancestry and coverage limitations; absence or low frequency does not establish pathogenicity.",
+        ]
+        if exome is None:
+            warnings.append("No exome callset was returned for this variant in gnomad_r4.")
+        if genome is None:
+            warnings.append("No genome callset was returned for this variant in gnomad_r4.")
+
+        provenance = Provenance.now(
             source_name="gnomAD",
             source_url=self.BASE,
-            version="v4.0",
+            version=self.DATASET,
             license=self.TERMS,
-            endpoint="/variant"
+            endpoint="/",
+            query={
+                "variant_id": normalized_id,
+                "dataset_id": self.DATASET,
+                "reference_assembly": self.ASSEMBLY,
+            },
+            raw_payload=getattr(response, "content", None),
         )
-        anno = GnomADAnnotation(
-            variant_id=spdi,
-            warnings=[
-                "Population representation: gnomAD v4 includes diverse but incomplete global ancestry; check AN per population",
-                "Do not use allele frequency as clinical evidence; research discovery only"
-            ],
-            provenance=prov
+        annotation = GnomADAnnotation(
+            variant_id=normalized_id,
+            populations=populations,
+            warnings=warnings,
+            provenance=provenance,
+            version=self.DATASET,
+            license=self.TERMS,
+            status="AVAILABLE",
+            dataset_id=self.DATASET,
+            reference_assembly=self.ASSEMBLY,
+            exome=exome,
+            genome=genome,
+            allele_frequency=None,
+            allele_count=None,
+            allele_number=None,
         )
-        return anno, prov
+        return annotation, provenance
+
 
 class GTExAdapter:
+    """Query the GTEx Portal v2 static independent-eQTL association endpoint."""
+
     BASE = "https://gtexportal.org/api/v2"
-    DOC = "https://gtexportal.org/api/v2/docs"
-    def fetch_eqtl(self, ensembl_gene_id: str) -> Tuple[GTExAnnotation, Provenance]:
-        prov = Provenance.now(
+    DOC = "https://gtexportal.org/api/v2/redoc"
+    TERMS = "https://gtexportal.org/home/apiPage"
+    DATASETS = {"gtex_v8", "gtex_v10", "gtex_snrnaseq_pilot"}
+
+    @staticmethod
+    def _validate_timeout(timeout: float) -> float:
+        import math
+
+        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)):
+            raise ValueError("timeout must be a finite number from 0 to 60 seconds")
+        value = float(timeout)
+        if not math.isfinite(value) or not 0 < value <= 60:
+            raise ValueError("timeout must be a finite number from 0 to 60 seconds")
+        return value
+
+    @staticmethod
+    def _normalize_gencode_id(ensembl_gene_id: str) -> str:
+        if not isinstance(ensembl_gene_id, str):
+            raise ValueError("ensembl_gene_id must be a string")
+        value = ensembl_gene_id.strip()
+        if not re.fullmatch(r"ENSG[0-9]{11}\.[0-9]+", value):
+            raise ValueError(
+                "ensembl_gene_id must be a versioned GTEx GENCODE ID such as ENSG00000141510.18"
+            )
+        return value
+
+    def fetch_eqtl(
+        self,
+        ensembl_gene_id: str,
+        dataset_id: str = "gtex_v10",
+        tissue_ids: Optional[List[str]] = None,
+        max_results: int = 100,
+        timeout: float = 15.0,
+    ) -> Tuple[GTExAnnotation, Provenance]:
+        """Fetch one bounded page of real independent-eQTL records.
+
+        The returned annotation advertises whether more result pages remain. It is
+        not a complete all-tissue export unless the source reports one page.
+        """
+        gene_id = self._normalize_gencode_id(ensembl_gene_id)
+        if dataset_id not in self.DATASETS:
+            raise ValueError(f"dataset_id must be one of {sorted(self.DATASETS)}")
+        if isinstance(max_results, bool) or not isinstance(max_results, int) or not 1 <= max_results <= 1000:
+            raise ValueError("max_results must be an integer between 1 and 1000")
+        timeout_value = self._validate_timeout(timeout)
+        normalized_tissues: list[str] = []
+        for tissue in tissue_ids or []:
+            if not isinstance(tissue, str) or not re.fullmatch(r"[A-Za-z0-9_:-]{1,128}", tissue):
+                raise ValueError("tissue_ids must contain valid GTEx tissue IDs")
+            normalized_tissues.append(tissue)
+        if len(normalized_tissues) > 10:
+            raise ValueError("at most 10 tissue IDs may be queried per call")
+
+        import requests
+
+        endpoint = "/association/independentEqtl"
+        params: Dict[str, Any] = {
+            "gencodeId": gene_id,
+            "datasetId": dataset_id,
+            "page": 0,
+            "itemsPerPage": max_results,
+        }
+        if normalized_tissues:
+            params["tissueSiteDetailId"] = normalized_tissues
+        url = f"{self.BASE}{endpoint}"
+        try:
+            response = requests.get(
+                url,
+                params=params,
+                headers={"Accept": "application/json"},
+                timeout=timeout_value,
+                allow_redirects=False,
+            )
+        except requests.RequestException as exc:
+            raise GTExLookupError(
+                f"GTEx request failed ({type(exc).__name__}); no annotation was accepted"
+            ) from exc
+        if response.status_code != 200:
+            raise GTExLookupError(f"GTEx returned HTTP {response.status_code}; no annotation was accepted")
+        try:
+            payload = response.json()
+        except (TypeError, ValueError) as exc:
+            raise GTExLookupError("GTEx returned invalid JSON; no annotation was accepted") from exc
+        if not isinstance(payload, dict):
+            raise GTExLookupError("GTEx response had an unexpected shape")
+        raw_records = payload.get("data")
+        paging = payload.get("paging_info")
+        if not isinstance(raw_records, list) or not isinstance(paging, dict):
+            raise GTExLookupError("GTEx response is missing data or paging metadata")
+        records: list[Dict[str, Any]] = []
+        for row in raw_records:
+            if not isinstance(row, dict):
+                raise GTExLookupError("GTEx returned a malformed eQTL record")
+            if row.get("datasetId") not in (None, dataset_id):
+                raise GTExLookupError("GTEx returned records from an unexpected dataset")
+            row_gene_id = row.get("gencodeId")
+            if row_gene_id and row_gene_id != gene_id:
+                raise GTExLookupError("GTEx returned a record for a different gene")
+            records.append(dict(row))
+
+        total_results = paging.get("totalNumberOfItems")
+        if total_results is not None and (
+            isinstance(total_results, bool) or not isinstance(total_results, int) or total_results < 0
+        ):
+            raise GTExLookupError("GTEx returned invalid total result count")
+        total_pages = paging.get("numberOfPages")
+        if total_pages is not None and (
+            isinstance(total_pages, bool) or not isinstance(total_pages, int) or total_pages < 0
+        ):
+            raise GTExLookupError("GTEx returned invalid page count")
+        is_partial = bool(total_pages and total_pages > 1)
+        warnings = [
+            "GTEx eQTL associations are population-level observational statistics, not causal or clinical interpretations.",
+            f"Dataset {dataset_id} queried with page size {max_results}; partial results are explicitly flagged.",
+        ]
+        provenance = Provenance.now(
             source_name="GTEx",
-            source_url=self.BASE,
-            version="v8",
-            license="GTEx Portal terms",
-            endpoint=f"/expression/geneEqtl?geneId={ensembl_gene_id}"
+            source_url=url,
+            version=dataset_id,
+            license=self.TERMS,
+            endpoint=endpoint,
+            query={
+                "gencode_id": gene_id,
+                "dataset_id": dataset_id,
+                "tissue_ids": normalized_tissues,
+                "page": 0,
+                "items_per_page": max_results,
+                "number_of_pages": total_pages,
+                "total_number_of_items": total_results,
+            },
+            raw_payload=getattr(response, "content", None),
         )
-        anno = GTExAnnotation(
-            gene_id=Identifier("ENSEMBL", ensembl_gene_id),
-            warnings=["GTEx v8: 85% European ancestry; interpret tissue eQTL generalizability with caution; research only"],
-            provenance=prov
+        annotation = GTExAnnotation(
+            gene_id=Identifier("ENSEMBL", gene_id.rsplit(".", 1)[0], version=gene_id.rsplit(".", 1)[1]),
+            tissue_eqtls=records,
+            splicing_qtl=False,
+            provenance=provenance,
+            version=dataset_id,
+            dataset_id=dataset_id,
+            total_results=total_results,
+            is_partial=is_partial,
+            status="PARTIAL" if is_partial else "AVAILABLE",
+            warnings=warnings,
         )
-        return anno, prov
+        return annotation, provenance
 
 # ---------------------------------------------------------------------------
 # Splice / Variant Literature View - Reports source-supported annotations + conflicts, no clinical interpretation
@@ -1061,11 +1411,62 @@ class DiseaseGraphBuilder:
                           conflict_links=[assertion.vcv] if assertion.conflicting_interpretations else [])
         return variant, assertion
 
-    def create_literature_view(self, variant: Variant, gene: Optional[Gene]=None,
-                               transcripts: Optional[List[Transcript]]=None,
-                               literature: Optional[List[LiteratureEvidence]]=None) -> VariantLiteratureView:
-        gnomad_data, _ = self.gnomad_adapter.fetch(variant.spdi or "unknown")
-        gtex_data, _ = self.gtex_adapter.fetch_eqtl(gene.ensembl_gene_id.id if gene and gene.ensembl_gene_id else "ENSG00000000000")
+    def create_literature_view(
+        self,
+        variant: Variant,
+        gene: Optional[Gene] = None,
+        transcripts: Optional[List[Transcript]] = None,
+        literature: Optional[List[LiteratureEvidence]] = None,
+        *,
+        fetch_external_annotations: bool = False,
+        gnomad_variant_id: Optional[str] = None,
+        gtex_gencode_id: Optional[str] = None,
+        gtex_dataset_id: str = "gtex_v10",
+        timeout: float = 15.0,
+        max_eqtl_results: int = 100,
+    ) -> VariantLiteratureView:
+        """Create a source-preserving view; external APIs are opt-in and bounded."""
+        gnomad_data: Optional[GnomADAnnotation] = None
+        gtex_data: Optional[GTExAnnotation] = None
+        source_notes: list[str] = []
+
+        if not isinstance(fetch_external_annotations, bool):
+            raise ValueError("fetch_external_annotations must be a boolean")
+
+        if fetch_external_annotations:
+            if gnomad_variant_id:
+                try:
+                    gnomad_data, _ = self.gnomad_adapter.fetch(
+                        gnomad_variant_id,
+                        assembly=self.assembly,
+                        timeout=timeout,
+                    )
+                except (ValueError, GnomADLookupError) as exc:
+                    source_notes.append(f"gnomAD annotation unavailable: {exc}")
+            else:
+                source_notes.append(
+                    "gnomAD was not queried: provide an explicit normalized GRCh38 gnomAD variant ID; "
+                    "automatic SPDI/HGVS coordinate conversion is not implemented."
+                )
+
+            if gtex_gencode_id:
+                try:
+                    gtex_data, _ = self.gtex_adapter.fetch_eqtl(
+                        gtex_gencode_id,
+                        dataset_id=gtex_dataset_id,
+                        timeout=timeout,
+                        max_results=max_eqtl_results,
+                    )
+                except (ValueError, GTExLookupError) as exc:
+                    source_notes.append(f"GTEx annotation unavailable: {exc}")
+            else:
+                source_notes.append(
+                    "GTEx was not queried: provide a versioned GENCODE gene identifier for the selected GTEx dataset."
+                )
+        else:
+            source_notes.append(
+                "External gnomAD and GTEx annotations were not queried; no population-frequency or eQTL values are implied."
+            )
 
         view = VariantLiteratureView(
             variant=variant,
@@ -1075,8 +1476,9 @@ class DiseaseGraphBuilder:
             ensembl_consequences=variant.ensembl_consequence,
             gnomad=gnomad_data,
             gtex=gtex_data,
-            literature=literature or []
+            literature=literature or [],
         )
+        view.disclaimers.extend(source_notes)
         view.summarize_conflicts()
         return view
 
