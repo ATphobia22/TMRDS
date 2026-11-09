@@ -20,7 +20,7 @@ numpy==2.4.6
 opentelemetry-api==1.45.1
 pycparser==3.12
 pydantic==2.14.1
-pydantic-core==2.50.1
+pydantic-core==2.50.4
 python-dotenv==1.2.4
 python-multipart==0.0.32
 pytz==2026.5
