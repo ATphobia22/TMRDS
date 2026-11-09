@@ -23,7 +23,7 @@ packaging==26.3
 pluggy==1.7.0
 pycparser==3.12
 pydantic==2.14.1
-pydantic-core==2.50.1
+pydantic-core==2.50.4
 Pygments==2.21.0
 pytest==9.1.1
 pytest-asyncio==1.4.1
