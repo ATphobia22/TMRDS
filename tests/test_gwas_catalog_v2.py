@@ -159,3 +159,9 @@ async def test_gwas_public_route_exposes_failure_without_sensitive_text(monkeypa
     assert body["source_status"]["count"] == 0
     assert body["envelopes"] == []
     assert "sensitive-upstream-debug-token" not in str(body)
+
+def test_gwas_is_discoverable_from_quantum_cube_disease_target_and_population_faces():
+    from engines.qrnc_open_source_integrations import for_face
+    for face in ("disease", "target", "equity"):
+        ids = {item["id"] for item in for_face(face)["integrations"]}
+        assert "gwas_catalog_v2" in ids
