@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: "3.11"
       - run: python -m pip install pytest==9.2.0
-      - run: python -m pytest -q tests/test_offline_workstation_adapters.py tests/test_offline_wheelhouse.py
+      - run: python -m pytest -q tests/test_offline_workstation_adapters.py tests/test_offline_wheelhouse.py tests/test_qrce_swarm_local.py
       - run: python scripts/qrce_offline_workstation.py doctor
   windows-binary-packaging:
     runs-on: windows-latest
@@ -43,7 +43,7 @@ jobs:
           python -m pip check
           python -m pip install pytest==9.2.0
       - name: Exercise real pydicom MR pixel data, Biopython FASTQ, RDKit SDF and pypdf
-        run: python -m pytest -q tests/test_offline_workstation_adapters.py tests/test_offline_wheelhouse.py
+        run: python -m pytest -q tests/test_offline_workstation_adapters.py tests/test_offline_wheelhouse.py tests/test_qrce_swarm_local.py
       - name: Verify actual installed versions
         run: python scripts/qrce_offline_workstation.py doctor
       - name: Assemble portable Python 3.11 wheelhouse (NOT a standalone .exe)
@@ -53,8 +53,11 @@ jobs:
           Copy-Item engines/__init__.py offline-release/engines/__init__.py
           Copy-Item engines/offline_workstation_adapters.py offline-release/engines/
           Copy-Item engines/cube_grover_research.py offline-release/engines/
+          Copy-Item engines/qrce_research_formats.py offline-release/engines/
           Copy-Item scripts/qrce_offline_workstation.py offline-release/scripts/
           Copy-Item scripts/qrce_wheelhouse.py offline-release/scripts/
+          Copy-Item scripts/qrce_swarm_local.py offline-release/scripts/
+          Copy-Item deploy/offline/swarm offline-release/deploy/offline/swarm -Recurse
           Copy-Item deploy/offline/requirements.txt offline-release/deploy/offline/
           Copy-Item docs/operations/portable-offline-workstation.md offline-release/README.md
           Copy-Item wheelhouse offline-release/wheelhouse -Recurse
