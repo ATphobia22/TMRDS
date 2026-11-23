@@ -44,8 +44,16 @@ def main() -> None:
     assert required <= inspector.ids, sorted(required - inspector.ids)
     assert inspector.inline_scripts == 0, "inline script prohibited"
     assert inspector.csp and "default-src 'none'" in inspector.csp
-    assert "connect-src https://www.ebi.ac.uk https://clinicaltrials.gov;" in inspector.csp
+    assert "connect-src 'self' https://www.ebi.ac.uk https://clinicaltrials.gov;" in inspector.csp
     assert inspector.local_assets == ["./site.css", "./site.js"], inspector.local_assets
+    import json
+    backend_config = json.loads((PUBLIC / "backend-config.json").read_text())
+    assert backend_config["api_mode"] == "disabled", "public Pages must never claim deployed backend"
+    assert {"rubiksCube", "cubeMoveBtn", "cubeActivity", "backendState", "pathwayRecords", "pathwayFootnote"} <= inspector.ids
+    for token in ("turnCubeLayer", "rotateVector", "startCubeSearch", "stopCubeSearch", "backendConfiguration", "loadGovernedPathway"):
+        assert token in js, token
+    assert "@keyframes cube-idle" in css and "@keyframes cube-working" in css
+    assert "prefers-reduced-motion" in css
     assert len(css) > 1000
     for asset in inspector.local_assets:
         assert (PUBLIC / asset.removeprefix("./")).is_file(), asset
