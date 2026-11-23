@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api/v1/research", tags=["bounded-public-crosscheck"]
 _ORANGE_BOOK = "https://api.fda.gov/drug/orangebook.json"
 _MAX_BYTES = 1_048_576
 _DRUG_QUERY = re.compile(r"^[a-zA-Z][a-zA-Z0-9 -]{1,55}$")
-_PATENT_NUMBER = re.compile(r"^[0-9]{5,12}(?:\\*PED)?$")
+_PATENT_NUMBER = re.compile(r"^[0-9]{5,12}(?:\*PED)?$")
 _SOURCE_HANDLERS: dict[str, str] = {
     "pubmed": "_search_pubmed",
     "europe_pmc": "_search_europepmc",
@@ -44,7 +44,7 @@ def validate_public_query(query: str) -> str:
     query = query.strip()
     if len(query) < 2 or len(query) > 100 or any(ord(c) < 32 for c in query):
         raise ValueError("invalid research term")
-    if re.search(r"\\b[0-9]{3}-[0-9]{2}-[0-9]{4}\\b|[\\w.+-]+@[\\w.-]+\\.[a-zA-Z]{2,}", query):
+    if re.search(r"\b[0-9]{3}-[0-9]{2}-[0-9]{4}\b|[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}", query):
         raise ValueError("Patient or identifying information must not be sent to public sources")
     return query
 
