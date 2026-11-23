@@ -33,6 +33,7 @@ from api.evidence_retrieval_routes import router as evidence_retrieval_router
 from api.interoperability_routes import router as interoperability_router
 from api.medical_workbench_routes import router as medical_workbench_router
 from api.open_medical_routes import router as open_medical_router
+from api.public_crosscheck_routes import router as public_crosscheck_router
 from api.governed_pathway_routes import router as governed_pathway_router
 from engines.cdc_data_pipeline import CDCDataPipeline
 from engines.clinical_trials_pipeline import ClinicalTrialsPipeline
@@ -409,6 +410,7 @@ app.include_router(interoperability_router)
 app.include_router(medical_workbench_router)
 app.include_router(governed_pathway_router)
 app.include_router(open_medical_router)
+app.include_router(public_crosscheck_router)
 
 # Static, no-data demonstration UI. Never accepts patient files or patient fields.
 from pathlib import Path
