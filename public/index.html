@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071d32">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://www.ebi.ac.uk https://clinicaltrials.gov; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests">
+  <meta name="description" content="TMRDS open biomedical evidence atlas: live public literature and trial lookup with source provenance and human review boundaries.">
+  <title>TMRDS | Open Evidence Atlas</title>
+  <link rel="stylesheet" href="./site.css">
+  <script src="./site.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#research">Skip to research</a>
+  <header class="masthead">
+    <div class="wrap mast-inner">
+      <a class="brand" href="./" aria-label="TMRDS Home"><span class="brand-icon">T</span><span>TMRDS <small>OPEN EVIDENCE ATLAS</small></span></a>
+      <nav class="top-nav" aria-label="Site navigation"><a href="#research">Research</a><a href="#cube">Six evidence planes</a><a href="#sources">Sources</a><a href="https://github.com/ATphobia22/TMRDS" target="_blank" rel="noopener noreferrer">Source code ↗</a></nav>
+    </div>
+  </header>
+  <main class="wrap">
+    <div class="safety" role="note"><strong>RESEARCH SOFTWARE · HUMAN AUTHORITY FINAL</strong><span>Not a medical device, diagnostic service, prescription tool, or validated cure-finding system. Do not enter personal or patient information.</span></div>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-text">
+        <span class="eyebrow">OPEN SCIENCE / VERIFIED ORIGIN</span>
+        <h1 id="hero-title">Every discovery<br>starts with <em>evidence.</em></h1>
+        <p>Explore public biomedical literature and clinical trial records as they exist at their original sources. Follow the provenance, see incomplete coverage, and keep computational hypotheses separate from clinical conclusions.</p>
+        <div class="hero-actions"><a class="primary-link" href="#research">Explore live records ↓</a><a class="quiet-link" href="https://github.com/ATphobia22/TMRDS/blob/main/docs/QRNC_NAVIGATION_CUBE.md" target="_blank" rel="noopener noreferrer">How the cube works ↗</a></div>
+      </div>
+      <div class="cube-showcase" aria-label="Six interconnected research evidence planes">
+        <div class="cube-diagram" aria-hidden="true">
+          <div class="cube-face face-top">GENE</div><div class="cube-face face-left">DATA</div><div class="cube-face face-right">TRIAL</div>
+        </div>
+        <div class="cube-key">6 EVIDENCE PLANES <span>≠ 6 CONFIRMED CLINICAL OUTCOMES</span></div>
+      </div>
+    </section>
+    <section id="research" class="search-panel" aria-labelledby="research-title">
+      <div class="section-heading"><div><span class="eyebrow">01 / PUBLIC EVIDENCE SEARCH</span><h2 id="research-title">Search authoritative records</h2><p>Read-only requests to Europe PMC and ClinicalTrials.gov. Results are never fabricated or silently replaced by cached examples.</p></div><span class="live-pill"><span class="pulse"></span> PUBLIC SOURCES</span></div>
+      <form id="searchForm" class="search-form">
+        <label for="query">Disease, molecule, gene, or research topic <small>(not a patient's history)</small></label>
+        <div class="search-control"><input id="query" name="query" type="search" maxlength="120" required value="amyotrophic lateral sclerosis" autocomplete="off" spellcheck="false" aria-describedby="searchHelp"><button type="submit" id="searchBtn">Search sources</button></div>
+        <p id="searchHelp" class="input-note">Sample topic only; no account, tracking, patient-record ingestion, or personal medical profile. Your query is sent to the two named public services when you search.</p>
+      </form>
+      <div class="source-statuses" aria-label="Upstream source checks">
+        <div><span class="status-mark" id="literatureDot"></span><strong>Europe PMC</strong><span id="literatureStatus" aria-live="polite">Not queried</span></div>
+        <div><span class="status-mark" id="trialDot"></span><strong>ClinicalTrials.gov</strong><span id="trialStatus" aria-live="polite">Not queried</span></div>
+      </div>
+      <p class="fetch-meta" id="fetchMeta" aria-live="polite">Search to load timestamped source records. The page does not consult TMRDS's private backend.</p>
+      <div class="results-grid">
+        <section class="result-column" aria-labelledby="litTitle"><div class="result-head"><h3 id="litTitle">Literature</h3><span id="litCount">—</span></div><div id="literature" class="results-list"><p class="empty">No request made.</p></div></section>
+        <section class="result-column" aria-labelledby="trialTitle"><div class="result-head"><h3 id="trialTitle">Registered studies</h3><span id="trialCount">—</span></div><div id="trials" class="results-list"><p class="empty">No request made.</p></div></section>
+      </div>
+      <p class="method-note">Records are discovery results, not independently appraised evidence. Trial registration is not proof of efficacy; a literature match is not proof of peer review. The locally calculated SHA-256 fingerprint identifies normalized display fields only and does not certify authenticity or clinical validity.</p>
+    </section>
+    <section id="cube" class="cube-section" aria-labelledby="cube-title">
+      <div class="section-heading"><div><span class="eyebrow">02 / QUANTUM RESEARCH NAVIGATION CUBE</span><h2 id="cube-title">Six planes. One transparent research trail.</h2><p>The six faces organize questions; the site does not invent a composite cure score.</p></div></div>
+      <div class="facet-grid">
+        <article class="facet"><span>01</span><h3>Disease &amp; phenotype</h3><p>Define the condition, inclusion criteria, and ontology identifiers.</p><a href="https://www.ebi.ac.uk/ols4/" target="_blank" rel="noopener noreferrer">Ontology Lookup Service ↗</a></article>
+        <article class="facet"><span>02</span><h3>Target &amp; pathway</h3><p>Evaluate gene or protein associations; correlation is not causation.</p><a href="https://platform.opentargets.org/" target="_blank" rel="noopener noreferrer">Open Targets ↗</a></article>
+        <article class="facet"><span>03</span><h3>Structure &amp; pocket</h3><p>Inspect experimental structures and mark modeled coordinates as predictions.</p><a href="https://www.rcsb.org/" target="_blank" rel="noopener noreferrer">RCSB PDB ↗</a></article>
+        <article class="facet"><span>04</span><h3>Molecule &amp; chemistry</h3><p>Review chemical identities and assays before interpreting activity.</p><a href="https://www.ebi.ac.uk/chembl/" target="_blank" rel="noopener noreferrer">ChEMBL ↗</a></article>
+        <article class="facet"><span>05</span><h3>Trials &amp; labels</h3><p>Inspect trial status, populations, outcomes and regulatory boundaries.</p><a href="https://clinicaltrials.gov/" target="_blank" rel="noopener noreferrer">ClinicalTrials.gov ↗</a></article>
+        <article class="facet"><span>06</span><h3>Population &amp; equity</h3><p>Identify who was included, excluded, or underrepresented.</p><a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank" rel="noopener noreferrer">ClinVar ↗</a></article>
+      </div>
+    </section>
+    <section id="sources" class="sources-section" aria-labelledby="sources-title">
+      <div class="section-heading"><div><span class="eyebrow">03 / SOURCE AND COMPUTE REGISTRY</span><h2 id="sources-title">Know the difference between connected and referenced</h2></div></div>
+      <div class="registry-grid">
+        <div class="registry-item"><strong>Live in this public page</strong><p>Europe PMC literature search and NIH ClinicalTrials.gov v2. Each fetch reports success or failure independently.</p><div class="registry-links"><a href="https://www.ebi.ac.uk/europepmc/webservices/rest/" target="_blank" rel="noopener noreferrer">Europe PMC API</a><a href="https://clinicaltrials.gov/data-api/api" target="_blank" rel="noopener noreferrer">Trials API</a></div></div>
+        <div class="registry-item"><strong>Repository-backed research adapters</strong><p>PubMed, openFDA, UniProt, Ensembl, RCSB, ChEMBL, Open Targets, gnomAD, GTEx and other adapters are part of the separate Python backend. This page does not claim they are online.</p><div class="registry-links"><a href="https://github.com/ATphobia22/TMRDS/blob/main/engines/federated_evidence_search.py" target="_blank" rel="noopener noreferrer">Inspect implementation</a><a href="https://github.com/ATphobia22/TMRDS/blob/main/engines/research_source_catalog.json" target="_blank" rel="noopener noreferrer">Inspect source catalog</a></div></div>
+        <div class="registry-item"><strong>Quantum computation</strong><p>Simulators and optional IBM Quantum execution have separate authorization, job-ledger and validation boundaries. No quantum experiment runs in your browser or as a result of opening this page.</p><div class="registry-links"><a href="https://github.com/ATphobia22/TMRDS/blob/main/docs/integrations/ibm-quantum-compute.md" target="_blank" rel="noopener noreferrer">Compute controls</a></div></div>
+      </div>
+      <p class="method-note">Source datasets and code have different licenses. Check source-specific permissions and attribution before bulk replication, model training, redistribution, or clinical application. No user-generated biomedical records are published by this page.</p>
+    </section>
+  </main>
+  <footer class="footer"><div class="wrap"><strong>TMRDS</strong><span>Evidence first · Human authority final · <a href="https://github.com/ATphobia22/TMRDS" target="_blank" rel="noopener noreferrer">Open-source repository ↗</a></span><small>Research-only public interface. No patient data collection or treatment recommendations.</small></div></footer>
+</body>
+</html>
