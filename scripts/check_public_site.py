@@ -44,7 +44,7 @@ def main() -> None:
     assert required <= inspector.ids, sorted(required - inspector.ids)
     assert inspector.inline_scripts == 0, "inline script prohibited"
     assert inspector.csp and "default-src 'none'" in inspector.csp
-    assert "connect-src 'self' https://www.ebi.ac.uk https://clinicaltrials.gov;" in inspector.csp
+    assert "connect-src 'self' https://www.ebi.ac.uk https://clinicaltrials.gov https://api.crossref.org https://api.fda.gov;" in inspector.csp
     assert inspector.local_assets == ["./site.css", "./site.js"], inspector.local_assets
     import json
     backend_config = json.loads((PUBLIC / "backend-config.json").read_text())
@@ -70,6 +70,15 @@ def main() -> None:
                   "api/v1/research/pubmed-citations", "api/v1/research/alphafold-db/",
                   "NOT AlphaFold 3 inference"):
         assert token in js, token
+    assert {"crossrefDot", "crossrefStatus", "crossrefResults", "crossrefCount",
+            "crosscheckState", "crosscheckRecords", "crosscheckFootnote", "portalList",
+            "patentForm", "ingredient", "patentState", "patentRecords",
+            "patentSubmit", "source-portals"} <= inspector.ids
+    for token in ("loadCrossref", "loadBackendCrosscheck", "updateResearchPortalLinks",
+                  "api.crossref.org/works", "api.fda.gov/drug/orangebook.json",
+                  "cross_index_metadata_overlap_only", "NOT independently verified"):
+        assert token in js, token
+    assert ".results-grid{grid-template-columns:repeat(3," in css
     assert ".medical-grid" in css and ".extension-grid" in css
     assert len(css) > 1000
     for asset in inspector.local_assets:
@@ -82,7 +91,9 @@ def main() -> None:
     assert "textContent" in js, "source strings must not be injected as HTML"
     assert "innerHTML" not in js, "do not render upstream HTML"
     for host in ("https://www.ebi.ac.uk/europepmc/webservices/rest/search",
-                 "https://clinicaltrials.gov/api/v2/studies"):
+                 "https://clinicaltrials.gov/api/v2/studies",
+                 "https://api.crossref.org/works",
+                 "https://api.fda.gov/drug/orangebook.json"):
         assert host in js, host
     assert not re.search(r"fetch\(\s*['\"]http:", js)
     print("Public site static contract valid: CSP, bounded source hosts, provenance, no HTML injection")
