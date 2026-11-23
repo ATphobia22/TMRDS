@@ -3,12 +3,14 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from api.public_gateway import app
+from api.public_gateway import app, pathway_router
 from engines.governed_pathway import PathwaySourceError
 
 
 def test_public_gateway_has_only_read_only_research_routes_and_static_site():
-    paths = {getattr(route, "path", ""): route for route in app.routes}
+    # FastAPI can defer router flattening; inspect the registered APIRouter
+    # separately and also assert the network-facing URLs resolve.
+    paths = {getattr(route, "path", ""): route for route in [*app.routes, *pathway_router.routes]}
     expected = {
         "/health/live", "/health/ready", "/backend-config.json",
         "/api/v1/research/dossier", "/api/v1/research/gwas-associations",
@@ -17,6 +19,10 @@ def test_public_gateway_has_only_read_only_research_routes_and_static_site():
         "/api/v1/research/reference-pathway-contract",
     }
     assert expected <= paths.keys(), sorted(paths.keys())
+    client = TestClient(app)
+    for path in expected:
+        response = client.get(path)
+        assert response.status_code in {200, 422}, (path, response.status_code)
     assert not any("/api/v1/medical" in path or "/api/v1/evidence/ingest" in path for path in paths)
     assert not any("/api/v1/ops" in path for path in paths)
     for path in expected:
