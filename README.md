@@ -4,13 +4,31 @@
 
 ## Try it now
 
-**[TMRDS 2 — public research workspace](https://muse.ai/s/tmrds-2-xxd6j1fn9xyxwxf/DtP0Ir8DQV7MepeJdlvuTQBszwBcsygUi_QoYBYFruw)** — a static, public preview of the workspace: federated evidence search, the Quantum Research Navigation Cube, the Care Evidence Brief, and the development roadmap. Research-advisory only; human clinical authority final. (Public preview reflects the October 2026 build; the repository below is current.)
+**[Launch the live TMRDS Open Evidence Atlas](https://atphobia22.github.io/TMRDS/)** — a free, anonymous GitHub Pages research interface with a rotating, interactive **3D Rubik's Cube**. The 26 visible cubies rotate continuously and their layers turn while searches run. You can select **Rotate a layer** to turn a face manually; reduced-motion preferences are respected. Search the live **Europe PMC** and **ClinicalTrials.gov v2** services, inspect source identifiers and retrieval dates, and follow records to their origin.
+
+**[TMRDS 2 — earlier public workspace preview](https://muse.ai/s/tmrds-2-xxd6j1fn9xyxwxf/DtP0Ir8DQV7MepeJdlvuTQBszwBcsygUi_QoYBYFruw)** documents the October 2026 research concept and is not the current production evidence atlas.
+
+**Important hosting boundary:** GitHub Pages serves static HTML/CSS/JavaScript; it **does not run the Python research adapters**. The governed disease → target → compound API requires a separately deployed, same-origin research service. The Rubik's Cube is a visual search indicator, **not** quantum computation.
+
+### Deployment and verification status
+
+| Capability | Verified status (November 23, 2026) |
+|---|---|
+| Animated 3D cube and manual layer turns | Live on GitHub Pages; browser smoke-tested |
+| Public literature and trial searches | Live browser queries to Europe PMC and ClinicalTrials.gov returned real linked results |
+| Public read-only research backend | Docker image, routes, and same-origin site tested in CI; **not publicly cloud-hosted** |
+| Federated research adapters | 25 repository adapters; **eight** explicitly policy-registered metadata adapters permitted in the isolated public service |
+| Disease → target → compound link | Open Targets source-reported mechanism, exact MONDO / Ensembl / ChEMBL identifiers; bounded research lookup |
+| Freshness, source rights, and provenance | Dated source receipts, release observations, conservative license-review gate, limited SHA-256 record hashes |
+| Independent efficacy / clinical validation | **Not established**; one FDA-anchored technical reference case and a synthetic negative control are not a blinded clinical benchmark |
+
+The [November 23 source audit](https://github.com/ATphobia22/TMRDS/actions/workflows/source-governance.yml) reported responses from **five** official APIs (Open Targets, ChEMBL, Europe PMC, ClinicalTrials.gov, GWAS Catalog v2), and its one-case CFTR/ivacaftor **technical identifier-consistency check passed**. That does not certify license permission, data currency, comprehensive coverage, or treatment effectiveness.
 
 ## For doctors
 
 TMRDS is a research workspace for answering "what does the evidence say?" — with every answer traceable to its source.
 
-- **One federated search across 25 public metadata sources, plus a separate AlphaFold DB structure lookup.** Ask about a drug, gene, variant, trial, or condition and get results from the biomedical literature (PubMed, Europe PMC, OpenAlex, Semantic Scholar, Crossref, arXiv, bioRxiv/medRxiv), trials and drug labels (ClinicalTrials.gov, openFDA, DailyMed), chemistry (PubChem, ChEMBL, RxNorm), genomics and variants (Ensembl — including variant-consequence predictions — ClinVar with review stars, UniProtKB, gnomAD population frequencies, GTEx tissue eQTLs, GWAS Catalog v2 genetic associations), and knowledge graphs and pathways (Open Targets, STRING, Reactome, Monarch, NCATS, MeSH). Each result keeps its source, its date, and its limits. If a source is down or throttled, you see a warning for that source — never a silent gap.
+- **Research federation with 25 cataloged public metadata adapters, plus a separate AlphaFold DB structure lookup.** The repository's full research federation supports discovery across the biomedical literature (PubMed, Europe PMC, OpenAlex, Semantic Scholar, Crossref, arXiv, bioRxiv/medRxiv), trials and drug labels (ClinicalTrials.gov, openFDA, DailyMed), chemistry (PubChem, ChEMBL, RxNorm), genomics and variants (Ensembl — including variant-consequence predictions — ClinVar with review stars, UniProtKB, gnomAD population frequencies, GTEx tissue eQTLs, GWAS Catalog v2 genetic associations), and knowledge graphs and pathways (Open Targets, STRING, Reactome, Monarch, NCATS, MeSH). Each result keeps its source, its date, and its limits. Per-source failures are disclosed rather than silently converted to negative findings. **Only eight reviewed-policy metadata adapters are queried by the isolated public API; the static Pages site queries two services.** The other adapters are not automatically represented as public/live integrations.
 - **Original-source GWAS Catalog v2 associations.** `GET /api/v1/research/gwas-associations?trait=asthma&limit=2` exposes a bounded, read-only genetic association facet with GWAS IDs, PMIDs, source provenance, per-source error status, and no causal or clinical interpretation. This is a backend endpoint, not part of the static public Pages site.
 - **A research dossier with citations.** `GET /api/v1/research/dossier` turns a search into a structured export: exact DOI/PMID matches, each record's provenance, retraction flags, and what is still unreviewed. Discovery material, not proof of a treatment or cure.
 - **A synthetic lab-trends workbench.** A FHIR R4 research workbench for reviewing laboratory trends (values, units, dates, statuses, reference ranges) and imaging metadata — **synthetic test data only**. No real patient records, no real images, no diagnosis, no reference-range interpretation. It exists so workflows can be tested safely before any real data is ever involved.
@@ -58,13 +76,38 @@ Public sources are queried by isolated adapters, normalized into a common eviden
 
 ## What's new
 
-**November 23, 2026** — added an original-source GWAS Catalog REST API v2 genetic-association metadata adapter to the federated search. The adapter uses one bounded source page, preserves association IDs, study accession, ontology traits and p-values, and explicitly refuses causal or clinical interpretation. Source rights and study population applicability need independent review. The public GitHub Pages site remains a separate, limited two-source browser experience; it does not execute the Python backend.
+**November 23, 2026 — [PR #72](https://github.com/ATphobia22/TMRDS/pull/72), merged to main.** Replaced the original static cube art with a working, accessible 3D Rubik's Cube (26 visible cubies, quarter-turn moves, continuous/search animation, manual control and reduced-motion support). Introduced **`api/public_gateway.py`** and **`Dockerfile.public`**: a separate, nonclinical read-only API that serves the same site and permits only eight policy-registered, bounded metadata adapters from the larger federation. Added a source-governance registry, explicit retrieval freshness vs. upstream version states, a 90-day license-review checkpoint, scheduled official-source receipts and exact-ID Open Targets disease → target → compound links. A single FDA-anchored cystic fibrosis (`MONDO_0009061`) → CFTR (`ENSG00000001626`) → ivacaftor (`CHEMBL2010601`) reference case passed the live technical check, but **independent clinical validation remains outstanding**. All seven PR workflows and the corresponding merged-`main` workflows completed successfully; the public Pages deployment was also browser-tested. The Python service is **deployable but not yet publicly hosted**.
+
+**November 23, 2026 — GWAS Catalog v2.** Added an original-source GWAS Catalog REST API v2 genetic-association metadata adapter to the federated search. The adapter uses one bounded source page, preserves association IDs, study accession, ontology traits and p-values, and explicitly refuses causal or clinical interpretation. Source rights and study population applicability need independent review. The public GitHub Pages site remains a separate, limited two-source browser experience; it does not execute the Python backend.
 
 **November 2026** — gnomAD and GTEx adapters wired into federated search (population frequencies, tissue eQTLs; 25 live sources); Ensembl VEP variant-consequence annotation (HGVS and region queries, same Ensembl source); HAPI FHIR public test-server probe with a documented synthetic-only opt-in, guards intact; degraded-open API-key posture restored per the standing directive; synthetic FHIR R4 research workbench (lab trends, imaging metadata, terminology; synthetic data only); local Orthanc/OHIF imaging research sandbox; research evidence dossiers with retraction flags; a 30-surface research-plugin capability registry with a read-only RCSB PDB metadata route; source telemetry; opt-in IBM Quantum adapter with a bounded reconciliation worker and job ledger.
 
 **October 2026** — 15 new evidence pipelines (Tier 1: Semantic Scholar, Crossref, PubChem, ChEMBL, DailyMed, RxNorm; Tier 2: Open Targets, STRING, Reactome, ClinVar, Ensembl, bioRxiv/medRxiv, NCATS, Monarch, MeSH), each verified live against its official service before coding. Operations hardening: Prometheus metrics, rate limiting, sanitized errors, optional API-key gate, and a deploy stack (Caddy + TLS, Prometheus/Alertmanager/Grafana, Keycloak). Research-only intended use (`docs/INTENDED_USE.md`, mapping the four Cures Act §520(o)(1)(E) criteria). Verified open-source medical software catalog (`docs/reference/open-source-medical-software.md`).
 
 ## Run it yourself
+
+### Public research-only gateway (no patient ingestion or database)
+
+The isolated public service serves the animated website and same-origin governed lookup endpoints. It binds to **127.0.0.1:18080** by default. This is a local deployment, not a public production cloud endpoint:
+
+```bash
+docker compose -f compose.public.yml config
+docker compose -f compose.public.yml up --build -d
+
+# API and same-origin configuration
+curl -fsS http://127.0.0.1:18080/health/ready
+curl -fsS http://127.0.0.1:18080/backend-config.json
+curl -fsS http://127.0.0.1:18080/api/v1/research/source-governance
+
+# Exact identifier test case; evidence discovery only
+curl -fsS 'http://127.0.0.1:18080/api/v1/research/evidence-pathway?disease=MONDO_0009061&limit=8'
+```
+
+Open **http://127.0.0.1:18080/** for the same interactive Rubik's Cube site with research API lookup enabled. Internet publication requires an operator-controlled HTTPS reverse proxy, rate and concurrency controls, source-license review, and production monitoring. Do **not** expose the separate all-purpose medical API just to serve this public research website.
+
+The public gateway has no clinical write or patient-ingestion routes. Its `/health/ready` checks the service process, **not** whether external evidence providers are live. Source failures return `source_unavailable` rather than invented evidence. The Pages copy of `backend-config.json` explicitly disables the Python backend.
+
+### Full development and integration stack
 
 Core development/CI targets **Python 3.11**. From the repository root:
 
@@ -87,6 +130,17 @@ docker compose --env-file .env up -d
 ```
 
 The migration runner is explicit and never runs at API startup. For an existing database without a migration ledger, inspect the schema and backup/restore path first; use the documented operator-reviewed `baseline --through N` command only if the existing schema truly matches every migration through that version. Never drop or recreate a persistent volume to force migration initialization.
+
+Run the new research governance and frontend checks with:
+
+```bash
+python -m pytest -q tests/test_governed_pathway.py tests/test_public_gateway.py
+python scripts/check_public_site.py
+node --check public/site.js
+docker build --pull -f Dockerfile.public -t tmrds-public:test .
+```
+
+The `source-governance.yml` GitHub Actions workflow also runs a **weekly** bounded audit of five upstream services and uploads a dated, hashed receipt (30-day artifact retention). It reports actual response state and source version observations; it does not certify independent source currency or data-use rights.
 
 Live-source and database tests are marked `integration` and require their external services. CI does not require live PHI, institutional EHR access, or IBM Quantum hardware. A read-only [Postman smoke collection](postman/TMRDS-API-smoke.postman_collection.json) covers liveness, readiness, and research-advisory metadata.
 
@@ -134,17 +188,20 @@ An opt-in adapter for the **IBM Quantum Compute Service REST API**, for research
 
 ```text
 TMRDS/
-├── api/                 # FastAPI application and route modules
+├── api/                 # Full medical API + isolated read-only public_gateway.py
 ├── engines/             # Research, evidence, interoperability, and security engines
 ├── docs/                # Architecture, security, interoperability, and operations docs
 ├── migrations/          # Ordered PostgreSQL schema changes and audit tables
 ├── scripts/             # Security scans, route audit, and bounded operator commands
 ├── postman/             # Read-only API smoke-test collection
 ├── tests/               # Unit, API-contract, and integration tests
-├── frontend/            # Frontend assets/application surface
+├── frontend/            # Existing frontend/application surface
+├── public/              # Live GitHub Pages atlas, 3D cube JS/CSS, disabled Pages API config
 ├── workers/             # Continuous real-world data synchronization workers
 ├── .github/workflows/   # CI and security scanning
 ├── docker-compose.yml   # PostgreSQL/pgvector + Neo4j + API stack
+├── compose.public.yml   # Isolated loopback-bound public research-only service
+├── Dockerfile.public     # Unprivileged same-origin website + read-only research API
 ├── deploy.sh            # Deployment helper
 ├── requirements.txt     # Python runtime/test dependencies
 └── pytest.ini           # Pytest configuration
@@ -159,6 +216,8 @@ TMRDS/
 - [Imaging research workflow](docs/integrations/imaging-research-workflow.md) — bounded DICOMweb reads, OHIF provenance panel, reviewed MONAI weight loading, human label submission; research only, no clinical approval.
 - [Research dossier](docs/operations/research-dossier.md) — dossier contract and remaining gates.
 - [GWAS Catalog v2 integration](docs/integrations/gwas-catalog-v2.md) — bounded real-source genetic association metadata, rate limits, identity preservation, and clinical limitations.
+- [Governed evidence pathway and Rubik's Cube deployment](docs/integrations/governed-evidence-pathway.md) — same-origin Docker service, source-license/freshness checks, exact identifier joins, release audit, and independent-validation limits.
+- [Source-governance workflow](.github/workflows/source-governance.yml) — CI tests, public container smoke tests, and weekly upstream audits.
 - [Biomedical source gap review](docs/reference/biomedical-source-gap-review-2026-11-07.md) — status baseline for GWAS v2, DepMap/PRISM, LINCS, CELLxGENE, ClinPGx priorities.
 - [Verified open-source medical software catalog](docs/reference/open-source-medical-software.md) — 32 projects checked against primary sources.
 - [CI and release gates](docs/operations/ci-release-gates.md) — workflows, pinning, and release evidence.
@@ -169,19 +228,3 @@ TMRDS/
 TMRDS is research software for biomedical evidence exploration and engineering development. It is not medical advice, a diagnosis, a prescription, or a substitute for qualified clinical judgment. No repository documentation should be interpreted as evidence that TMRDS is FDA-cleared, clinically validated, HIPAA-compliant, ONC-certified, TEFCA-connected, or authorized for a particular regulated use.
 
 **Owner action still required:** branch protection is currently disabled on `main`. Configure required checks and pull-request protections in GitHub repository settings after the new workflow check names have appeared. Workflow YAML alone cannot enforce branch protection.
-
-
-## Interactive research cube and governed public evidence gateway
-
-The [public evidence atlas](https://atphobia22.github.io/TMRDS/) includes a 3D Rubik's Cube with layer turns while biomedical evidence searches run. The GitHub Pages edition directly queries Europe PMC and ClinicalTrials.gov and **does not host the Python research backend**. A separate, research-only backend is available as source and Docker configuration (not a confirmed public deployment).
-
-For a locally deployable same-origin research interface, run:
-
-```bash
-docker compose -f compose.public.yml up --build -d
-curl -fsS http://127.0.0.1:18080/health/ready
-```
-
-The public-only FastAPI service exposes bounded disease–target–compound Open Targets evidence, eight explicitly policy-registered adapters from the 25-source federation, source governance and GWAS v2. It does **not** expose patient ingestion or clinical write endpoints. Freshness means retrieval time, **not** verified currency of the underlying dataset. Licensing and reference case review remain explicit human gates, and evidence joins are not treatment claims.
-
-Deployment, methodology, independent-review limitations and validation commands: [Governed evidence pathway](docs/integrations/governed-evidence-pathway.md).
