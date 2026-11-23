@@ -13,6 +13,7 @@ from engines.fieldlab_local import (
 
 
 def test_real_rdkit_molecule_descriptor_values_and_invalid_smiles():
+    pytest.importorskip("rdkit")  # Optional package is exercised by the dedicated FieldLab CI job
     mol = molecular_descriptors("CCO")
     assert mol["source_library"] == "RDKit"
     assert 46.0 < mol["molecular_weight"] < 46.2
@@ -29,6 +30,7 @@ def test_real_rdkit_molecule_descriptor_values_and_invalid_smiles():
 
 
 def test_biopython_fasta_and_fastq_are_really_decoded_without_identifiers(tmp_path):
+    pytest.importorskip("Bio")  # Optional package is exercised by the dedicated FieldLab CI job
     fasta = tmp_path / "synthetic.fa"
     fasta.write_text(">synthetic-sequence-PRIVATE\nACGTACGT\n>synthetic2\nNNNN\n")
     result = inspect_local_file(fasta, private_local=True)
@@ -49,6 +51,7 @@ def test_biopython_fasta_and_fastq_are_really_decoded_without_identifiers(tmp_pa
 
 
 def test_pydicom_reads_real_dicom_headers_and_pixels_locally_without_phi(tmp_path):
+    pytest.importorskip("pydicom")  # Optional package is exercised by the dedicated FieldLab CI job
     import pydicom
     from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
     from pydicom.uid import ExplicitVRLittleEndian, SecondaryCaptureImageStorage, generate_uid
@@ -100,6 +103,7 @@ def test_pydicom_reads_real_dicom_headers_and_pixels_locally_without_phi(tmp_pat
 
 
 def test_nibabel_inspects_offline_nifti_geometry_without_exposing_voxels(tmp_path):
+    pytest.importorskip("nibabel")  # Optional package is exercised by the dedicated FieldLab CI job
     import nibabel as nib
     path = tmp_path / "private.nii.gz"
     image = nib.Nifti1Image(np.zeros((4, 5, 6), dtype=np.int16), np.diag([2.0, 2.5, 3.0, 1.0]))
@@ -136,6 +140,10 @@ def test_private_local_is_required_and_no_sensitive_origin_information_leaks(tmp
 
 
 def test_readers_bound_records_bytes_and_cannot_make_medical_claims(tmp_path):
+    pytest.importorskip("rdkit")  # Optional package is exercised by the dedicated FieldLab CI job
+    pytest.importorskip("Bio")  # Optional package is exercised by the dedicated FieldLab CI job
+    pytest.importorskip("pydicom")  # Optional package is exercised by the dedicated FieldLab CI job
+    pytest.importorskip("nibabel")  # Optional package is exercised by the dedicated FieldLab CI job
     bad = tmp_path / "test.docx"
     bad.write_bytes(b"not a real document")
     with pytest.raises(FieldLabError):
@@ -159,6 +167,7 @@ def test_readers_bound_records_bytes_and_cannot_make_medical_claims(tmp_path):
 
 
 def test_nonimage_dicom_does_not_fabricate_one_pixel_per_axis(tmp_path):
+    pytest.importorskip("pydicom")  # Optional package is exercised by the dedicated FieldLab CI job
     from pydicom.dataset import FileDataset, FileMetaDataset
     from pydicom.uid import ExplicitVRLittleEndian, SecondaryCaptureImageStorage, generate_uid
     meta = FileMetaDataset()
@@ -180,6 +189,8 @@ def test_nonimage_dicom_does_not_fabricate_one_pixel_per_axis(tmp_path):
 
 
 def test_malformed_medical_imaging_raises_sanitized_local_reader_error(tmp_path):
+    pytest.importorskip("pydicom")  # Optional package is exercised by the dedicated FieldLab CI job
+    pytest.importorskip("nibabel")  # Optional package is exercised by the dedicated FieldLab CI job
     for filename in ("malformed.dcm", "malformed.nii.gz"):
         file = tmp_path / filename
         file.write_bytes(b"NOT A VALID MEDICAL IMAGE")
