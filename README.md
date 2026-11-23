@@ -24,6 +24,38 @@
 
 The [November 23 source audit](https://github.com/ATphobia22/TMRDS/actions/workflows/source-governance.yml) reported responses from **five** official APIs (Open Targets, ChEMBL, Europe PMC, ClinicalTrials.gov, GWAS Catalog v2), and its one-case CFTR/ivacaftor **technical identifier-consistency check passed**. That does not certify license permission, data currency, comprehensive coverage, or treatment effectiveness.
 
+## Current: twelve-source QRCE cross-check + live FDA Orange Book research
+
+The [public evidence atlas](https://atphobia22.github.io/TMRDS/) searches
+**Europe PMC, ClinicalTrials.gov and Crossref DOI metadata** directly from
+the browser, with a separate ingredient-only **FDA Orange Book** search
+for patent/exclusivity metadata. It also links to twelve official biomedical
+research portals for human-triggered original-source searches.
+
+The read-only research-only Python gateway now exposes
+`GET /api/v1/research/cross-check`: **12 source adapters** (existing eight
+plus Reactome, UniProt, PubChem and Crossref), original source-ID
+cross-reference by exact DOI / PMID / NCT, source failure isolation,
+source provenance, metadata disagreements, hash-scoped receipt, and a
+typed **OpenMI-inspired, nonclinical model exchange** (not OGC OpenMI
+conformance). Each database's copyright and terms remain applicable.
+Duplicate bibliographic indexing does NOT count as independent
+experimental confirmation.
+
+`GET /api/v1/research/patent-landscape?ingredient=METFORMIN&limit=2`
+queries original **FDA Orange Book** records without asserting patent
+expiration or freedom to operate. The FDA's reported dates (including
+pediatric extension markers), US patent claims, regulatory exclusivity,
+jurisdiction and current USPTO status require **separate legal review**.
+Nothing here identifies a drug as an established new indication or cure.
+
+The **static GitHub Pages site does not host a Python backend**, and no
+EHR/PACS, medical device, quantum hardware or patient-record system
+is deployed by this change.
+
+[Source-to-QRCE architecture, official documents, uploaded-code safety
+audit and reproducible gates](docs/integrations/qrce-crosscheck-openmi-patents-20261123.md).
+
 ## New: open-source medical project integration registry
 
 The [public evidence atlas](https://atphobia22.github.io/TMRDS/) now includes a
