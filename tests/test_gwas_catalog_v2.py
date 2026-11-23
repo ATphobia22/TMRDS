@@ -111,3 +111,15 @@ def test_gwas_rejects_unsafe_or_empty_queries():
     for bad in ("", " ", "a" * 121, 123, "a\nb"):
         with pytest.raises(ValueError):
             GWASCatalogV2Pipeline._validate_trait(bad)
+
+def test_multiple_gwas_associations_from_one_publication_remain_distinct():
+    """The study PMID must never collapse distinct variant-trait associations."""
+    from engines.federated_evidence_search import _make_envelope
+    a = GWASCatalogV2Pipeline.normalize(ASSOCIATION, "asthma", has_more=False)
+    b = GWASCatalogV2Pipeline.normalize(
+        {**ASSOCIATION, "association_id": 228393509}, "asthma", has_more=False)
+    entries = [_make_envelope("gwas_catalog_v2", "GWAS Catalog v2", item, "genetic_association")
+               for item in (a, b)]
+    assert entries[0]["pmid"] == entries[1]["pmid"] == "39024449"
+    assert entries[0]["stable_id"] != entries[1]["stable_id"]
+    assert len(FederatedEvidenceSearch._dedupe(entries)) == 2
