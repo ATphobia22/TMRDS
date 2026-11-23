@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - "api/governed_pathway_routes.py"
+      - "api/open_medical_routes.py"
+      - "public/medical-projects.json"
+      - "tests/test_open_medical_routes.py"
       - "api/main.py"
       - "engines/governed_pathway.py"
       - "engines/pathway_reference_cases.json"
@@ -52,7 +55,7 @@ jobs:
       - name: Locked dependencies
         run: python -m pip install -r requirements.lock
       - name: Test identifier, provenance, freshness and licensing boundaries
-        run: python -m pytest -q tests/test_governed_pathway.py tests/test_public_gateway.py
+        run: python -m pytest -q tests/test_governed_pathway.py tests/test_public_gateway.py tests/test_open_medical_routes.py
       - name: Public browser source security contract
         run: |
           python scripts/check_public_site.py
