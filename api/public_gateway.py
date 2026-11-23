@@ -18,6 +18,7 @@ from api.ops import (
     SecurityHeadersMiddleware, configure_logging, limiter, setup_rate_limiting,
 )
 from engines.federated_evidence_search import COVERAGE, FederatedEvidenceSearch
+from engines.governed_pathway import evaluate_license
 from engines.research_dossier import build_research_dossier
 
 app = FastAPI(
@@ -54,18 +55,65 @@ async def public_research_dossier(
     """Run 25 documented public research adapters with per-provider fault isolation."""
     if not query.strip():
         raise HTTPException(422, detail="research query must not be blank")
+    if any(ord(char) < 32 for char in query):
+        raise HTTPException(422, detail="control characters are not permitted")
+    # Connect ONLY adapters that have an explicit, reviewable policy permitting
+    # bounded public metadata display. Cataloged but unapproved providers are
+    # visible as withheld and are never queried by this public service.
+    allowed = {
+        "opentargets": "_search_opentargets",
+        "chembl": "_search_chembl",
+        "europe_pmc": "_search_europepmc",
+        "pubmed": "_search_pubmed",
+        "clinicaltrials_gov": "_search_trials",
+        "openfda": "_search_openfda",
+        "dailymed": "_search_dailymed",
+        "gwas_catalog_v2": "_search_gwas_catalog_v2",
+    }
+    if not all(evaluate_license(provider)["metadata_display_allowed"] for provider in allowed):
+        raise HTTPException(503, detail="Public research license policy review is not current")
+    service = FederatedEvidenceSearch(timeout=18)
     try:
-        search = await asyncio.wait_for(
-            FederatedEvidenceSearch(timeout=18).search_all(
-                query.strip(), limit, preserve_source_records=True
-            ),
+        results = await asyncio.wait_for(
+            asyncio.gather(*(
+                service._guard(provider, getattr(service, adapter)(query.strip(), limit))
+                for provider, adapter in allowed.items()
+            )),
             timeout=40,
         )
     except Exception:
         raise HTTPException(503, detail="Research federation failed or exceeded safety bounds") from None
+    envelopes = []
+    status = {}
+    for result in results:
+        # Do not rebroadcast abstracts, underlying source blobs, or structures:
+        # a metadata-display policy is not blanket full-text redistribution.
+        for envelope in result.envelopes:
+            envelopes.append({
+                key: value for key, value in envelope.items()
+                if key not in {"abstract", "open_access_url", "canonical_smiles", "raw_record"}
+            })
+        status[result.source] = {
+            "ok": result.ok, "count": result.count, "warning": result.warning,
+            "coverage": COVERAGE[result.source],
+            "governance": "public_metadata_only",
+        }
+    for provider, coverage in COVERAGE.items():
+        if provider not in allowed:
+            status[provider] = {
+                "ok": False, "count": 0, "coverage": coverage,
+                "warning": "License or access review required; not queried",
+                "governance": "license_review_required_not_queried",
+            }
+    search = {
+        "query": query.strip(),
+        "searched_at": datetime.now(timezone.utc).isoformat(),
+        "envelopes": envelopes,
+        "source_status": status,
+    }
     dossier = build_research_dossier(search)
     dossier["service"] = "tmrds-public-research"
-    dossier["data_use_warning"] = "Per-provider and per-record licenses require review before reuse"
+    dossier["data_use_warning"] = "Eight explicitly registered adapters expose bounded metadata only. Other providers are withheld pending individual licensing; third-party text and bulk redistribution remain prohibited without human approval."
     return dossier
 
 
