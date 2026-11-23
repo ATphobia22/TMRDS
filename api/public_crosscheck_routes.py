@@ -19,6 +19,7 @@ from engines.federated_evidence_search import COVERAGE, FederatedEvidenceSearch
 from engines.governed_pathway import evaluate_license
 from engines.qrce_public_crosscheck import build_crosscheck
 from engines.qrce_research_formats import format_capabilities
+from engines.pubchem_periodic_element import lookup_pubchem_element
 
 router = APIRouter(prefix="/api/v1/research", tags=["bounded-public-crosscheck"])
 _ORANGE_BOOK = "https://api.fda.gov/drug/orangebook.json"
@@ -393,3 +394,15 @@ async def public_format_capabilities(request: Request):
                               if x["state"] == "external_reader_required"],
         "clinical_promotion_allowed": False,
     }
+
+
+@router.get("/periodic-element")
+@limiter.limit("10/minute")
+async def public_periodic_element(
+    request: Request,
+    symbol: str = Query(..., min_length=1, max_length=2),
+):
+    try:
+        return await lookup_pubchem_element(symbol)
+    except ValueError as exc:
+        raise HTTPException(422, detail=str(exc)) from None
