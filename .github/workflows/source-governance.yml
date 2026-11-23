@@ -1,0 +1,85 @@
+name: TMRDS Governed Pathway and Source Audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "api/governed_pathway_routes.py"
+      - "api/main.py"
+      - "engines/governed_pathway.py"
+      - "engines/pathway_reference_cases.json"
+      - "public/**"
+      - "scripts/audit_research_sources.py"
+      - "scripts/check_public_site.py"
+      - "tests/test_governed_pathway.py"
+      - ".github/workflows/source-governance.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "api/governed_pathway_routes.py"
+      - "api/main.py"
+      - "engines/governed_pathway.py"
+      - "engines/pathway_reference_cases.json"
+      - "public/**"
+      - "scripts/audit_research_sources.py"
+      - "scripts/check_public_site.py"
+      - "tests/test_governed_pathway.py"
+      - ".github/workflows/source-governance.yml"
+  schedule:
+    - cron: "43 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tmrds-governance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python 3.11
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+      - name: Locked dependencies
+        run: python -m pip install -r requirements.lock
+      - name: Test identifier, provenance, freshness and licensing boundaries
+        run: python -m pytest -q tests/test_governed_pathway.py
+      - name: Public browser source security contract
+        run: |
+          python scripts/check_public_site.py
+          node --check public/site.js
+
+  live-source-receipt:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python 3.11
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+      - name: Locked runtime dependencies
+        run: python -m pip install -r requirements-runtime.lock
+      - name: Collect bounded official-source observations and live pathway check
+        run: python -m scripts.audit_research_sources --output build/audit/research-sources.json
+      - name: Upload dated nonclinical audit receipt
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tmrds-official-source-audit
+          path: build/audit/research-sources.json
+          if-no-files-found: warn
+          retention-days: 30
