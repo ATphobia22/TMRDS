@@ -426,7 +426,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "NIH full-text archive; per-article license controls reuse",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -438,7 +438,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Directory and article records; licensing varies by journal/article",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -450,7 +450,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Research discovery; many reviews require a subscription or institution",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -462,7 +462,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Official search interface; no unrestricted public bulk search API",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -474,7 +474,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Medical preprints; NOT peer reviewed and license varies",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -486,7 +486,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Biology preprints; existing backend date-bounded local filtering; not peer reviewed",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -498,7 +498,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Identifier conversion only; no article body redistribution",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -510,7 +510,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "restricted_authorization_required",
       "license_notes": "Public search; partner XML API and bulk download require separate access and terms",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -522,7 +522,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "EU trials public portal; regulatory statuses require source-specific review",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -534,7 +534,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Trial registration records; check provider terms and updates",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -546,7 +546,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Dataset discovery, not unrestricted access to the underlying patient records",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -558,7 +558,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "US HHS public datasets; license and API are dataset-specific",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -570,7 +570,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Public health indicator datasets, not individual patient data",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -582,7 +582,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Surveillance aggregate estimates, suppressed cells and query rules",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -594,7 +594,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Health indicators; older OData implementation marked as legacy/deprecated",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -606,7 +606,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Country-level indicators; no individual patient records",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -618,7 +618,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Dataset-dependent licenses; some open, others require credentialing",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -630,7 +630,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "restricted_authorization_required",
       "license_notes": "Credentialed clinical dataset; human-subject training and DUA required",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -642,7 +642,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "restricted_authorization_required",
       "license_notes": "Restricted critical-care data; access approval required",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -654,7 +654,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "restricted_authorization_required",
       "license_notes": "Research application and controlled data access required",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -666,7 +666,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "restricted_authorization_required",
       "license_notes": "Controlled researcher access; do not ingest public patient-level data",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -678,7 +678,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "restricted_authorization_required",
       "license_notes": "Controlled genotype/phenotype human data; no open enrollment bypass",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -690,7 +690,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Immunology dataset release and access restrictions apply",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -702,7 +702,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Scientific datasets with dataset-specific licenses",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -714,7 +714,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Repository deposits with per-item licensing",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -726,7 +726,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Research artifacts with record-level licenses and DOIs",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -738,7 +738,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Gene annotations with organism and assembly identifiers",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -750,7 +750,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Sequence archive with provenance and release tracking",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -762,7 +762,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Public gene-expression studies; individual datasets have rights",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -774,7 +774,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Sequencing datasets; controlled access for sensitive studies",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -786,7 +786,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Study/project identifiers, not experimental result validation",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -798,7 +798,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Sample metadata; access varies, no reidentification",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -810,7 +810,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Variant rs identifiers; assembly and alleles must match",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -822,7 +822,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Structural variant annotations with reference coordinates",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -834,7 +834,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Single-cell reference datasets; pin releases, check dataset license",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -846,7 +846,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Research genome browser; downloadable desktop software",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -858,7 +858,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Only published genome-editing data and screening results; no procedural design",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -870,7 +870,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Open-source genomics and transcriptomics packages; not all installed",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -882,7 +882,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Scalable genomic analysis toolkit; not installed in public gateway",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -894,7 +894,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Single-cell RNA analysis library; not installed in public gateway",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -906,7 +906,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Probabilistic single-cell analysis; model validation needed",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -918,7 +918,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "restricted_authorization_required",
       "license_notes": "License and UTS account required for selected terminologies",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -930,7 +930,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "restricted_authorization_required",
       "license_notes": "License varies by jurisdiction; medical terminologies require authorization",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -942,7 +942,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "LOINC license; mapped lab codes require professional validation",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -954,7 +954,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Normalized drug identifiers; interaction endpoint retired in 2024",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -966,7 +966,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Healthcare standard, not authorization or patient data license",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -978,7 +978,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Hospital messaging standard; clinical endpoint authorization required",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -990,7 +990,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Medical imaging standard; patient-identifiable tags must remain private",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1002,7 +1002,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Reference element identities and atomic masses; not drug safety predictions",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1014,7 +1014,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Chemistry reference data; re-use terms per record",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1026,7 +1026,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Chemical identifiers and conversions; verify provider terms",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1038,7 +1038,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Open-source chemical file-conversion library; not automatically installed",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1050,7 +1050,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Cheminformatics library; existing repository chemistry node available",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1062,7 +1062,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Apache-2.0 electronic-structure research, separate optional compute",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1074,7 +1074,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Molecular dynamics library; separate CPU/GPU research compute",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1086,7 +1086,7 @@
       "interface": "official original-source catalog or API",
       "integration_state": "catalog_reference_only",
       "license_notes": "Molecular dynamics simulator; unconfigured external binary",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1098,7 +1098,7 @@
       "interface": "research software / model math",
       "integration_state": "optional_not_installed",
       "license_notes": "Quantum circuits and simulators; QPU requires separate credentialed provider",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1110,7 +1110,7 @@
       "interface": "research software / model math",
       "integration_state": "optional_not_installed",
       "license_notes": "Differentiable quantum algorithms and simulation; no clinical validation",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1122,7 +1122,7 @@
       "interface": "research software / model math",
       "integration_state": "optional_not_installed",
       "license_notes": "Open-source fermionic/molecular Hamiltonian operators, no hardware assumed",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1134,7 +1134,7 @@
       "interface": "research software / model math",
       "integration_state": "optional_not_installed",
       "license_notes": "Quantum dynamics solvers and reference benchmarks",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1146,7 +1146,7 @@
       "interface": "research software / model math",
       "integration_state": "optional_not_installed",
       "license_notes": "Circuit simulation and hardware interface, separate execution rights",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1158,7 +1158,7 @@
       "interface": "research software / model math",
       "integration_state": "optional_not_installed",
       "license_notes": "Runtime exchange of model quantities; no clinical HL7/DICOM semantics",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1170,7 +1170,7 @@
       "interface": "optional open-source library or CLI",
       "integration_state": "optional_not_installed",
       "license_notes": "FASTA/GenBank/sequence parsers; not included by cataloging",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1182,7 +1182,7 @@
       "interface": "optional open-source library or CLI",
       "integration_state": "optional_not_installed",
       "license_notes": "BAM/CRAM/VCF access; genome references and consent required",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1194,7 +1194,7 @@
       "interface": "optional open-source library or CLI",
       "integration_state": "optional_not_installed",
       "license_notes": "Open genomics sequence/index APIs; external binary not bundled",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1206,7 +1206,7 @@
       "interface": "optional open-source library or CLI",
       "integration_state": "optional_not_installed",
       "license_notes": "Alignment indexing and QC; local research environment only",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1218,7 +1218,7 @@
       "interface": "optional open-source library or CLI",
       "integration_state": "optional_not_installed",
       "license_notes": "Variant filtering and normalization; assembly reference required",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1230,7 +1230,7 @@
       "interface": "optional open-source library or CLI",
       "integration_state": "optional_not_installed",
       "license_notes": "Open source DICOM utilities, deployment requires authorization",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1242,7 +1242,7 @@
       "interface": "optional open-source library or CLI",
       "integration_state": "optional_not_installed",
       "license_notes": "HL7 v2 parsing with patient segments; not a public uploader",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1254,7 +1254,7 @@
       "interface": "optional open-source library or CLI",
       "integration_state": "optional_not_installed",
       "license_notes": "FHIR resource validation; not a clinical consent mechanism",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1266,7 +1266,7 @@
       "interface": "optional open-source library or CLI",
       "integration_state": "optional_not_installed",
       "license_notes": "Reproducible bioinformatics workflows; not executed by public website",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1278,7 +1278,7 @@
       "interface": "optional open-source library or CLI",
       "integration_state": "optional_not_installed",
       "license_notes": "Scientific tool orchestration; external public services with dataset terms",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1290,7 +1290,7 @@
       "interface": "optional open-source library or CLI",
       "integration_state": "optional_not_installed",
       "license_notes": "Versioned bioinformatics containers; trust and vulnerability review required",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1302,7 +1302,7 @@
       "interface": "optional open-source library or CLI",
       "integration_state": "optional_not_installed",
       "license_notes": "Human-in-the-loop imaging annotation; external clinical approval required",
-      "verification": "official_url_catalogued_not_runtime_checked",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     }
