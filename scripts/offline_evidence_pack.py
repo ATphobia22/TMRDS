@@ -9,6 +9,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from urllib import request as urlrequest
 from urllib.parse import urlencode
 
