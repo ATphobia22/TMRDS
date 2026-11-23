@@ -1,0 +1,25 @@
+# Separate OFFLINE/LOCAL FieldLab image; deliberately not used by public research API.
+# Build obtains packages; execution is expected to use --network none and
+# read-only bind mounts. No web server, patient upload or background update.
+FROM python:3.11-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /fieldlab
+COPY deploy/fieldlab/requirements.txt /tmp/fieldlab-requirements.txt
+RUN python -m pip install --no-cache-dir --only-binary=:all: -r /tmp/fieldlab-requirements.txt \
+    && python -m pip check \
+    && rm -f /tmp/fieldlab-requirements.txt
+
+RUN groupadd --system --gid 10001 fieldlab \
+    && useradd --system --uid 10001 --gid fieldlab --home-dir /nonexistent \
+       --shell /usr/sbin/nologin fieldlab
+COPY --chown=fieldlab:fieldlab engines/fieldlab_local.py /fieldlab/engines/fieldlab_local.py
+COPY --chown=fieldlab:fieldlab engines/fieldlab_cube_bridge.py /fieldlab/engines/fieldlab_cube_bridge.py
+COPY --chown=fieldlab:fieldlab engines/cube_grover_research.py /fieldlab/engines/cube_grover_research.py
+COPY --chown=fieldlab:fieldlab scripts/fieldlab_cli.py /fieldlab/scripts/fieldlab_cli.py
+USER 10001:10001
+ENTRYPOINT ["python", "scripts/fieldlab_cli.py"]
+CMD ["status"]

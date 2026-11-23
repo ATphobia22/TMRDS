@@ -1,0 +1,129 @@
+name: TMRDS Offline FieldLab Libraries and Win11 Wheel Bundle
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "engines/fieldlab_local.py"
+      - "engines/fieldlab_cube_bridge.py"
+      - "scripts/fieldlab_*.py"
+      - "scripts/install_fieldlab_windows.ps1"
+      - "Dockerfile.fieldlab"
+      - "deploy/fieldlab/**"
+      - "tests/test_fieldlab_*.py"
+      - ".github/workflows/fieldlab-offline.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "engines/fieldlab_local.py"
+      - "scripts/fieldlab_*.py"
+      - "scripts/install_fieldlab_windows.ps1"
+      - "Dockerfile.fieldlab"
+      - "deploy/fieldlab/**"
+      - "tests/test_fieldlab_*.py"
+      - ".github/workflows/fieldlab-offline.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-local-parsers:
+    name: Actual local parsers and no-network Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python 3.11
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+      - name: Download executable wheels for Linux only
+        run: |
+          mkdir -p fieldlab-linux-wheels
+          python -m pip download --only-binary=:all: -d fieldlab-linux-wheels -r deploy/fieldlab/requirements.txt
+      - name: Install each library only from downloaded local wheels
+        run: |
+          python -m pip install --no-index --only-binary=:all: --find-links fieldlab-linux-wheels -r deploy/fieldlab/requirements.txt
+          python -m pip check
+      - name: Run actual DICOM, NIfTI, molecule and sequence library tests
+        run: |
+          python -m pip install pytest==9.2.0
+          python -m pytest -q tests/test_fieldlab_local.py tests/test_fieldlab_wheelhouse.py tests/test_fieldlab_cube_bridge.py
+          python scripts/fieldlab_cli.py status
+          python scripts/fieldlab_cli.py molecule --smiles CCO
+          python scripts/fieldlab_cli.py molecule --smiles CCO --cube-plan
+      - name: Build local-only research container
+        run: docker build -f Dockerfile.fieldlab -t tmrds-fieldlab:ci .
+      - name: Verify FieldLab container with physical egress disabled
+        run: |
+          docker run --rm --network none --read-only --security-opt=no-new-privileges --cap-drop ALL tmrds-fieldlab:ci status
+          docker run --rm --network none --read-only --security-opt=no-new-privileges --cap-drop ALL tmrds-fieldlab:ci molecule --smiles CCO
+          docker run --rm --network none --read-only --security-opt=no-new-privileges --cap-drop ALL tmrds-fieldlab:ci molecule --smiles CCO --cube-plan
+
+  windows-fieldlab:
+    name: Win11 x64 real parsers and offline ZIP installer
+    runs-on: windows-2025
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python 3.11 x64
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+          architecture: x64
+      - name: Download Windows wheels including transitive dependencies
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path fieldlab-release/wheelhouse | Out-Null
+          python -m pip download --only-binary=:all: -d fieldlab-release/wheelhouse -r deploy/fieldlab/requirements.txt
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Create immutable-by-contract wheel SHA-256 inventory
+        shell: pwsh
+        run: |
+          python scripts/fieldlab_wheelhouse.py create fieldlab-release/wheelhouse --manifest fieldlab-release/wheelhouse-manifest.json --platform win_amd64 --python-abi cp311
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          python scripts/fieldlab_wheelhouse.py verify fieldlab-release/wheelhouse --manifest fieldlab-release/wheelhouse-manifest.json --platform win_amd64 --python-abi cp311
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Assemble portable offline package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path fieldlab-release/engines,fieldlab-release/scripts,fieldlab-release/deploy/fieldlab | Out-Null
+          Copy-Item engines/fieldlab_local.py,engines/fieldlab_cube_bridge.py,engines/cube_grover_research.py fieldlab-release/engines/
+          Copy-Item scripts/fieldlab_cli.py,scripts/fieldlab_desktop.py,scripts/fieldlab_wheelhouse.py,scripts/install_fieldlab_windows.ps1 fieldlab-release/scripts/
+          python -m py_compile scripts/fieldlab_cli.py scripts/fieldlab_desktop.py engines/fieldlab_cube_bridge.py
+          Copy-Item deploy/fieldlab/requirements.txt fieldlab-release/deploy/fieldlab/
+          Copy-Item docs/integrations/fieldlab-offline-workstation-20261123.md fieldlab-release/FIELDLAB-README.md
+      - name: Prove installer uses downloaded wheels with no package-index access
+        shell: pwsh
+        run: |
+          & pwsh -NoLogo -NoProfile -File scripts/install_fieldlab_windows.ps1 -BundleDir "$PWD/fieldlab-release" -InstallDir "$env:RUNNER_TEMP/fieldlab-ci-venv"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Test actual local science libraries using installed packages
+        shell: pwsh
+        run: |
+          python -m pip install pytest==9.2.0
+          python -m pip install --no-index --only-binary=:all: --find-links fieldlab-release/wheelhouse -r deploy/fieldlab/requirements.txt
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          python -m pip check
+          python -m pytest -q tests/test_fieldlab_local.py tests/test_fieldlab_wheelhouse.py
+      - name: Archive offline FieldLab bundle and SHA-256
+        shell: pwsh
+        run: |
+          Compress-Archive -Path fieldlab-release/* -DestinationPath TMRDS-FieldLab-win11-x64.zip -CompressionLevel Optimal
+          (Get-FileHash TMRDS-FieldLab-win11-x64.zip -Algorithm SHA256).Hash.ToLowerInvariant() | Out-File -FilePath TMRDS-FieldLab-win11-x64.sha256 -NoNewline -Encoding ascii
+      - name: Publish inspectable Windows offline research bundle
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v4.6.2
+        with:
+          name: TMRDS-FieldLab-Win11-x64-research
+          path: |
+            TMRDS-FieldLab-win11-x64.zip
+            TMRDS-FieldLab-win11-x64.sha256
+          if-no-files-found: error
+          retention-days: 30

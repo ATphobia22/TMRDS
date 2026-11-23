@@ -33,6 +33,14 @@ Then open **http://127.0.0.1:8765/** in a laptop browser. This demonstration can
 
 [Offline-workstation implementation, exact local APIs, AsyncAPI/event contract, current installed modules and clinical authorization gates](docs/integrations/offline-specialist-swarm-20261123.md).
 
+## New: executable offline FieldLab for Windows 11 x64
+
+The **separate FieldLab workstation** is a real locally executed, no-server Python research application—not a list of project links. It runs actual **pydicom** DICOM image-header/pixel inspection, **NiBabel** NIfTI scan geometry inspection, **Biopython** FASTA/FASTQ summaries, **RDKit** SMILES molecular descriptors, and bounded numerical lab CSV inspection. A **Tkinter desktop window** and a command-line interface operate entirely locally; an optional **FieldLab → offline six-plane Grover research review-plan** bridge uses only the type of inspected file, never a patient measurement or original sequence. It does not establish a diagnosis, target or treatment; patient identifiers and original images are not emitted in the structured report. It does not upload patient files to GitHub Pages or Render.
+
+The [Windows 11 x64 offline wheelhouse workflow](.github/workflows/fieldlab-offline.yml) creates a ZIP containing predownloaded real package wheels, wheel-by-wheel SHA-256 checks, an offline-only PowerShell installer and scripts. **Python 3.11 x64 must already be installed**, and the ZIP must be copied to the laptop before disconnecting. The package is a research-only file inspector: it is **not** MRI/CT diagnosis, clinical interpretation, validated variant calling, protein docking, gene editing, or an autonomous cure engine. The workflow must pass before a completed Windows package can be claimed.
+
+[Installation commands, exact package versions, safe offline execution, supported formats and limitations](docs/integrations/fieldlab-offline-workstation-20261123.md).
+
 ## Try it now
 
 **[Open the fully connected TMRDS research workspace](https://tmrds-public-evidence-api.onrender.com/)** — a free, anonymous, same-origin Docker-backed research interface. **[GitHub Pages static atlas](https://atphobia22.github.io/TMRDS/)** remains the independently deployed static version with a rotating, interactive **3D Rubik's Cube**. The 26 visible cubies rotate continuously and their layers turn while searches run. You can select **Rotate a layer** to turn a face manually; reduced-motion preferences are respected. Search the live **Europe PMC**, **ClinicalTrials.gov v2** and **Crossref** services, inspect source identifiers and retrieval dates, and follow records to their origin.
