@@ -33,8 +33,12 @@ Backend tag: `classical_linear_algebra_simulator`. Scores are retrieval hypothes
 4. ClinicalTrials.gov + openFDA
 5. Boltz-2 (MIT) for complexes — preferred open alternative to AF3 weights
 6. AlphaFold 3 only behind academic license; mocks return `MOCK_ONLY`
+7. NHGRI–EBI GWAS Catalog v2: bounded official variant–trait associations, p-values and study identifiers; no inference of causality or clinical relevance
 
 ## API
+
+GWAS research association endpoint: `GET /api/v1/research/gwas-associations?trait=asthma&limit=2` (backend only; not hosted in the static GitHub Pages frontend). Source failure stays explicit, and two associations from one PMID remain distinct.
+
 
 ```
 GET  /api/v1/research/cube

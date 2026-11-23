@@ -237,6 +237,48 @@ async def get_research_source_catalog() -> dict[str, Any]:
     return research_source_catalog()
 
 
+@app.get("/api/v1/research/gwas-associations")
+@limiter.limit(FEDERATED_SEARCH_RATE_LIMIT)
+async def gwas_associations(
+    request: Request,
+    trait: str = Query(..., min_length=2, max_length=120),
+    limit: int = Query(default=10, ge=1, le=25),
+) -> dict[str, Any]:
+    """Public trait association metadata, not a causal or clinical finding.
+
+    Source failure returns ok=false and empty records, not a false negative
+    finding; the warning is intentionally sanitized by the common source guard.
+    """
+    from datetime import datetime, timezone
+    from engines.federated_evidence_search import COVERAGE, FederatedEvidenceSearch
+
+    if not trait.strip():
+        raise HTTPException(status_code=422, detail="research trait must not be blank")
+    service = FederatedEvidenceSearch()
+    outcome = await service._guard(
+        "gwas_catalog_v2", service._search_gwas_catalog_v2(trait, limit)
+    )
+    return {
+        "query": trait,
+        "searched_at": datetime.now(timezone.utc).isoformat(),
+        "source": "gwas_catalog_v2",
+        "source_status": {
+            "ok": outcome.ok,
+            "count": outcome.count,
+            "warning": outcome.warning,
+            "coverage": COVERAGE["gwas_catalog_v2"],
+        },
+        "envelopes": outcome.envelopes,
+        "governance": {
+            "research_advisory_only": True,
+            "human_authority_final": True,
+            "not_samd": True,
+            "clinical_promotion_allowed": False,
+            "no_mock_records": True,
+        },
+    }
+
+
 @app.get("/api/v1/research/dossier")
 @limiter.limit(FEDERATED_SEARCH_RATE_LIMIT)
 async def research_dossier(request: Request, query: str = Query(..., min_length=2, max_length=500), limit: int = Query(default=5, ge=1, le=25)) -> dict[str, Any]:

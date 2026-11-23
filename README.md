@@ -10,7 +10,8 @@
 
 TMRDS is a research workspace for answering "what does the evidence say?" — with every answer traceable to its source.
 
-- **One search across 25 public sources.** Ask about a drug, gene, variant, trial, or condition and get results from the biomedical literature (PubMed, Europe PMC, OpenAlex, Semantic Scholar, Crossref, arXiv, bioRxiv/medRxiv), trials and drug labels (ClinicalTrials.gov, openFDA, DailyMed), chemistry (PubChem, ChEMBL, RxNorm), genomics and variants (Ensembl — including variant-consequence predictions — ClinVar with review stars, UniProtKB, AlphaFold DB, gnomAD population frequencies, GTEx tissue eQTLs), and knowledge graphs and pathways (Open Targets, STRING, Reactome, Monarch, NCATS, MeSH). Each result keeps its source, its date, and its limits. If a source is down or throttled, you see a warning for that source — never a silent gap.
+- **One federated search across 25 public metadata sources, plus a separate AlphaFold DB structure lookup.** Ask about a drug, gene, variant, trial, or condition and get results from the biomedical literature (PubMed, Europe PMC, OpenAlex, Semantic Scholar, Crossref, arXiv, bioRxiv/medRxiv), trials and drug labels (ClinicalTrials.gov, openFDA, DailyMed), chemistry (PubChem, ChEMBL, RxNorm), genomics and variants (Ensembl — including variant-consequence predictions — ClinVar with review stars, UniProtKB, gnomAD population frequencies, GTEx tissue eQTLs, GWAS Catalog v2 genetic associations), and knowledge graphs and pathways (Open Targets, STRING, Reactome, Monarch, NCATS, MeSH). Each result keeps its source, its date, and its limits. If a source is down or throttled, you see a warning for that source — never a silent gap.
+- **Original-source GWAS Catalog v2 associations.** `GET /api/v1/research/gwas-associations?trait=asthma&limit=2` exposes a bounded, read-only genetic association facet with GWAS IDs, PMIDs, source provenance, per-source error status, and no causal or clinical interpretation. This is a backend endpoint, not part of the static public Pages site.
 - **A research dossier with citations.** `GET /api/v1/research/dossier` turns a search into a structured export: exact DOI/PMID matches, each record's provenance, retraction flags, and what is still unreviewed. Discovery material, not proof of a treatment or cure.
 - **A synthetic lab-trends workbench.** A FHIR R4 research workbench for reviewing laboratory trends (values, units, dates, statuses, reference ranges) and imaging metadata — **synthetic test data only**. No real patient records, no real images, no diagnosis, no reference-range interpretation. It exists so workflows can be tested safely before any real data is ever involved.
 - **Imaging research, kept separate from interpretation.** A local Orthanc/OHIF recipe lets researchers view test DICOM studies, and offline MONAI tools can evaluate segmentation masks. AI output is always labeled as AI output — never mixed with the original image or a radiologist's reading. Nothing here is validated for patient-care use.
@@ -37,14 +38,14 @@ TMRDS is built to be evaluated as a research platform first, with clear boundari
 
 ## Evidence sources
 
-**25 live public sources**, each queried in isolation so one failure never blocks the rest. Two more are credential-gated and reported as unavailable, never mocked: Lens Patents and IBM Quantum.
+**25 federated public metadata sources**, each queried in isolation so one failure never blocks the rest; an additional AlphaFold DB structure endpoint is separate. Two more are credential-gated and reported as unavailable, never mocked: Lens Patents and IBM Quantum.
 
 | Group | Sources |
 |---|---|
 | Literature | PubMed, Europe PMC, OpenAlex, Semantic Scholar, Crossref, arXiv, bioRxiv/medRxiv |
 | Trials, labels, safety | ClinicalTrials.gov, openFDA, DailyMed |
 | Chemistry and drugs | PubChem, ChEMBL, RxNorm |
-| Genomics and variants | Ensembl, ClinVar (review status shown with every classification), UniProtKB, AlphaFold DB, gnomAD, GTEx |
+| Genomics and variants | Ensembl, ClinVar (review status shown with every classification), UniProtKB, gnomAD, GTEx, GWAS Catalog v2 (trait-associated variants; not causality) |
 | Knowledge and pathways | Open Targets Platform, STRING, Reactome, Monarch, NCATS Node Normalization, MeSH |
 
 Per-source limits are stated in the code (`engines/federated_evidence_search.py`) — for example, Semantic Scholar runs on the shared request pool without a free API key, and Ensembl VEP predictions are computational, not clinical assertions.
@@ -56,6 +57,8 @@ Per-source limits are stated in the code (`engines/federated_evidence_search.py`
 Public sources are queried by isolated adapters, normalized into a common evidence shape, and stored with provenance in PostgreSQL. Derived views (vectors, graphs) are projections that always trace back to source records. AI governance records model, prompt, and dataset provenance for every generated output and keeps research outputs from becoming clinical authority. The core API starts without heavy scientific dependencies; optional research engines (MONAI, quantum) are isolated from the core import path.
 
 ## What's new
+
+**November 23, 2026** — added an original-source GWAS Catalog REST API v2 genetic-association metadata adapter to the federated search. The adapter uses one bounded source page, preserves association IDs, study accession, ontology traits and p-values, and explicitly refuses causal or clinical interpretation. Source rights and study population applicability need independent review. The public GitHub Pages site remains a separate, limited two-source browser experience; it does not execute the Python backend.
 
 **November 2026** — gnomAD and GTEx adapters wired into federated search (population frequencies, tissue eQTLs; 25 live sources); Ensembl VEP variant-consequence annotation (HGVS and region queries, same Ensembl source); HAPI FHIR public test-server probe with a documented synthetic-only opt-in, guards intact; degraded-open API-key posture restored per the standing directive; synthetic FHIR R4 research workbench (lab trends, imaging metadata, terminology; synthetic data only); local Orthanc/OHIF imaging research sandbox; research evidence dossiers with retraction flags; a 30-surface research-plugin capability registry with a read-only RCSB PDB metadata route; source telemetry; opt-in IBM Quantum adapter with a bounded reconciliation worker and job ledger.
 
@@ -155,7 +158,8 @@ TMRDS/
 - [Imaging research sandbox](docs/operations/imaging-research-sandbox.md) — local Orthanc/OHIF recipe and synthetic MR-to-FHIR tooling.
 - [Imaging research workflow](docs/integrations/imaging-research-workflow.md) — bounded DICOMweb reads, OHIF provenance panel, reviewed MONAI weight loading, human label submission; research only, no clinical approval.
 - [Research dossier](docs/operations/research-dossier.md) — dossier contract and remaining gates.
-- [Biomedical source gap review](docs/reference/biomedical-source-gap-review-2026-11-07.md) — GWAS v2, DepMap/PRISM, LINCS, CELLxGENE, ClinPGx priorities.
+- [GWAS Catalog v2 integration](docs/integrations/gwas-catalog-v2.md) — bounded real-source genetic association metadata, rate limits, identity preservation, and clinical limitations.
+- [Biomedical source gap review](docs/reference/biomedical-source-gap-review-2026-11-07.md) — status baseline for GWAS v2, DepMap/PRISM, LINCS, CELLxGENE, ClinPGx priorities.
 - [Verified open-source medical software catalog](docs/reference/open-source-medical-software.md) — 32 projects checked against primary sources.
 - [CI and release gates](docs/operations/ci-release-gates.md) — workflows, pinning, and release evidence.
 - [Operations runbook](docs/operations/tmrds-operations-runbook.md)
