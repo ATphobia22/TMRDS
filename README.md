@@ -4,11 +4,11 @@
 
 ## Try it now
 
-**[Launch the live TMRDS Open Evidence Atlas](https://atphobia22.github.io/TMRDS/)** — a free, anonymous GitHub Pages research interface with a rotating, interactive **3D Rubik's Cube**. The 26 visible cubies rotate continuously and their layers turn while searches run. You can select **Rotate a layer** to turn a face manually; reduced-motion preferences are respected. Search the live **Europe PMC** and **ClinicalTrials.gov v2** services, inspect source identifiers and retrieval dates, and follow records to their origin.
+**[Open the fully connected TMRDS research workspace](https://tmrds-public-evidence-api.onrender.com/)** — a free, anonymous, same-origin Docker-backed research interface. **[GitHub Pages static atlas](https://atphobia22.github.io/TMRDS/)** remains the independently deployed static version with a rotating, interactive **3D Rubik's Cube**. The 26 visible cubies rotate continuously and their layers turn while searches run. You can select **Rotate a layer** to turn a face manually; reduced-motion preferences are respected. Search the live **Europe PMC**, **ClinicalTrials.gov v2** and **Crossref** services, inspect source identifiers and retrieval dates, and follow records to their origin.
 
 **[TMRDS 2 — earlier public workspace preview](https://muse.ai/s/tmrds-2-xxd6j1fn9xyxwxf/DtP0Ir8DQV7MepeJdlvuTQBszwBcsygUi_QoYBYFruw)** documents the October 2026 research concept and is not the current production evidence atlas.
 
-**Important hosting boundary:** GitHub Pages serves static HTML/CSS/JavaScript; it **does not run the Python research adapters**. The governed disease → target → compound API requires a separately deployed, same-origin research service. The Rubik's Cube is a visual search indicator, **not** quantum computation.
+**Important hosting boundary:** GitHub Pages serves static HTML/CSS/JavaScript; it **does not run the Python research adapters**. The independent [free-plan Render HTTPS deployment](https://tmrds-public-evidence-api.onrender.com/) serves the same frontend and the read-only Python research API. Render free-plan availability and latency are not guaranteed, and its service readiness does **not** establish upstream data availability. The Rubik's Cube is a visual search indicator, **not** quantum computation.
 
 ### Deployment and verification status
 
@@ -16,13 +16,21 @@
 |---|---|
 | Animated 3D cube and manual layer turns | Live on GitHub Pages; browser smoke-tested |
 | Public literature and trial searches | Live browser queries to Europe PMC and ClinicalTrials.gov returned real linked results |
-| Public read-only research backend | Docker image, routes, and same-origin site tested in CI; **not publicly cloud-hosted** |
-| Federated research adapters | 25 repository adapters; **eight** explicitly policy-registered metadata adapters permitted in the isolated public service |
+| Public read-only research backend | **Public HTTPS deployed on Render free plan**; readiness/config/source metadata routes returned HTTP 200; original PMC, PubChem and bounded 22-source research queries independently tested |
+| Federated research adapters | ~25 repository adapters; **22 metadata-only adapters wired into governed concurrent cross-check**. CFTR one-record-per-source live check: **18 responded, four source-unavailable**; does not prove complete coverage |
 | Disease → target → compound link | Open Targets source-reported mechanism, exact MONDO / Ensembl / ChEMBL identifiers; bounded research lookup |
 | Freshness, source rights, and provenance | Dated source receipts, release observations, conservative license-review gate, limited SHA-256 record hashes |
 | Independent efficacy / clinical validation | **Not established**; one FDA-anchored technical reference case and a synthetic negative control are not a blinded clinical benchmark |
 
 The [November 23 source audit](https://github.com/ATphobia22/TMRDS/actions/workflows/source-governance.yml) reported responses from **five** official APIs (Open Targets, ChEMBL, Europe PMC, ClinicalTrials.gov, GWAS Catalog v2), and its one-case CFTR/ivacaftor **technical identifier-consistency check passed**. That does not certify license permission, data currency, comprehensive coverage, or treatment effectiveness.
+
+### Public research API deployment, independent verification and monitoring
+
+- **HTTPS research runtime:** [https://tmrds-public-evidence-api.onrender.com/](https://tmrds-public-evidence-api.onrender.com/) — Docker `api.public_gateway`, read-only public methods, no PHI upload; Render free plan, Ohio region, auto-deploys from `main`.
+- **Verified release:** `0ec2669c16ddca030ed3fc1dec9cd6b246cb13c9`, Render deployed **2026-11-23**. Live `/health/ready` HTTP 200 (`external_sources_verified:false`), `/backend-config.json` HTTP 200 (`same-origin`), public project and synthetic format endpoints HTTP 200.
+- **Original-source checks:** live `/pmc-identifiers?identifier=PMC3531190` returned PMID `23193287`, PMCID `PMC3531190`, DOI `10.1093/nar/gks1195`; live `/periodic-element?symbol=Fe` returned the PubChem original **118-row table** with iron atomic number 26, without clinical inference.
+- **Twenty-two-source fan-out:** live `/cross-check?query=CFTR&limit=1` HTTP 200, **18 of 22 sources responded**, 14 returned records, and four source requests failed. One-record bounds and a provider outage are not evidence-quality judgments or full-data discovery.
+- **Operations:** scheduled [HTTPS contract smoke workflow](.github/workflows/public-api-smoke.yml), [operator documentation](docs/integrations/live-public-backend-20261123.md), plus the separate weekly upstream source audit. Public service uptime, upstream freshness, privacy compliance, clinical effect and model efficacy require independent assessment.
 
 ## Current: 22-source QRCE cross-check, PMC identifier bridge and live FDA/PubChem research
 
@@ -66,7 +74,7 @@ audit and reproducible gates](docs/integrations/qrce-crosscheck-openmi-patents-2
 ## New: open-source medical project integration registry
 
 The [public evidence atlas](https://atphobia22.github.io/TMRDS/) now includes a
-**41-project, category-filterable medical-software catalog** with official
+**115-resource, category-filterable medical software and research catalog** with official
 repository/documentation links and explicit integration/licensing states.
 It covers EHRs (OpenEMR, OpenMRS, Bahmni, GNU Health), imaging (Orthanc,
 OHIF, Cornerstone3D, Weasis, 3D Slicer), interoperability (HAPI FHIR,
@@ -76,7 +84,7 @@ labs, genomics, mobile/offline platforms, PubMed and AlphaFold.
 The **separately deployable public research API** adds read-only,
 bounded `/api/v1/research/pubmed-citations`,
 `/api/v1/research/alphafold-db/{accession}` and
-`/api/v1/research/alphafold3-status` endpoints. The AlphaFold DB
+`/api/v1/research/alphafold3-status` endpoints. The same gateway also provides `/cross-check`, `/pmc-identifiers`, `/periodic-element` and `/file-format-capabilities` under the research prefix. The AlphaFold DB
 endpoint returns **real source-reported prediction metadata**,
 not AlphaFold 3 predictions. AlphaFold 3 source is Apache-2.0,
 but the weights/output have restrictive noncommercial terms;
