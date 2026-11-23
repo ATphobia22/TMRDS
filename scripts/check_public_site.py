@@ -68,7 +68,7 @@ def main() -> None:
         assert project["integration_state"] != "clinical_live"
     for token in ("loadMedicalProjectCatalog", "loadBackendPubMed", "structureForm",
                   "api/v1/research/pubmed-citations", "api/v1/research/alphafold-db/",
-                  "not AlphaFold 3 inference"):
+                  "NOT AlphaFold 3 inference"):
         assert token in js, token
     assert ".medical-grid" in css and ".extension-grid" in css
     assert len(css) > 1000
