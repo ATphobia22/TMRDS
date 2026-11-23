@@ -17,6 +17,7 @@ from engines.fieldlab_local import (
     FieldLabError, inspect_local_file, molecular_descriptors,
     runtime_capabilities,
 )
+from engines.fieldlab_cube_bridge import create_offline_review_plan
 
 
 def start() -> None:
@@ -80,6 +81,8 @@ def start() -> None:
         box.pack(side="left", fill="both", expand=True)
         return box
 
+    cube_flag = tk.BooleanVar(value=False)
+    ttk.Checkbutton(inspect, text="Also simulate Rubik research review plan (not diagnosis)", variable=cube_flag).pack(anchor="w")
     file_output = output_area(inspect)
 
     def display(box: tk.Text, result: dict) -> None:
@@ -97,6 +100,8 @@ def start() -> None:
                 Path(selected_path.get()), private_local=True,
                 include_pixel_summary=pixel_flag.get(),
             )
+            if cube_flag.get():
+                result = {"fieldlab": result, "cube_review_plan": create_offline_review_plan(result)}
         except (FieldLabError, OSError):
             result = {"status": "file_rejected_or_reader_missing",
                       "note": "No clinical conclusion; review file type, permissions and installed libraries"}
@@ -108,11 +113,15 @@ def start() -> None:
     smiles_var = tk.StringVar(value="CCO")
     entry = ttk.Entry(chemistry, textvariable=smiles_var)
     entry.pack(fill="x", pady=5)
+    chem_cube_flag = tk.BooleanVar(value=False)
+    ttk.Checkbutton(chemistry, text="Also simulate molecule evidence-plane review", variable=chem_cube_flag).pack(anchor="w")
     mol_output = output_area(chemistry)
 
     def run_molecule() -> None:
         try:
             result = molecular_descriptors(smiles_var.get().strip())
+            if chem_cube_flag.get():
+                result = {"fieldlab": result, "cube_review_plan": create_offline_review_plan(result)}
         except FieldLabError:
             result = {"status": "invalid_molecular_structure_or_reader_missing",
                       "drug_efficacy_inferred": False, "binding_prediction_executed": False}
