@@ -60,7 +60,8 @@ def main() -> None:
     medical_catalog = json.loads((PUBLIC / "medical-projects.json").read_text())
     assert medical_catalog["all_platforms_installed"] is False
     assert medical_catalog["license_approvals_completed"] is False
-    assert len(medical_catalog["projects"]) >= 40
+    assert len(medical_catalog["projects"]) >= 110, "expanded public and restricted source catalog missing"
+    assert {"pmc", "medrxiv", "who_ictrp", "mimic_iv", "uk_biobank", "allofus", "loinc", "pyscf", "openfermion", "biopython", "pysam", "qiskit"} <= {p["id"] for p in medical_catalog["projects"]}
     assert len({p["id"] for p in medical_catalog["projects"]}) == len(medical_catalog["projects"])
     assert medical_catalog["schema_version"] == "1.0"
     for project in medical_catalog["projects"]:
@@ -83,6 +84,10 @@ def main() -> None:
     assert len(css) > 1000
     for asset in inspector.local_assets:
         assert (PUBLIC / asset.removeprefix("./")).is_file(), asset
+    assert {"pmcForm", "pmcIdentifier", "pmcSubmit", "pmcState", "pmcRecords", "formatState", "format-safety", "pmc-bridge"} <= inspector.ids
+    for token in ("api/v1/research/pmc-identifiers", "22 source requests responded",
+                  "PMC ID Converter", "Local synthetic-only parser", "NLM Dataset Catalog"):
+        assert token in js or token in html, token
     assert "credentials: \"omit\"" in js
     assert "cache: \"no-store\"" in js
     assert "AbortController()" in js
