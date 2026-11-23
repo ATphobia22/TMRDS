@@ -48,6 +48,8 @@ if (-not $SkipSmoke) {
   if ($LASTEXITCODE -ne 0) { throw "FieldLab library import smoke failed." }
   & $Python $FieldLabCli molecule --smiles CCO
   if ($LASTEXITCODE -ne 0) { throw "FieldLab RDKit execution smoke failed." }
+  & $Python $FieldLabCli molecule --smiles CCO --cube-plan
+  if ($LASTEXITCODE -ne 0) { throw "FieldLab offline Rubik review-plan integration smoke failed." }
 }
 Write-Host "Offline FieldLab libraries installed. No patient files were read and no external service was contacted."
 Write-Host "CLI: & '$Python' '$FieldLabCli' status"
