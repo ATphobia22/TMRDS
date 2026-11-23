@@ -37,6 +37,16 @@ _SOURCE_HANDLERS: dict[str, str] = {
     "pubchem": "_search_pubchem",
     "uniprot": "_search_uniprot",
     "crossref": "_search_crossref",
+    "openalex": "_search_openalex",
+    "arxiv": "_search_arxiv",
+    "biorxiv": "_search_biorxiv",
+    "clinvar": "_search_clinvar",
+    "ensembl": "_search_ensembl",
+    "gnomad": "_search_gnomad",
+    "gtex": "_search_gtex",
+    "string": "_search_string",
+    "mesh": "_search_mesh",
+    "ncats": "_search_ncats",
 }
 
 
