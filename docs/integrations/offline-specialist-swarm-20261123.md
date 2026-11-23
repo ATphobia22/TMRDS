@@ -80,7 +80,8 @@ For drug-discovery and protein-structure research, expensive or restricted Alpha
 
 ```sh
 # Real local HTTP, security-policy, synthetic parser and Grover tests:
-python -m unittest discover -s tests -p 'test_offline*.py' -v
+python -m unittest discover -s tests -p 'test_offline_specialist_swarm.py' -v
+python -m unittest discover -s tests -p 'test_offline_swarm_http.py' -v
 node --check offline/swarm/swarm.js
 python -m compileall -q engines/offline_specialist_swarm.py scripts/run_offline_swarm.py
 
