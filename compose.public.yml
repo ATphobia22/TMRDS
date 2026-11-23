@@ -1,0 +1,26 @@
+# Research-only public API and web frontend. Does not publish clinical routes.
+# Bind loopback; put behind your own HTTPS reverse proxy before internet access.
+services:
+  tmrds-public:
+    build:
+      context: .
+      dockerfile: Dockerfile.public
+    image: tmrds-public:local
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    ports:
+      - "127.0.0.1:${TMRDS_PUBLIC_PORT:-18080}:8000"
+    environment:
+      TMRDS_ENV: production
+      PYTHONDONTWRITEBYTECODE: "1"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+    restart: unless-stopped

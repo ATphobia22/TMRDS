@@ -1,0 +1,5 @@
+{
+  "schema_version": "1.0",
+  "api_mode": "disabled",
+  "notes": "GitHub Pages is static. A separately deployed TMRDS API serves same-origin mode by overriding this file at /backend-config.json. No proxy or credentials are shipped with Pages."
+}

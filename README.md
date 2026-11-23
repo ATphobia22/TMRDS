@@ -169,3 +169,19 @@ TMRDS/
 TMRDS is research software for biomedical evidence exploration and engineering development. It is not medical advice, a diagnosis, a prescription, or a substitute for qualified clinical judgment. No repository documentation should be interpreted as evidence that TMRDS is FDA-cleared, clinically validated, HIPAA-compliant, ONC-certified, TEFCA-connected, or authorized for a particular regulated use.
 
 **Owner action still required:** branch protection is currently disabled on `main`. Configure required checks and pull-request protections in GitHub repository settings after the new workflow check names have appeared. Workflow YAML alone cannot enforce branch protection.
+
+
+## Interactive research cube and governed public evidence gateway
+
+The [public evidence atlas](https://atphobia22.github.io/TMRDS/) includes a 3D Rubik's Cube with layer turns while biomedical evidence searches run. The GitHub Pages edition directly queries Europe PMC and ClinicalTrials.gov and **does not host the Python research backend**. A separate, research-only backend is available as source and Docker configuration (not a confirmed public deployment).
+
+For a locally deployable same-origin research interface, run:
+
+```bash
+docker compose -f compose.public.yml up --build -d
+curl -fsS http://127.0.0.1:18080/health/ready
+```
+
+The public-only FastAPI service exposes bounded disease–target–compound Open Targets evidence, eight explicitly policy-registered adapters from the 25-source federation, source governance and GWAS v2. It does **not** expose patient ingestion or clinical write endpoints. Freshness means retrieval time, **not** verified currency of the underlying dataset. Licensing and reference case review remain explicit human gates, and evidence joins are not treatment claims.
+
+Deployment, methodology, independent-review limitations and validation commands: [Governed evidence pathway](docs/integrations/governed-evidence-pathway.md).

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#071d32">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://www.ebi.ac.uk https://clinicaltrials.gov; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://www.ebi.ac.uk https://clinicaltrials.gov; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests">
   <meta name="description" content="TMRDS open biomedical evidence atlas: live public literature and trial lookup with source provenance and human review boundaries.">
   <title>TMRDS | Open Evidence Atlas</title>
   <link rel="stylesheet" href="./site.css">
@@ -27,29 +27,35 @@
         <p>Explore public biomedical literature and clinical trial records as they exist at their original sources. Follow the provenance, see incomplete coverage, and keep computational hypotheses separate from clinical conclusions.</p>
         <div class="hero-actions"><a class="primary-link" href="#research">Explore live records ↓</a><a class="quiet-link" href="https://github.com/ATphobia22/TMRDS/blob/main/docs/QRNC_NAVIGATION_CUBE.md" target="_blank" rel="noopener noreferrer">How the cube works ↗</a></div>
       </div>
-      <div class="cube-showcase" aria-label="Six interconnected research evidence planes">
-        <div class="cube-diagram" aria-hidden="true">
-          <div class="cube-face face-top">GENE</div><div class="cube-face face-left">DATA</div><div class="cube-face face-right">TRIAL</div>
-        </div>
-        <div class="cube-key">6 EVIDENCE PLANES <span>≠ 6 CONFIRMED CLINICAL OUTCOMES</span></div>
+      <div class="cube-showcase" aria-label="Interactive rotating three-dimensional Rubik's Cube for six evidence planes">
+        <div class="cube-scene"><div id="rubiksCube" class="rubiks-cube" role="img" aria-label="Three-dimensional Rubik's Cube; faces twist while research sources are searched"></div></div>
+        <button type="button" id="cubeMoveBtn" class="cube-move">Rotate a layer</button>
+        <p id="cubeActivity" class="cube-activity" aria-live="polite">Cube rotates continuously. Select a face turn or search to start a sequence.</p>
+        <div class="cube-key">6 EVIDENCE PLANES <span>ANIMATION IS A SEARCH INDICATOR · NOT QUANTUM COMPUTATION</span></div>
       </div>
     </section>
     <section id="research" class="search-panel" aria-labelledby="research-title">
-      <div class="section-heading"><div><span class="eyebrow">01 / PUBLIC EVIDENCE SEARCH</span><h2 id="research-title">Search authoritative records</h2><p>Read-only requests to Europe PMC and ClinicalTrials.gov. Results are never fabricated or silently replaced by cached examples.</p></div><span class="live-pill"><span class="pulse"></span> PUBLIC SOURCES</span></div>
+      <div class="section-heading"><div><span class="eyebrow">01 / PUBLIC EVIDENCE SEARCH</span><h2 id="research-title">Search authoritative records</h2><p>Direct lookups use Europe PMC and ClinicalTrials.gov. A same-origin deployed research backend can additionally display governed disease-to-target-to-compound evidence; it is not hosted by GitHub Pages.</p></div><span class="live-pill"><span class="pulse"></span> PUBLIC SOURCES</span></div>
       <form id="searchForm" class="search-form">
         <label for="query">Disease, molecule, gene, or research topic <small>(not a patient's history)</small></label>
         <div class="search-control"><input id="query" name="query" type="search" maxlength="120" required value="amyotrophic lateral sclerosis" autocomplete="off" spellcheck="false" aria-describedby="searchHelp"><button type="submit" id="searchBtn">Search sources</button></div>
-        <p id="searchHelp" class="input-note">Sample topic only; no account, tracking, patient-record ingestion, or personal medical profile. Your query is sent to the two named public services when you search.</p>
+        <p id="searchHelp" class="input-note">Sample topic only; no account, tracking, patient-record ingestion, or personal medical profile. Your query is sent to the two named public services; if configured, also to the separately deployed TMRDS research API.</p>
       </form>
       <div class="source-statuses" aria-label="Upstream source checks">
         <div><span class="status-mark" id="literatureDot"></span><strong>Europe PMC</strong><span id="literatureStatus" aria-live="polite">Not queried</span></div>
         <div><span class="status-mark" id="trialDot"></span><strong>ClinicalTrials.gov</strong><span id="trialStatus" aria-live="polite">Not queried</span></div>
       </div>
-      <p class="fetch-meta" id="fetchMeta" aria-live="polite">Search to load timestamped source records. The page does not consult TMRDS's private backend.</p>
+      <p class="fetch-meta" id="fetchMeta" aria-live="polite">Search to load timestamped source records. A separately deployed backend is used only when explicitly configured and available.</p>
       <div class="results-grid">
         <section class="result-column" aria-labelledby="litTitle"><div class="result-head"><h3 id="litTitle">Literature</h3><span id="litCount">—</span></div><div id="literature" class="results-list"><p class="empty">No request made.</p></div></section>
         <section class="result-column" aria-labelledby="trialTitle"><div class="result-head"><h3 id="trialTitle">Registered studies</h3><span id="trialCount">—</span></div><div id="trials" class="results-list"><p class="empty">No request made.</p></div></section>
       </div>
+      <section class="pathway-panel" aria-labelledby="pathwayTitle">
+        <div class="pathway-head"><div><span class="eyebrow">GOVERNED BACKEND</span><h3 id="pathwayTitle">Disease → target → compound</h3></div><span id="backendState" aria-live="polite">Checking backend configuration…</span></div>
+        <p>When the separately hosted research API is connected, results use exact disease, Ensembl target and ChEMBL compound identifiers from source-reported mechanisms. Unavailable, ambiguous, stale and license-review states stay visible.</p>
+        <div id="pathwayRecords" class="pathway-records" aria-live="polite"><p class="empty">Research API not queried.</p></div>
+        <p id="pathwayFootnote" class="method-note">No inferred efficacy, diagnostic status, cure claim or clinical recommendation. Platform associations may include third-party data with separate licenses.</p>
+      </section>
       <p class="method-note">Records are discovery results, not independently appraised evidence. Trial registration is not proof of efficacy; a literature match is not proof of peer review. The locally calculated SHA-256 fingerprint identifies normalized display fields only and does not certify authenticity or clinical validity.</p>
     </section>
     <section id="cube" class="cube-section" aria-labelledby="cube-title">
@@ -66,9 +72,9 @@
     <section id="sources" class="sources-section" aria-labelledby="sources-title">
       <div class="section-heading"><div><span class="eyebrow">03 / SOURCE AND COMPUTE REGISTRY</span><h2 id="sources-title">Know the difference between connected and referenced</h2></div></div>
       <div class="registry-grid">
-        <div class="registry-item"><strong>Live in this public page</strong><p>Europe PMC literature search and NIH ClinicalTrials.gov v2. Each fetch reports success or failure independently.</p><div class="registry-links"><a href="https://www.ebi.ac.uk/europepmc/webservices/rest/" target="_blank" rel="noopener noreferrer">Europe PMC API</a><a href="https://clinicaltrials.gov/data-api/api" target="_blank" rel="noopener noreferrer">Trials API</a></div></div>
-        <div class="registry-item"><strong>Repository-backed research adapters</strong><p>PubMed, openFDA, UniProt, Ensembl, RCSB, ChEMBL, Open Targets, gnomAD, GTEx and other adapters are part of the separate Python backend. This page does not claim they are online.</p><div class="registry-links"><a href="https://github.com/ATphobia22/TMRDS/blob/main/engines/federated_evidence_search.py" target="_blank" rel="noopener noreferrer">Inspect implementation</a><a href="https://github.com/ATphobia22/TMRDS/blob/main/engines/research_source_catalog.json" target="_blank" rel="noopener noreferrer">Inspect source catalog</a></div></div>
-        <div class="registry-item"><strong>Quantum computation</strong><p>Simulators and optional IBM Quantum execution have separate authorization, job-ledger and validation boundaries. No quantum experiment runs in your browser or as a result of opening this page.</p><div class="registry-links"><a href="https://github.com/ATphobia22/TMRDS/blob/main/docs/integrations/ibm-quantum-compute.md" target="_blank" rel="noopener noreferrer">Compute controls</a></div></div>
+        <div class="registry-item"><strong>Live in this public page</strong><p>Europe PMC literature search and NIH ClinicalTrials.gov v2. Each fetch reports success or failure independently. The governed API is only connected in a separate same-origin backend deployment.</p><div class="registry-links"><a href="https://www.ebi.ac.uk/europepmc/webservices/rest/" target="_blank" rel="noopener noreferrer">Europe PMC API</a><a href="https://clinicaltrials.gov/data-api/api" target="_blank" rel="noopener noreferrer">Trials API</a></div></div>
+        <div class="registry-item"><strong>Repository-backed research adapters</strong><p>PubMed, openFDA, UniProt, Ensembl, RCSB, ChEMBL, Open Targets, gnomAD, GTEx and other adapters are part of the separate Python backend. The governed Docker deployment can expose a bounded evidence pathway, source policies and reference contracts; GitHub Pages does not host those routes.</p><div class="registry-links"><a href="https://github.com/ATphobia22/TMRDS/blob/main/engines/federated_evidence_search.py" target="_blank" rel="noopener noreferrer">Inspect implementation</a><a href="https://github.com/ATphobia22/TMRDS/blob/main/engines/research_source_catalog.json" target="_blank" rel="noopener noreferrer">Inspect source catalog</a></div></div>
+        <div class="registry-item"><strong>Quantum computation</strong><p>Simulators and optional IBM Quantum execution have separate authorization, job-ledger and validation boundaries. The animated cube is a visual search indicator only; no quantum experiment runs when searching or opening this page.</p><div class="registry-links"><a href="https://github.com/ATphobia22/TMRDS/blob/main/docs/integrations/ibm-quantum-compute.md" target="_blank" rel="noopener noreferrer">Compute controls</a></div></div>
       </div>
       <p class="method-note">Source datasets and code have different licenses. Check source-specific permissions and attribution before bulk replication, model training, redistribution, or clinical application. No user-generated biomedical records are published by this page.</p>
     </section>
