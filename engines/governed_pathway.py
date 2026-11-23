@@ -30,6 +30,10 @@ _SOURCE_LICENSES = {
     "gwas_catalog_v2": ("Per-source and publication rights; manual review required", "https://www.ebi.ac.uk/gwas/docs/programmatic-access/rest-api/", True),
     "dailymed": ("SPL label and provider-specific notices", "https://dailymed.nlm.nih.gov/dailymed/", True),
     "openfda": ("OpenFDA data terms and underlying label rights", "https://open.fda.gov/apis/", True),
+    "reactome": ("Reactome pathway annotations CC0; images and code CC BY 4.0", "https://reactome.org/license", True),
+    "uniprot": ("UniProtKB data CC BY 4.0; source annotations may require further rights review", "https://www.uniprot.org/help/license", True),
+    "pubchem": ("NCBI PubChem data: individual depositors retain their own rights; metadata only", "https://pubchem.ncbi.nlm.nih.gov/docs/data-sources", True),
+    "crossref": ("Crossref factual metadata generally CC0; article content/publisher rights separate", "https://www.crossref.org/documentation/retrieve-metadata/", True),
 }
 _RESOLVE = """query TMRDSResolveDisease($query: String!) {
  search(queryString: $query, entityNames: ["disease"], page: {index: 0, size: 10}) {
