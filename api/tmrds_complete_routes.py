@@ -71,7 +71,8 @@ def health(
             "structure": "live AlphaFold DB via engines.alphafold3_node.fetch_live_alphafold_db",
             "quantum_backends": "live IBM Quantum via engines.ibm_quantum_compute (credentials required)",
             "quantum_vqe": "simulator only when qiskit-aer installed; hardware via governed flow only",
-            "federated_search": "live via engines.federated_evidence_search (Europe PMC, PubMed, trials, openFDA, arXiv, OpenAlex)",
+            "federated_search": "research dossier uses engines.federated_evidence_search (including GWAS Catalog v2); legacy federated-search route is narrower",
+            "genetic_association": "GET /api/v1/research/gwas-associations for bounded GWAS v2 trait metadata (not causality or treatment evidence)",
         },
         "ibm_api_version": ibm_api_version or IBM_API_VERSION_DEFAULT,
         "governance": {
