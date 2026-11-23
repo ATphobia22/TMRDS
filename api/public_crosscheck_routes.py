@@ -18,6 +18,7 @@ from api.ops import limiter
 from engines.federated_evidence_search import COVERAGE, FederatedEvidenceSearch
 from engines.governed_pathway import evaluate_license
 from engines.qrce_public_crosscheck import build_crosscheck
+from engines.qrce_research_formats import format_capabilities
 
 router = APIRouter(prefix="/api/v1/research", tags=["bounded-public-crosscheck"])
 _ORANGE_BOOK = "https://api.fda.gov/drug/orangebook.json"
@@ -374,3 +375,21 @@ async def public_pmc_identifiers(
         return await lookup_pmc_id_mapping(identifier)
     except ValueError as exc:
         raise HTTPException(422, detail=str(exc)) from None
+
+
+@router.get("/file-format-capabilities")
+@limiter.limit("20/minute")
+async def public_format_capabilities(request: Request):
+    """Manifest only. No upload, samples, PHI, files or clinical interpretations."""
+    return {
+        "schema_version": "1.0",
+        "mode": "local_synthetic_only",
+        "public_patient_upload_enabled": False,
+        "patient_data_ingestion_enabled": False,
+        "installed_external_reader_claim": False,
+        "supported_local": [x for x in format_capabilities()
+                            if x["state"] == "local_synthetic_text_reader"],
+        "external_optional": [x for x in format_capabilities()
+                              if x["state"] == "external_reader_required"],
+        "clinical_promotion_allowed": False,
+    }
