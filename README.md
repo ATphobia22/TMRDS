@@ -182,6 +182,6 @@ docker compose -f compose.public.yml up --build -d
 curl -fsS http://127.0.0.1:18080/health/ready
 ```
 
-The public-only FastAPI service exposes bounded disease–target–compound Open Targets evidence, the existing 25-source federation, source governance and GWAS v2. It does **not** expose patient ingestion or clinical write endpoints. Freshness means retrieval time, **not** verified currency of the underlying dataset. Licensing and reference case review remain explicit human gates, and evidence joins are not treatment claims.
+The public-only FastAPI service exposes bounded disease–target–compound Open Targets evidence, eight explicitly policy-registered adapters from the 25-source federation, source governance and GWAS v2. It does **not** expose patient ingestion or clinical write endpoints. Freshness means retrieval time, **not** verified currency of the underlying dataset. Licensing and reference case review remain explicit human gates, and evidence joins are not treatment claims.
 
 Deployment, methodology, independent-review limitations and validation commands: [Governed evidence pathway](docs/integrations/governed-evidence-pathway.md).
