@@ -54,6 +54,23 @@ def main() -> None:
         assert token in js, token
     assert "@keyframes cube-idle" in css and "@keyframes cube-working" in css
     assert "prefers-reduced-motion" in css
+    assert {"medicalCategory", "medicalList", "medicalCount", "medicalRegistryStatus",
+            "pubmedBackendState", "pubmedBackendRecords", "structureForm",
+            "uniprotAccession", "structureBackendState", "structureBackendRecords"} <= inspector.ids
+    medical_catalog = json.loads((PUBLIC / "medical-projects.json").read_text())
+    assert medical_catalog["all_platforms_installed"] is False
+    assert medical_catalog["license_approvals_completed"] is False
+    assert len(medical_catalog["projects"]) >= 40
+    assert len({p["id"] for p in medical_catalog["projects"]}) == len(medical_catalog["projects"])
+    assert medical_catalog["schema_version"] == "1.0"
+    for project in medical_catalog["projects"]:
+        assert project["source_url"].startswith("https://")
+        assert project["integration_state"] != "clinical_live"
+    for token in ("loadMedicalProjectCatalog", "loadBackendPubMed", "structureForm",
+                  "api/v1/research/pubmed-citations", "api/v1/research/alphafold-db/",
+                  "not AlphaFold 3 inference"):
+        assert token in js, token
+    assert ".medical-grid" in css and ".extension-grid" in css
     assert len(css) > 1000
     for asset in inspector.local_assets:
         assert (PUBLIC / asset.removeprefix("./")).is_file(), asset
