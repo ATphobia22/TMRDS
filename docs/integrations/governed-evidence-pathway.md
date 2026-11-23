@@ -9,7 +9,7 @@ and DOES NOT execute the Python adapters.**
 | Surface | What is connected | What is deliberately absent |
 |---|---|---|
 | GitHub Pages `public/` | Direct, bounded Europe PMC and ClinicalTrials.gov v2 lookups; real 3D rotating 26-cubie display | Python API, database, clinical records, quantum hardware |
-| Docker `api.public_gateway:app` | Same site, exact-ID disease-to-target-to-compound route, 25-source federated discovery dossier, GWAS v2, source-policy inventory | Patient ingestion, DICOM, FHIR writes, Neo4j/PostgreSQL access, admin routes, clinical endpoints |
+| Docker `api.public_gateway:app` | Same site, exact-ID disease-to-target-to-compound route, eight policy-registered federated metadata adapters, GWAS v2, source-policy inventory | Patient ingestion, DICOM, FHIR writes, Neo4j/PostgreSQL access, admin routes, clinical endpoints |
 | Existing `api.main:app` | Original full TMRDS backend plus new read-only pathway routes | Not recommended as internet-facing public viewer |
 
 The cube is physically reindexed as quarter-turn layers (26 visible cubies,
@@ -53,14 +53,14 @@ browser API keys.
   A query for text must resolve to a unique exact preferred name;
   ambiguous names return candidates without fabricated links.
 - `GET /api/v1/research/dossier?query=cystic%20fibrosis&limit=3`
-  invokes the existing 25-source federated research adapters with isolated
+  invokes eight registered public-metadata adapters (Open Targets, ChEMBL, Europe PMC, PubMed, ClinicalTrials.gov, openFDA, DailyMed and GWAS v2) from the existing 25-source federation with isolated
   provider failures, normalized source metadata, evidence hashes and
   unpublished/retraction warnings. A source failure is not a negative result.
   Queries may be forwarded to third-party sources. Never enter patient data.
 - `GET /api/v1/research/gwas-associations?trait=asthma&limit=8`
   uses the existing bounded GWAS Catalog v2 adapter.
 - `GET /api/v1/research/source-governance` lists **all 25** federated
-  sources and conservative license/permission states; unreviewed sources
+  cataloged sources and conservative license/permission states; unreviewed sources
   have `metadata_display_allowed=false`.
 - `GET /api/v1/research/reference-pathway-contract` returns the
   method and review boundary for the embedded reference cases.
