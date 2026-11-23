@@ -46,7 +46,7 @@ def _hash(value: dict) -> str:
 def _query(text: str) -> str:
     if (not isinstance(text, str) or not (2 <= len(text.strip()) <= 80)
             or any(ord(c) < 32 for c in text) or _PII.search(text)
-            or ".." in text or "/" in text or "\\" in text):
+            or ".." in text or ("/" in text and not _DOI.fullmatch(text.strip())) or "\\" in text):
         raise EvidencePackError("Use only public, short non-identifying biomedical research terms")
     return text.strip()
 
