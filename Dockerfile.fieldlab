@@ -17,6 +17,8 @@ RUN groupadd --system --gid 10001 fieldlab \
     && useradd --system --uid 10001 --gid fieldlab --home-dir /nonexistent \
        --shell /usr/sbin/nologin fieldlab
 COPY --chown=fieldlab:fieldlab engines/fieldlab_local.py /fieldlab/engines/fieldlab_local.py
+COPY --chown=fieldlab:fieldlab engines/fieldlab_cube_bridge.py /fieldlab/engines/fieldlab_cube_bridge.py
+COPY --chown=fieldlab:fieldlab engines/cube_grover_research.py /fieldlab/engines/cube_grover_research.py
 COPY --chown=fieldlab:fieldlab scripts/fieldlab_cli.py /fieldlab/scripts/fieldlab_cli.py
 USER 10001:10001
 ENTRYPOINT ["python", "scripts/fieldlab_cli.py"]
