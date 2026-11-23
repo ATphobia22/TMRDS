@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ATphobia22/TMRDS/blob/main/offline/swarm/contracts/event.schema.json",
+  "title": "TMRDS synthetic offline specialist event (not patient data)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "channel",
+    "node",
+    "data_class",
+    "status",
+    "result_sha256",
+    "clinical_promotion_allowed"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^synthetic-[0-9]{3}$"
+    },
+    "channel": {
+      "const": "tmrds.offline.node.v1"
+    },
+    "node": {
+      "enum": [
+        "labs",
+        "imaging",
+        "genomics",
+        "evidence",
+        "drug_discovery",
+        "quantum",
+        "knowledge",
+        "supervisor"
+      ]
+    },
+    "data_class": {
+      "const": "synthetic_nonidentifying"
+    },
+    "status": {
+      "type": "string",
+      "maxLength": 90
+    },
+    "result_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "clinical_promotion_allowed": {
+      "const": false
+    }
+  }
+}
