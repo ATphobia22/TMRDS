@@ -50,6 +50,13 @@ def main() -> None:
     backend_config = json.loads((PUBLIC / "backend-config.json").read_text())
     assert backend_config["api_mode"] == "disabled", "public Pages must never claim deployed backend"
     assert {"rubiksCube", "cubeMoveBtn", "cubeActivity", "backendState", "pathwayRecords", "pathwayFootnote", "connectedWorkspaceLink"} <= inspector.ids
+    assert {"cubePlanScenario", "cubeSolveBtn", "cubePlannerNote", "cubeSolverOutput"} <= inspector.ids
+    assert 'api/v1/research/cube-search' in js
+    assert "CUBE_PLAN_SCENARIOS" in js
+    assert "grover_phase_oracle_and_diffusion" in js
+    assert "quantum_hardware_used !== false" in js
+    assert "clinical_promotion_allowed" in html or "not a medical device" in html.lower()
+
     assert 'id="connectedWorkspaceLink"' in html and 'href="https://tmrds-public-evidence-api.onrender.com/"' in html
     assert 'liveWorkspaceLink.hidden = backendEnabled' in js
     assert "#connectedWorkspaceLink[hidden]{display:none!important}" in css
@@ -63,7 +70,7 @@ def main() -> None:
     medical_catalog = json.loads((PUBLIC / "medical-projects.json").read_text())
     assert medical_catalog["all_platforms_installed"] is False
     assert medical_catalog["license_approvals_completed"] is False
-    assert len(medical_catalog["projects"]) >= 110, "expanded public and restricted source catalog missing"
+    assert len(medical_catalog["projects"]) >= 122, "expanded research software catalog missing"
     assert {"pmc", "medrxiv", "who_ictrp", "mimic_iv", "uk_biobank", "allofus", "loinc", "pyscf", "openfermion", "biopython", "pysam", "qiskit"} <= {p["id"] for p in medical_catalog["projects"]}
     assert len({p["id"] for p in medical_catalog["projects"]}) == len(medical_catalog["projects"])
     assert medical_catalog["schema_version"] == "1.0"

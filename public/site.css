@@ -84,3 +84,10 @@
 
 /* Do not show the external backend link when already on the same-origin hosted API. */
 #connectedWorkspaceLink[hidden]{display:none!important}
+
+/* Bounded six-plane Grover research mathematics, not a clinical solver. */
+.cube-solver-form{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem;justify-content:center;margin:.65rem 0 .25rem}
+.cube-solver-form label{flex-basis:100%;font-size:.78rem;color:#e4f3ff;text-align:center}
+.cube-solver-form select{max-width:100%;min-height:2.3rem;padding:.35rem .5rem;background:#09243c;color:#eef8ff;border:1px solid #6195b3;border-radius:.45rem}
+#cubeSolverOutput{max-width:31rem;margin:.45rem auto 0;overflow-wrap:anywhere}
+#cubeSolveBtn:disabled{opacity:.6;cursor:wait}

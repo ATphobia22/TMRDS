@@ -1305,6 +1305,90 @@
       "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
+    },
+    {
+      "id": "pymatching",
+      "category": "quantum_software",
+      "name": "PyMatching / Sparse Blossom",
+      "source_url": "https://github.com/oscarhiggott/PyMatching",
+      "interface": "QEC minimum-weight perfect-matching decoder",
+      "integration_state": "optional_not_installed",
+      "license_notes": "Apache-2.0 code per GitHub repository metadata; error correction only, not disease matching",
+      "verification": "official_license_checked",
+      "clinical_access_enabled": false,
+      "public_api_connected": false
+    },
+    {
+      "id": "stim",
+      "category": "quantum_software",
+      "name": "Stim quantum circuit stabilizer simulator",
+      "source_url": "https://github.com/quantumlib/Stim",
+      "interface": "Clifford/stabilizer error-correction simulator",
+      "integration_state": "optional_not_installed",
+      "license_notes": "Apache-2.0 code per repository metadata; not chemistry or clinical software",
+      "verification": "official_license_checked",
+      "clinical_access_enabled": false,
+      "public_api_connected": false
+    },
+    {
+      "id": "deepchem",
+      "category": "chemistry",
+      "name": "DeepChem",
+      "source_url": "https://github.com/deepchem/deepchem",
+      "interface": "Molecular machine learning research workflows",
+      "integration_state": "optional_not_installed",
+      "license_notes": "MIT code per repository metadata; trained models and datasets each require independent license and validity review",
+      "verification": "official_license_checked",
+      "clinical_access_enabled": false,
+      "public_api_connected": false
+    },
+    {
+      "id": "boltz2",
+      "category": "molecular",
+      "name": "Boltz-2 biomolecular structure/affinity research",
+      "source_url": "https://github.com/jwohlwend/boltz",
+      "interface": "Protein-ligand structure and affinity research model",
+      "integration_state": "optional_not_installed",
+      "license_notes": "MIT repository per GitHub; weights, data, inference costs and task-specific validation reviewed separately",
+      "verification": "official_license_checked",
+      "clinical_access_enabled": false,
+      "public_api_connected": false
+    },
+    {
+      "id": "scispacy",
+      "category": "clinical_nlp",
+      "name": "scispaCy",
+      "source_url": "https://github.com/allenai/scispacy",
+      "interface": "Biomedical entity recognition and linking",
+      "integration_state": "optional_not_installed",
+      "license_notes": "Apache-2.0 repository; models/terminology licenses separately reviewed; no de-identification guarantee",
+      "verification": "official_license_checked",
+      "clinical_access_enabled": false,
+      "public_api_connected": false
+    },
+    {
+      "id": "medspacy",
+      "category": "clinical_nlp",
+      "name": "medspaCy",
+      "source_url": "https://github.com/medspacy/medspacy",
+      "interface": "Clinical section, context and negation patterns",
+      "integration_state": "optional_not_installed",
+      "license_notes": "MIT repository; clinical text can contain PHI; never use in the anonymous public API",
+      "verification": "official_license_checked",
+      "clinical_access_enabled": false,
+      "public_api_connected": false
+    },
+    {
+      "id": "presidio",
+      "category": "clinical_nlp",
+      "name": "Microsoft Presidio",
+      "source_url": "https://github.com/microsoft/presidio",
+      "interface": "PII detection and de-identification aid",
+      "integration_state": "optional_not_installed",
+      "license_notes": "Check exact release/license/model terms; detection has false negatives and does not by itself establish HIPAA compliance",
+      "verification": "cataloged_review_pending",
+      "clinical_access_enabled": false,
+      "public_api_connected": false
     }
   ]
 }

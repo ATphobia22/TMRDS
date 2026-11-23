@@ -280,6 +280,60 @@ const backendConfiguration = (async () => {
     "Backend not deployed on this site · two public live sources remain available";
   return backendEnabled;
 })();
+/* Read-only six-qubit Grover statevector demonstration.
+ * Valid plans are abstract source-coverage masks, never therapies.
+ * The static site cannot simulate through its absent Python API.
+ */
+const CUBE_PLAN_SCENARIOS = Object.freeze({
+  triangulation: "disease_phenotype,target_pathway,trials_labels&max_planes=4",
+  chemistry: "target_pathway,structure,molecule&max_planes=4",
+  full: "disease_phenotype,target_pathway,structure,molecule,trials_labels,population_equity&max_planes=6"
+});
+$("cubeSolveBtn").addEventListener("click", async () => {
+  const output = $("cubeSolverOutput");
+  const button = $("cubeSolveBtn");
+  const key = $("cubePlanScenario").value;
+  if (!Object.hasOwn(CUBE_PLAN_SCENARIOS, key)) {
+    output.textContent = "Unknown preset; select a documented source-coverage objective.";
+    return;
+  }
+  if (!(await backendConfiguration)) {
+    output.textContent = "The Grover simulator requires the connected research workspace. Open the linked HTTPS research site above.";
+    return;
+  }
+  button.disabled = true;
+  output.textContent = "Simulating six-qubit phase oracle and amplitude amplification…";
+  try {
+    const path = "/api/v1/research/cube-search?required=" + CUBE_PLAN_SCENARIOS[key];
+    const {data} = await getJson(path, 14000);
+    if (!data || data.algorithm !== "grover_phase_oracle_and_diffusion" ||
+        data.backend !== "classical_exact_statevector_simulator" ||
+        data.execution?.quantum_hardware_used !== false ||
+        data.governance?.cure_claim !== false ||
+        !Array.isArray(data.example_marked_plans)) throw new Error("Invalid simulator contract");
+    const probability = Number(data.simulated_probability_of_valid_plan);
+    const baseline = Number(data.uniform_random_baseline_probability);
+    if (!Number.isFinite(probability) || !Number.isFinite(baseline) ||
+        probability < 0 || probability > 1.00000001 || baseline < 0 || baseline > 1) {
+      throw new Error("Invalid simulation probability");
+    }
+    const example = data.example_marked_plans[0];
+    output.replaceChildren(
+      node("strong", "", "Actual simulated Grover plan search · " + data.iterations + " oracle turns"),
+      node("span", "", " Valid abstract plan probability: " + (100 * probability).toFixed(2) +
+           "% vs uniform baseline " + (100 * baseline).toFixed(2) + "%. "),
+      node("span", "", "Example 6-bit plan " + String(example?.bitstring || "unavailable") +
+           " covers " + (Array.isArray(example?.planes) ? example.planes.join(", ") : "none") + ". "),
+      node("span", "", "This is a classical statevector simulation, not evidence that a treatment works or that quantum hardware is faster.")
+    );
+    if (!reduceMotion.matches) void turnCubeLayer();
+  } catch (error) {
+    output.textContent = "Grover research simulator unavailable or returned invalid data; no solution is inferred.";
+  } finally {
+    button.disabled = false;
+  }
+});
+
 async function loadGovernedPathway(query, seq) {
   if (!(await backendConfiguration) || seq !== requestSequence) return null;
   $("backendState").textContent = "Querying governed research API…";
