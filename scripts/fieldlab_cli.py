@@ -34,8 +34,10 @@ def main(argv: list[str] | None = None) -> int:
         "--pixel-summary", action="store_true",
         help="Decode bounded DICOM pixels and calculate local min/max after DICOM modality LUT"
     )
+    inspect.add_argument("--cube-plan", action="store_true", help="Queue an abstract offline Grover review plan; no patient data transfer")
     molecule = sub.add_parser("molecule", help="Calculate RDKit 2D descriptors for a research SMILES")
     molecule.add_argument("--smiles", required=True, help="Public/non-patient SMILES only")
+    molecule.add_argument("--cube-plan", action="store_true", help="Simulate a source-review plan; not efficacy prediction")
     args = parser.parse_args(argv)
 
     try:
@@ -49,7 +51,10 @@ def main(argv: list[str] | None = None) -> int:
             )
         else:
             result = molecular_descriptors(args.smiles)
-    except FieldLabError:
+        if args.action != "status" and args.cube_plan:
+            from engines.fieldlab_cube_bridge import create_offline_review_plan
+            result = {"fieldlab": result, "cube_review_plan": create_offline_review_plan(result)}
+    except (FieldLabError, ValueError):
         # Never write the filename, patient ID, source text or SMILES to logs.
         print(json.dumps({
             "status": "local_input_rejected_or_reader_unavailable",
