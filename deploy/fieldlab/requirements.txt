@@ -1,0 +1,10 @@
+# TMRDS FieldLab optional OFFLINE local-only scientific adapters.
+# These are actual imported/executed packages, not a catalog.
+# Pin direct packages; downloadable wheelhouse is sealed with SHA-256 at CI
+# build time; indirect deps in the bundle are also hashed and verified.
+# Separate from Dockerfile.public; NO PHI may be transferred to the public site.
+numpy==2.4.6
+pydicom==3.0.2
+biopython==1.88
+rdkit==2026.9.2
+nibabel==5.5.0
