@@ -24,6 +24,29 @@
 
 The [November 23 source audit](https://github.com/ATphobia22/TMRDS/actions/workflows/source-governance.yml) reported responses from **five** official APIs (Open Targets, ChEMBL, Europe PMC, ClinicalTrials.gov, GWAS Catalog v2), and its one-case CFTR/ivacaftor **technical identifier-consistency check passed**. That does not certify license permission, data currency, comprehensive coverage, or treatment effectiveness.
 
+## New: open-source medical project integration registry
+
+The [public evidence atlas](https://atphobia22.github.io/TMRDS/) now includes a
+**41-project, category-filterable medical-software catalog** with official
+repository/documentation links and explicit integration/licensing states.
+It covers EHRs (OpenEMR, OpenMRS, Bahmni, GNU Health), imaging (Orthanc,
+OHIF, Cornerstone3D, Weasis, 3D Slicer), interoperability (HAPI FHIR,
+Medplum, Open Integration Engine), imaging AI (MONAI, TotalSegmentator),
+labs, genomics, mobile/offline platforms, PubMed and AlphaFold.
+
+The **separately deployable public research API** adds read-only,
+bounded `/api/v1/research/pubmed-citations`,
+`/api/v1/research/alphafold-db/{accession}` and
+`/api/v1/research/alphafold3-status` endpoints. The AlphaFold DB
+endpoint returns **real source-reported prediction metadata**,
+not AlphaFold 3 predictions. AlphaFold 3 source is Apache-2.0,
+but the weights/output have restrictive noncommercial terms;
+**AlphaFold 3 inference is not deployed or bundled**. The GitHub Pages
+copy remains static and cannot execute Python. Institutional EHR/PACS
+connectors are not connected to patient records.
+
+[Architecture, official upstream references, commands, license gates and tests](docs/integrations/open-source-medical-gateway.md).
+
 ## For doctors
 
 TMRDS is a research workspace for answering "what does the evidence say?" — with every answer traceable to its source.
@@ -216,6 +239,7 @@ TMRDS/
 - [Imaging research workflow](docs/integrations/imaging-research-workflow.md) — bounded DICOMweb reads, OHIF provenance panel, reviewed MONAI weight loading, human label submission; research only, no clinical approval.
 - [Research dossier](docs/operations/research-dossier.md) — dossier contract and remaining gates.
 - [GWAS Catalog v2 integration](docs/integrations/gwas-catalog-v2.md) — bounded real-source genetic association metadata, rate limits, identity preservation, and clinical limitations.
+- [Open-source medical gateway and 41-project catalog](docs/integrations/open-source-medical-gateway.md) — PubMed and AlphaFold DB metadata, integration status, source rights, and clinical-system isolation.
 - [Governed evidence pathway and Rubik's Cube deployment](docs/integrations/governed-evidence-pathway.md) — same-origin Docker service, source-license/freshness checks, exact identifier joins, release audit, and independent-validation limits.
 - [Source-governance workflow](.github/workflows/source-governance.yml) — CI tests, public container smoke tests, and weekly upstream audits.
 - [Biomedical source gap review](docs/reference/biomedical-source-gap-review-2026-11-07.md) — status baseline for GWAS v2, DepMap/PRISM, LINCS, CELLxGENE, ClinPGx priorities.
