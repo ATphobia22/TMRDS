@@ -24,6 +24,12 @@
 
 The [November 23 source audit](https://github.com/ATphobia22/TMRDS/actions/workflows/source-governance.yml) reported responses from **five** official APIs (Open Targets, ChEMBL, Europe PMC, ClinicalTrials.gov, GWAS Catalog v2), and its one-case CFTR/ivacaftor **technical identifier-consistency check passed**. That does not certify license permission, data currency, comprehensive coverage, or treatment effectiveness.
 
+### New: Six-plane Grover search demonstration (no clinical inference)
+
+The connected Rubik's Cube now has a **reproducible, bounded six-qubit Grover simulator**: `GET /api/v1/research/cube-search?required=disease_phenotype,target_pathway,trials_labels&max_planes=4`. An actual phase oracle and Grover diffuser amplify **synthetic research-coverage configurations** across 64 bitstrings and show a classical 64-evaluation baseline, exact success probability, deterministic SHA-256 oracle digest, and a no-quantum-hardware execution receipt. The static GitHub Pages version links to the separately deployed Python simulator; it cannot run that Python backend. **The reported probability is only a probability of selecting a source-coverage plan—not likelihood a treatment is effective or a cure exists.**
+
+**Sparse Blossom/PyMatching is a quantum error-correction decoder, not a medical search algorithm.** The molecular graph-transformer named GROVER is unrelated to Grover's quantum algorithm. Seven verified, optional open-source software candidates (PyMatching, Stim, DeepChem, Boltz-2, scispaCy, medspaCy, Presidio) were added to the public registry as `optional_not_installed`, bringing the catalog to **122** entries, with zero new patient-data routes or unreviewed model installations. Mathematical tests and [implementation/validation notes](docs/integrations/qrce-grover-molecular-roadmap-20261123.md) accompany the code.
+
 ### Public research API deployment, independent verification and monitoring
 
 - **HTTPS research runtime:** [https://tmrds-public-evidence-api.onrender.com/](https://tmrds-public-evidence-api.onrender.com/) — Docker `api.public_gateway`, read-only public methods, no PHI upload; Render free plan, Ohio region, auto-deploys from `main`.
@@ -74,7 +80,7 @@ audit and reproducible gates](docs/integrations/qrce-crosscheck-openmi-patents-2
 ## New: open-source medical project integration registry
 
 The [public evidence atlas](https://atphobia22.github.io/TMRDS/) now includes a
-**115-resource, category-filterable medical software and research catalog** with official
+**122-resource, category-filterable medical software and research catalog** with official
 repository/documentation links and explicit integration/licensing states.
 It covers EHRs (OpenEMR, OpenMRS, Bahmni, GNU Health), imaging (Orthanc,
 OHIF, Cornerstone3D, Weasis, 3D Slicer), interoperability (HAPI FHIR,
