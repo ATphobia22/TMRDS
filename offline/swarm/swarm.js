@@ -69,7 +69,7 @@ function renderResult(msg) {
   root.append(item("p","Receipt SHA-256 of synthetic result: " + msg.receipt_sha256, "receipt"));
   for (const event of msg.events) {
     if (event.channel !== "tmrds.offline.node.v1" || !nodes.has(event.node) ||
-        event.data_class !== "synthetic_nonidentifying") continue;
+        !["synthetic_nonidentifying", "public_citation_metadata"].includes(event.data_class)) continue;
     bus.dispatchEvent(new CustomEvent("tmrds:node", {detail:event}));
   }
 }
@@ -124,4 +124,53 @@ $("run").addEventListener("click", async () => {
     $("run").disabled = false;
   }
 });
+/* Public citation-only cache search: fixed localhost endpoint, zero external
+ * requests, no HTML interpretation, and no patient or full-text upload.
+ */
+if (nodeName === "evidence") {
+  const form = $("evidenceSearchForm");
+  const button = $("evidenceSearchBtn");
+  const status = $("evidenceSearchStatus");
+  const root = $("evidenceSearchResults");
+  if (form && button && status && root) {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const term = $("evidenceSearchTerm").value.trim();
+      if (term.length < 2 || term.length > 80 || term.includes("@") ||
+          term.includes("/") || term.includes("\\\\") || term.includes("..")) {
+        status.textContent = "Enter only a public biomedical topic or source identifier; no patient data.";
+        return;
+      }
+      button.disabled = true;
+      status.textContent = "Searching verified local citation pack without Internet…";
+      root.replaceChildren();
+      try {
+        const result = await getLocalJson("/api/local/evidence-search", {
+          method: "POST",
+          headers: {"Content-Type": "application/json", "X-TMRDS-Local-Only": "public-citation-query"},
+          body: JSON.stringify({term}),
+        });
+        if (result.search_executed_online !== false || !Array.isArray(result.matches) ||
+            !Number.isInteger(result.match_count)) throw new Error("Unexpected local evidence contract");
+        status.textContent = "Local source: " + result.status +
+          (result.freshness ? " · " + result.freshness : "") +
+          " · " + result.match_count + " citation matches (not independent clinical confirmation).";
+        for (const record of result.matches.slice(0, 20)) {
+          const card = document.createElement("article");
+          card.className = "node-card";
+          card.append(item("h3", String(record.title || "Untitled public citation").slice(0, 350)));
+          card.append(item("p", String(record.source || "source") + " · " +
+            String(record.pmid || record.doi || record.pmcid || record.nct_id || record.stable_id || "no public identifier")));
+          root.append(card);
+        }
+        if (!result.matches.length) root.append(item("p", "No records in this limited local cache. This does not mean no research exists."));
+      } catch (_) {
+        status.textContent = "Verified offline citation lookup unavailable; no scientific result inferred.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+}
+
 void boot();
