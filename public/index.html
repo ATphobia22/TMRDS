@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#071d32">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://www.ebi.ac.uk https://clinicaltrials.gov; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://www.ebi.ac.uk https://clinicaltrials.gov https://api.crossref.org https://api.fda.gov; img-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests">
   <meta name="description" content="TMRDS open biomedical evidence atlas: live public literature and trial lookup with source provenance and human review boundaries.">
   <title>TMRDS | Open Evidence Atlas</title>
   <link rel="stylesheet" href="./site.css">
@@ -15,7 +15,7 @@
   <header class="masthead">
     <div class="wrap mast-inner">
       <a class="brand" href="./" aria-label="TMRDS Home"><span class="brand-icon">T</span><span>TMRDS <small>OPEN EVIDENCE ATLAS</small></span></a>
-      <nav class="top-nav" aria-label="Site navigation"><a href="#research">Research</a><a href="#cube">Six evidence planes</a><a href="#sources">Sources</a><a href="#medical-projects">Medical software</a><a href="https://github.com/ATphobia22/TMRDS" target="_blank" rel="noopener noreferrer">Source code ↗</a></nav>
+      <nav class="top-nav" aria-label="Site navigation"><a href="#research">Research</a><a href="#cube">Six evidence planes</a><a href="#sources">Sources</a><a href="#source-portals">More databases</a><a href="#medical-projects">Medical software</a><a href="https://github.com/ATphobia22/TMRDS" target="_blank" rel="noopener noreferrer">Source code ↗</a></nav>
     </div>
   </header>
   <main class="wrap">
@@ -35,26 +35,35 @@
       </div>
     </section>
     <section id="research" class="search-panel" aria-labelledby="research-title">
-      <div class="section-heading"><div><span class="eyebrow">01 / PUBLIC EVIDENCE SEARCH</span><h2 id="research-title">Search authoritative records</h2><p>Direct lookups use Europe PMC and ClinicalTrials.gov. A same-origin deployed research backend can additionally display governed disease-to-target-to-compound evidence; it is not hosted by GitHub Pages.</p></div><span class="live-pill"><span class="pulse"></span> PUBLIC SOURCES</span></div>
+      <div class="section-heading"><div><span class="eyebrow">01 / PUBLIC EVIDENCE SEARCH</span><h2 id="research-title">Search authoritative records</h2><p>Direct lookups use Europe PMC, ClinicalTrials.gov, and Crossref DOI metadata. FDA Orange Book has a separate ingredient-only search. A same-origin deployed research backend can additionally display governed disease-to-target-to-compound evidence; it is not hosted by GitHub Pages.</p></div><span class="live-pill"><span class="pulse"></span> PUBLIC SOURCES</span></div>
       <form id="searchForm" class="search-form">
         <label for="query">Disease, molecule, gene, or research topic <small>(not a patient's history)</small></label>
-        <div class="search-control"><input id="query" name="query" type="search" maxlength="120" required value="amyotrophic lateral sclerosis" autocomplete="off" spellcheck="false" aria-describedby="searchHelp"><button type="submit" id="searchBtn">Search sources</button></div>
-        <p id="searchHelp" class="input-note">Sample topic only; no account, tracking, patient-record ingestion, or personal medical profile. Your query is sent to the two named public services; if configured, also to the separately deployed TMRDS research API.</p>
+        <div class="search-control"><input id="query" name="query" type="search" maxlength="100" required value="amyotrophic lateral sclerosis" autocomplete="off" spellcheck="false" aria-describedby="searchHelp"><button type="submit" id="searchBtn">Search sources</button></div>
+        <p id="searchHelp" class="input-note">Sample topic only; no account, tracking, patient-record ingestion, or personal medical profile. Your query is sent to three named public services; if configured, also to the separately deployed TMRDS research API.</p>
       </form>
       <div class="source-statuses" aria-label="Upstream source checks">
         <div><span class="status-mark" id="literatureDot"></span><strong>Europe PMC</strong><span id="literatureStatus" aria-live="polite">Not queried</span></div>
         <div><span class="status-mark" id="trialDot"></span><strong>ClinicalTrials.gov</strong><span id="trialStatus" aria-live="polite">Not queried</span></div>
+        <div><span class="status-mark" id="crossrefDot"></span><strong>Crossref DOI metadata</strong><span id="crossrefStatus" aria-live="polite">Not queried</span></div>
       </div>
       <p class="fetch-meta" id="fetchMeta" aria-live="polite">Search to load timestamped source records. A separately deployed backend is used only when explicitly configured and available.</p>
       <div class="results-grid">
         <section class="result-column" aria-labelledby="litTitle"><div class="result-head"><h3 id="litTitle">Literature</h3><span id="litCount">—</span></div><div id="literature" class="results-list"><p class="empty">No request made.</p></div></section>
         <section class="result-column" aria-labelledby="trialTitle"><div class="result-head"><h3 id="trialTitle">Registered studies</h3><span id="trialCount">—</span></div><div id="trials" class="results-list"><p class="empty">No request made.</p></div></section>
+        <section class="result-column" aria-labelledby="crossrefTitle"><div class="result-head"><h3 id="crossrefTitle">DOI metadata</h3><span id="crossrefCount">—</span></div><div id="crossrefResults" class="results-list"><p class="empty">No request made.</p></div></section>
       </div>
       <section class="pathway-panel" aria-labelledby="pathwayTitle">
         <div class="pathway-head"><div><span class="eyebrow">GOVERNED BACKEND</span><h3 id="pathwayTitle">Disease → target → compound</h3></div><span id="backendState" aria-live="polite">Checking backend configuration…</span></div>
         <p>When the separately hosted research API is connected, results use exact disease, Ensembl target and ChEMBL compound identifiers from source-reported mechanisms. Unavailable, ambiguous, stale and license-review states stay visible.</p>
         <div id="pathwayRecords" class="pathway-records" aria-live="polite"><p class="empty">Research API not queried.</p></div>
         <p id="pathwayFootnote" class="method-note">No inferred efficacy, diagnostic status, cure claim or clinical recommendation. Platform associations may include third-party data with separate licenses.</p>
+      </section>
+      <section class="pathway-panel" id="crosscheck-panel" aria-labelledby="crosscheckTitle">
+        <div class="pathway-head"><div><span class="eyebrow">QUANTUM RUBIK'S EVIDENCE PLANES · HUMAN AUTHORITY FINAL</span><h3 id="crosscheckTitle">Cross-check original source identifiers</h3></div>
+          <span id="crosscheckState" aria-live="polite">Independent backend not configured on static Pages</span></div>
+        <p>The separate research gateway can cross-check **12** bounded public metadata providers using exact DOI, PMID, and NCT identifiers. Repeated indexing of one paper is not independent confirmation. OpenMI-inspired model exchange transmits source counts, never patient records. The cube does not assert cure scores or quantum hardware execution.</p>
+        <div id="crosscheckRecords" class="pathway-records" aria-live="polite"><p class="empty">Submit a research topic to check available sources.</p></div>
+        <p id="crosscheckFootnote" class="method-note">No backend = no cross-source results. Query the official databases directly using the research portal shortcuts below.</p>
       </section>
       <p class="method-note">Records are discovery results, not independently appraised evidence. Trial registration is not proof of efficacy; a literature match is not proof of peer review. The locally calculated SHA-256 fingerprint identifies normalized display fields only and does not certify authenticity or clinical validity.</p>
     </section>
@@ -99,13 +108,30 @@
             <a href="https://alphafold.ebi.ac.uk/" target="_blank" rel="noopener noreferrer">AlphaFold Database official site</a>
           </div>
         </div>
+        <section id="patent-explorer" class="research-extensions" aria-labelledby="patentTitle">
+          <h3 id="patentTitle">FDA Orange Book patent and exclusivity research</h3>
+          <p>Search one public drug ingredient in FDA's live Orange Book API. Displayed patent numbers, dates, pediatric markers and exclusivities are **FDA-reported records**, not verified patent legal status or permission to make, sell or prescribe anything. No patent can be labeled free-to-use from its date alone.</p>
+          <form id="patentForm" class="structure-form">
+            <label for="ingredient">Active ingredient (no patient data)</label>
+            <div><input id="ingredient" name="ingredient" type="search" minlength="2" maxlength="56" value="metformin" required autocomplete="off"><button type="submit" id="patentSubmit">Check FDA source</button></div>
+          </form>
+          <div id="patentState" role="status" aria-live="polite">No FDA lookup made.</div>
+          <div id="patentRecords" class="extension-results" aria-live="polite"><p class="empty">FDA metadata appears here only after an official API response.</p></div>
+          <p class="method-note">Cross-check legal claims with <a href="https://www.uspto.gov/patents/maintain" target="_blank" rel="noopener noreferrer">USPTO maintenance and status</a>,
+            <a href="https://www.fda.gov/drugs/drug-approvals-and-databases/orange-book-data-files" target="_blank" rel="noopener noreferrer">FDA Orange Book definitions</a>, and qualified patent counsel. Patent expiry, exclusivity, and freedom to operate are different questions.</p>
+        </section>
         <p class="method-note">AlphaFold 3 local inference remains unconfigured: code is Apache-2.0, while its weights and outputs have separate restrictions. This public site never downloads AF3 weights or submits molecular calculations.</p>
       </section>
     </section>
     <section id="sources" class="sources-section" aria-labelledby="sources-title">
       <div class="section-heading"><div><span class="eyebrow">03 / SOURCE AND COMPUTE REGISTRY</span><h2 id="sources-title">Know the difference between connected and referenced</h2></div></div>
+      <section id="source-portals" aria-labelledby="portalTitle" class="research-extensions">
+        <h3 id="portalTitle">More public biomedical search portals</h3>
+        <p>Open an independent source search for your current research topic. These hand-offs are user-initiated links, not hidden API integrations. Check provenance, study design, release dates and rights at each destination.</p>
+        <div id="portalList" class="medical-grid"><p class="empty">Loading official search destinations…</p></div>
+      </section>
       <div class="registry-grid">
-        <div class="registry-item"><strong>Live in this public page</strong><p>Europe PMC literature search and NIH ClinicalTrials.gov v2. Each fetch reports success or failure independently. The governed API is only connected in a separate same-origin backend deployment.</p><div class="registry-links"><a href="https://www.ebi.ac.uk/europepmc/webservices/rest/" target="_blank" rel="noopener noreferrer">Europe PMC API</a><a href="https://clinicaltrials.gov/data-api/api" target="_blank" rel="noopener noreferrer">Trials API</a></div></div>
+        <div class="registry-item"><strong>Live in this public page</strong><p>Europe PMC, NIH ClinicalTrials.gov v2, Crossref DOI metadata and on-demand FDA Orange Book lookups. Each fetch reports success or failure independently. The governed API is only connected in a separate same-origin backend deployment.</p><div class="registry-links"><a href="https://www.ebi.ac.uk/europepmc/webservices/rest/" target="_blank" rel="noopener noreferrer">Europe PMC API</a><a href="https://clinicaltrials.gov/data-api/api" target="_blank" rel="noopener noreferrer">Trials API</a></div></div>
         <div class="registry-item"><strong>Repository-backed research adapters</strong><p>PubMed, openFDA, UniProt, Ensembl, RCSB, ChEMBL, Open Targets, gnomAD, GTEx and other adapters are part of the separate Python backend. The governed Docker deployment can expose a bounded evidence pathway, source policies and reference contracts; GitHub Pages does not host those routes.</p><div class="registry-links"><a href="https://github.com/ATphobia22/TMRDS/blob/main/engines/federated_evidence_search.py" target="_blank" rel="noopener noreferrer">Inspect implementation</a><a href="https://github.com/ATphobia22/TMRDS/blob/main/engines/research_source_catalog.json" target="_blank" rel="noopener noreferrer">Inspect source catalog</a></div></div>
         <div class="registry-item"><strong>Quantum computation</strong><p>Simulators and optional IBM Quantum execution have separate authorization, job-ledger and validation boundaries. The animated cube is a visual search indicator only; no quantum experiment runs when searching or opening this page.</p><div class="registry-links"><a href="https://github.com/ATphobia22/TMRDS/blob/main/docs/integrations/ibm-quantum-compute.md" target="_blank" rel="noopener noreferrer">Compute controls</a></div></div>
       </div>
