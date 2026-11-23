@@ -282,7 +282,7 @@ def _lab_json(path: Path) -> dict[str, Any]:
 def _csv(path: Path, delimiter: str) -> dict[str, Any]:
     n = measured = units = 0
     try:
-        with path.open("r", encoding="utf8-sig", newline="") as f:
+        with path.open("r", encoding="utf-8-sig", newline="") as f:
             reader = csv.DictReader(f, delimiter=delimiter, strict=True)
             if not reader.fieldnames or len(reader.fieldnames) > 100:
                 raise OfflineWorkstationError("Invalid CSV/TSV columns")
