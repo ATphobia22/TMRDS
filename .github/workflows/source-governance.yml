@@ -89,7 +89,7 @@ jobs:
           curl -fsS http://127.0.0.1:18080/api/v1/research/source-governance | grep -F '"clinical_promotion_allowed":false'
 
   live-source-receipt:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
