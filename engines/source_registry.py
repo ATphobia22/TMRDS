@@ -66,6 +66,7 @@ class IdentifierType(str, Enum):
     ENSEMBL_VARIANT = "ENSEMBL_VARIANT"
     CLINVAR_VCID = "CLINVAR_VCID"
     GNOMAD_VARIANT = "GNOMAD_VARIANT"
+    GWAS_ASSOCIATION = "GWAS_ASSOCIATION"
     GTEX_EGENE = "GTEX_EGENE"
     UNIPROT = "UNIPROT"
     AFDB_ID = "AFDB_ID"
@@ -194,6 +195,24 @@ def build_default_registry() -> Dict[str, SourceDefinition]:
         docs_url="https://www.uniprot.org/help/api_queries",
         evidence_class="derived",
         notes="Protein annotations are not therapeutic effectiveness evidence; source release is recorded when returned.",
+    ))
+
+    add(SourceDefinition(
+        key="gwas_catalog_v2",
+        display_name="NHGRI–EBI GWAS Catalog v2",
+        api_endpoint="https://www.ebi.ac.uk/gwas/rest/api/v2/associations",
+        permitted_use=PermittedUse.GENOMIC_ANNOTATION,
+        license_class=LicenseClass.MIXED,
+        identifier_types=[IdentifierType.GWAS_ASSOCIATION, IdentifierType.PMID],
+        query_params={"efo_trait": "string", "size": 25, "page": 0, "show_child_traits": "false"},
+        update_cadence=UpdateCadence.ON_DEMAND,
+        attribution="NHGRI–EBI GWAS Catalog; cite original study and current GWAS terms.",
+        retention_policy="Research metadata and association identifiers only; no automatic full-summary-statistics crawl or clinical interpretation.",
+        adapter_owner="engines/gwas_catalog_v2_pipeline.py",
+        docs_url="https://www.ebi.ac.uk/gwas/docs/programmatic-access/rest-api/",
+        rate_limit="Provider cap 100 requests/minute AND 15 requests/second per IP; one bounded page per search",
+        evidence_class="derived",
+        notes="Association is not causality; effect, ancestry, population applicability and clinical interpretation require independent review.",
     ))
 
     # 1. PubMed
