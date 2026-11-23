@@ -16,7 +16,7 @@ def test_public_gateway_has_only_read_only_research_routes_and_static_site():
         "/api/v1/research/evidence-pathway",
         "/api/v1/research/reference-pathway-contract",
     }
-    assert expected <= paths.keys()
+    assert expected <= paths.keys(), sorted(paths.keys())
     assert not any("/api/v1/medical" in path or "/api/v1/evidence/ingest" in path for path in paths)
     assert not any("/api/v1/ops" in path for path in paths)
     for path in expected:
