@@ -332,6 +332,165 @@ async function loadGovernedPathway(query, seq) {
   }
 }
 
+
+/* Auditable project index is published as a static JSON asset on GitHub Pages.
+ * Project discovery does not mean its software is installed or connected.
+ */
+let medicalProjects = [];
+function medicalSafeLink(link) {
+  try {
+    const url = new URL(String(link));
+    return url.protocol === "https:" && !url.username && !url.password && !url.port &&
+      url.hostname.length > 3 && !/^(localhost|127\\.|10\\.|192\\.168\\.)/.test(url.hostname);
+  } catch (_) { return false; }
+}
+function drawMedicalProjects() {
+  const category = $("medicalCategory").value;
+  const chosen = medicalProjects.filter((project) => category === "all" || project.category === category);
+  const root = $("medicalList");
+  root.replaceChildren();
+  for (const project of chosen) {
+    const item = node("article", "medical-entry");
+    item.append(node("span", "medical-type", project.category.replaceAll("_", " ")),
+      node("strong", "", project.name),
+      node("span", "medical-state", "Connection: " + project.integration_state.replaceAll("_", " ")),
+      node("p", "", project.interface),
+      node("p", "", project.license_notes),
+      node("p", "", "Source review: " + project.verification.replaceAll("_", " ")));
+    if (medicalSafeLink(project.source_url)) {
+      const anchor = node("a", "", "Official project or documentation");
+      anchor.href = project.source_url; anchor.target = "_blank"; anchor.rel = "noopener noreferrer";
+      item.append(anchor);
+    }
+    root.append(item);
+  }
+  $("medicalCount").textContent = chosen.length + " of " + medicalProjects.length + " cataloged projects";
+  if (!chosen.length) root.append(node("p", "empty", "No projects in this category."));
+}
+async function loadMedicalProjectCatalog() {
+  try {
+    const outcome = await getJson("./medical-projects.json", 9000);
+    const json = outcome.data;
+    if (!json || json.schema_version !== "1.0" || !Array.isArray(json.projects) ||
+        json.projects.length < 10 || json.all_platforms_installed !== false) {
+      throw new Error("unrecognized project catalog schema");
+    }
+    medicalProjects = json.projects.filter((item) =>
+      typeof item.name === "string" && typeof item.category === "string" &&
+      typeof item.integration_state === "string" && typeof item.source_url === "string");
+    const categories = [...new Set(medicalProjects.map((p) => p.category))].sort();
+    $("medicalCategory").append(...categories.map((category) => {
+      const option = node("option", "", category.replaceAll("_", " "));
+      option.value = category;
+      return option;
+    }));
+    drawMedicalProjects();
+    $("medicalRegistryStatus").textContent =
+      "Official project/repository references last inventoried " + String(json.reviewed_on) +
+      ". License approvals and runtime health are NOT automatically verified. No patient data or clinical connectors enabled.";
+  } catch (_) {
+    $("medicalList").replaceChildren(node("p", "empty", "Project catalog unavailable; no project status can be inferred."));
+    $("medicalCount").textContent = "Catalog unavailable";
+  }
+}
+$("medicalCategory").addEventListener("change", drawMedicalProjects);
+void loadMedicalProjectCatalog();
+
+async function loadBackendPubMed(query, seq) {
+  if (!(await backendConfiguration) || seq !== requestSequence) {
+    $("pubmedBackendState").textContent = "Python backend not configured on this site. PubMed official search remains available by link.";
+    return null;
+  }
+  const container = $("pubmedBackendRecords");
+  container.replaceChildren(node("p", "empty", "Querying NCBI PubMed citations…"));
+  $("pubmedBackendState").textContent = "Bounded live PubMed metadata lookup…";
+  try {
+    const outcome = await getJson("/api/v1/research/pubmed-citations?limit=5&query=" +
+      encodeURIComponent(query), 24000);
+    if (seq !== requestSequence) return null;
+    const data = outcome.data;
+    if (!data || !Array.isArray(data.records) || !["responding", "source_unavailable"].includes(data.status)) {
+      throw new Error("invalid PubMed citation contract");
+    }
+    container.replaceChildren();
+    if (data.status !== "responding") {
+      container.append(node("p", "empty", "NCBI service unavailable; no negative findings inferred."));
+    } else {
+      for (const record of data.records) {
+        if (!validPmId(record.pmid)) continue;
+        const item = node("article", "result");
+        const link = node("a", "", textLimited(record.title, 350));
+        link.href = "https://pubmed.ncbi.nlm.nih.gov/" + record.pmid + "/";
+        link.target = "_blank"; link.rel = "noopener noreferrer";
+        item.append(link,
+          node("p", "identifier", "PMID " + record.pmid + " · " + textLimited(record.published, 40)),
+          node("p", "", textLimited(record.journal, 150)));
+        container.append(item);
+      }
+      if (!container.children.length) container.append(node("p", "empty", "No bounded citation matches returned."));
+    }
+    $("pubmedBackendState").textContent = "PubMed source: " + data.status + " · checked " + outcome.retrievedAt;
+    return data.status;
+  } catch (_) {
+    if (seq === requestSequence) {
+      container.replaceChildren(node("p", "empty", "PubMed backend request failed or exceeded bounds."));
+      $("pubmedBackendState").textContent = "Backend unavailable; no research result inferred.";
+    }
+    return null;
+  }
+}
+$("structureForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const accession = $("uniprotAccession").value.trim().toUpperCase();
+  const target = $("structureBackendRecords");
+  if (!/^[A-Z0-9]{6,10}$/.test(accession)) {
+    $("structureBackendState").textContent = "Use a public UniProt identifier of 6-10 alphanumeric characters.";
+    return;
+  }
+  if (!(await backendConfiguration)) {
+    target.replaceChildren(node("p", "empty", "The static website does not execute structure APIs."));
+    $("structureBackendState").textContent = "Backend not deployed on this site. Visit the official AlphaFold DB.";
+    return;
+  }
+  const submit = $("structureSubmit");
+  submit.disabled = true;
+  target.replaceChildren(node("p", "empty", "Checking AlphaFold DB official record…"));
+  try {
+    const response = await getJson("/api/v1/research/alphafold-db/" + encodeURIComponent(accession), 22000);
+    const data = response.data;
+    if (!data || typeof data.status !== "string" || !Array.isArray(data.records)) {
+      throw new Error("invalid structure response");
+    }
+    target.replaceChildren();
+    if (data.status === "predicted_structure_metadata" && data.records.length) {
+      const rec = data.records[0];
+      const article = node("article", "result");
+      article.append(node("p", "identifier", "UniProt " + accession + " · predicted, not experimentally verified"),
+        node("p", "", "Gene: " + textLimited(rec.gene, 80) +
+          " · Mean pLDDT: " + (typeof rec.mean_plddt === "number" ? rec.mean_plddt : "not reported")),
+        node("p", "", "Model version: " + textLimited(rec.model_version, 50) +
+          " · Normalized evidence SHA-256: " + textLimited(data.record_sha256, 80)));
+      if (medicalSafeLink(rec.cif_url) && new URL(rec.cif_url).hostname === "alphafold.ebi.ac.uk") {
+        const link = node("a", "", "View original predicted mmCIF structure");
+        link.href = rec.cif_url; link.target = "_blank"; link.rel = "noopener noreferrer";
+        article.append(link);
+      }
+      target.append(article);
+    } else {
+      target.append(node("p", "empty", data.status === "not_found" ?
+        "No source structure exists for this accession." :
+        "AlphaFold DB unavailable/invalid; no predicted structure fabricated."));
+    }
+    $("structureBackendState").textContent = "AlphaFold DB: " + data.status + " · " + response.retrievedAt +
+      " · This is NOT AlphaFold 3 inference.";
+  } catch (_) {
+    target.replaceChildren(node("p", "empty", "Structure lookup unavailable; do not infer a structure."));
+    $("structureBackendState").textContent = "Source or backend unavailable";
+  } finally {
+    submit.disabled = false;
+  }
+});
+
 FORM.addEventListener("submit", async (event) => {
   event.preventDefault();
   const query = $("query").value.trim();
@@ -348,7 +507,7 @@ FORM.addEventListener("submit", async (event) => {
   clearResults("trials", "Fetching source…");
   $("fetchMeta").textContent = "Querying two public services independently. Failure of one does not suppress the other.";
   try {
-    const results = await Promise.allSettled([loadLiterature(query, seq), loadTrials(query, seq), loadGovernedPathway(query, seq)]);
+    const results = await Promise.allSettled([loadLiterature(query, seq), loadTrials(query, seq), loadGovernedPathway(query, seq), loadBackendPubMed(query, seq)]);
     if (seq !== requestSequence) return;
     const successes = results.slice(0, 2).filter((x) => x.status === "fulfilled" && x.value).length;
     $("fetchMeta").textContent = "Search completed " + new Date().toISOString() +
