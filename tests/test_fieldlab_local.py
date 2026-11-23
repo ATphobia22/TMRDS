@@ -156,3 +156,24 @@ def test_readers_bound_records_bytes_and_cannot_make_medical_claims(tmp_path):
     assert caps["libraries"]["Biopython"]["loaded"] is True
     assert caps["libraries"]["pydicom"]["loaded"] is True
     assert caps["libraries"]["nibabel"]["loaded"] is True
+
+
+def test_nonimage_dicom_does_not_fabricate_one_pixel_per_axis(tmp_path):
+    from pydicom.dataset import FileDataset, FileMetaDataset
+    from pydicom.uid import ExplicitVRLittleEndian, SecondaryCaptureImageStorage, generate_uid
+    meta = FileMetaDataset()
+    meta.MediaStorageSOPClassUID = SecondaryCaptureImageStorage
+    meta.MediaStorageSOPInstanceUID = generate_uid()
+    meta.TransferSyntaxUID = ExplicitVRLittleEndian
+    meta.ImplementationClassUID = generate_uid()
+    ds = FileDataset(str(tmp_path / "nonimage.dcm"), {}, file_meta=meta, preamble=b"\x00" * 128)
+    ds.Modality = "SR"
+    ds.PatientID = "RESTRICTED-LOCAL-ID"
+    ds.save_as(tmp_path / "nonimage.dcm", enforce_file_format=True)
+    report = inspect_local_file(tmp_path / "nonimage.dcm", private_local=True)
+    assert report["image_modality"] == "SR"
+    assert report["rows"] is None and report["columns"] is None
+    assert report["frames"] is None
+    assert report["samples_per_pixel"] is None
+    assert report["pixel_summary_computed"] is False
+    assert "RESTRICTED-LOCAL-ID" not in json.dumps(report)
