@@ -336,7 +336,9 @@ async function loadGovernedPathway(query, seq) {
 /* Additional direct public records; no backend or clinical data needed. */
 function crossrefRecord(work) {
   const doi = String(work && work.DOI || "").trim();
-  if (!/^10\\.[0-9]{4,9}\\/[^\\s]{1,180}$/i.test(doi)) return null;
+  const validDoi = doi.startsWith("10.") && doi.includes("/") && doi.length <= 200 &&
+    !Array.from(doi).some((character) => character.charCodeAt(0) <= 32);
+  if (!validDoi) return null;
   const parts = work.published && Array.isArray(work.published["date-parts"]) ?
     work.published["date-parts"][0] : [];
   return {
@@ -676,7 +678,10 @@ $("structureForm").addEventListener("submit", async (event) => {
 FORM.addEventListener("submit", async (event) => {
   event.preventDefault();
   const query = $("query").value.trim();
-  if (query.length < 2 || query.length > 100 || /\\b\\d{3}-\\d{2}-\\d{4}\\b|[\\w.+-]+@[\\w.-]+\\.[a-zA-Z]{2,}/.test(query)) {
+  const pieces = query.split("-");
+  const isSSN = pieces.length === 3 && pieces[0].length === 3 && pieces[1].length === 2 &&
+    pieces[2].length === 4 && pieces.every((part) => Array.from(part).every((c) => c >= "0" && c <= "9"));
+  if (query.length < 2 || query.length > 100 || query.includes("@") || isSSN) {
     $("fetchMeta").textContent = "Enter a non-personal research topic between 2 and 100 characters.";
     return;
   }
