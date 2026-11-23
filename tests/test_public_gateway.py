@@ -64,3 +64,36 @@ def test_source_inventory_discloses_unreviewed_licenses():
     assert data["source_policies"]["chembl"]["policy"]["bulk_redistribution_allowed"] is False
     assert data["source_policies"]["monarch"]["policy"]["review_state"] == "unregistered"
     assert data["clinical_promotion_allowed"] is False
+
+
+def test_public_dossier_blocks_unreviewed_source_adapters_and_abstract_redistribution(monkeypatch):
+    from engines.federated_evidence_search import SourceResult
+
+    called = []
+
+    async def isolated_guard(self, source, coro):
+        coro.close()
+        called.append(source)
+        if source == "europe_pmc":
+            return SourceResult(source=source, ok=True, count=1, envelopes=[{
+                "stable_id": "europe_pmc:test", "source": "europe_pmc",
+                "title": "Nonclinical source reference", "doi": "10.5555/demo",
+                "abstract": "Publisher-restricted abstract must not leave this gateway",
+                "record_hash": "a" * 64, "retrieved_at": "2026-11-23T05:50:00+00:00",
+            }])
+        return SourceResult(source=source, ok=True, count=0, envelopes=[])
+
+    monkeypatch.setattr(
+        "api.public_gateway.FederatedEvidenceSearch._guard", isolated_guard
+    )
+    client = TestClient(app)
+    response = client.get("/api/v1/research/dossier", params={"query": "cystic fibrosis"})
+    assert response.status_code == 200
+    data = response.json()
+    assert set(called) == {
+        "opentargets", "chembl", "europe_pmc", "pubmed",
+        "clinicaltrials_gov", "openfda", "dailymed", "gwas_catalog_v2",
+    }
+    assert data["source_status"]["monarch"]["governance"] == "license_review_required_not_queried"
+    assert data["items"][0]["source_records"][0].get("abstract") is None
+    assert data["clinical_promotion_allowed"] is False
