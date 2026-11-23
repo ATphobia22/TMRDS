@@ -30,6 +30,17 @@
       <div class="cube-showcase" aria-label="Interactive rotating three-dimensional Rubik's Cube for six evidence planes">
         <div class="cube-scene"><div id="rubiksCube" class="rubiks-cube" role="img" aria-label="Three-dimensional Rubik's Cube; faces twist while research sources are searched"></div></div>
         <button type="button" id="cubeMoveBtn" class="cube-move">Rotate a layer</button>
+        <div class="cube-solver-form">
+          <label for="cubePlanScenario">Research review objective (no patient information)</label>
+          <select id="cubePlanScenario" aria-describedby="cubePlannerNote">
+            <option value="triangulation">Disease, target, trials (up to four planes)</option>
+            <option value="chemistry">Target, structure, molecule (up to four planes)</option>
+            <option value="full">All six evidence planes</option>
+          </select>
+          <button type="button" id="cubeSolveBtn" class="cube-move">Simulate Grover search</button>
+        </div>
+        <p id="cubePlannerNote" class="cube-activity">Six-bit mathematical evidence-coverage demonstration. Probability is not treatment success; no patient data, drug inference or quantum hardware.</p>
+        <p id="cubeSolverOutput" class="cube-activity" aria-live="polite">Select an abstract review objective to run the simulator on the connected backend.</p>
         <p id="cubeActivity" class="cube-activity" aria-live="polite">Cube rotates continuously. Select a face turn or search to start a sequence.</p>
         <div class="cube-key">6 EVIDENCE PLANES <span>ANIMATION IS A SEARCH INDICATOR · NOT QUANTUM COMPUTATION</span></div>
       </div>
