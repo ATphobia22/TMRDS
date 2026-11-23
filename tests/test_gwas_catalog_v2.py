@@ -123,3 +123,39 @@ def test_multiple_gwas_associations_from_one_publication_remain_distinct():
     assert entries[0]["pmid"] == entries[1]["pmid"] == "39024449"
     assert entries[0]["stable_id"] != entries[1]["stable_id"]
     assert len(FederatedEvidenceSearch._dedupe(entries)) == 2
+
+@pytest.mark.asyncio
+async def test_gwas_public_route_exposes_research_only_source_status(monkeypatch):
+    from fastapi.testclient import TestClient
+    from api.main import app
+    async def one_record(_self, query, n):
+        assert query == "asthma" and n == 2
+        return [GWASCatalogV2Pipeline.normalize(ASSOCIATION, query, has_more=False)]
+    monkeypatch.setattr(GWASCatalogV2Pipeline, "search_trait", one_record)
+    with TestClient(app) as client:
+        response = client.get("/api/v1/research/gwas-associations", params={"trait": "asthma", "limit": 2})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["source"] == "gwas_catalog_v2"
+    assert body["source_status"]["ok"] is True
+    assert body["source_status"]["count"] == 1
+    assert body["envelopes"][0]["association_id"] == 228393513
+    assert body["envelopes"][0]["is_authoritative"] is False
+    assert body["governance"]["research_advisory_only"] is True
+    assert body["governance"]["human_authority_final"] is True
+
+@pytest.mark.asyncio
+async def test_gwas_public_route_exposes_failure_without_sensitive_text(monkeypatch):
+    from fastapi.testclient import TestClient
+    from api.main import app
+    async def failure(_self, query, n):
+        raise RuntimeError("sensitive-upstream-debug-token")
+    monkeypatch.setattr(GWASCatalogV2Pipeline, "search_trait", failure)
+    with TestClient(app) as client:
+        response = client.get("/api/v1/research/gwas-associations", params={"trait": "asthma", "limit": 2})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["source_status"]["ok"] is False
+    assert body["source_status"]["count"] == 0
+    assert body["envelopes"] == []
+    assert "sensitive-upstream-debug-token" not in str(body)
