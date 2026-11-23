@@ -111,8 +111,16 @@ def main() -> int:
         "inspected_at": receipt["inspected_at"],
         "provider_states": {k: v["source_state"] for k, v in receipt["providers"].items()},
         "reference_case_status": receipt["reference_case"].get("status"),
+        "reference_technical_consistency": (
+            (receipt["reference_case"].get("reference_contract") or {}).get("technical_consistency", "inconclusive")
+        ),
         "license_approval": False, "clinical_validation": False,
     }, sort_keys=True))
+    # A live source reply that contradicts the reference is a real audit
+    # failure, unlike an explicitly unavailable source (inconclusive).
+    verification = receipt["reference_case"].get("reference_contract") or {}
+    if receipt["reference_case"].get("status") == "links_retrieved" and verification.get("technical_consistency") != "pass":
+        return 1
     return 0
 
 
