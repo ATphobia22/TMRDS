@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "engines/fieldlab_local.py"
+      - "engines/offline_evidence_pack.py"
+      - "scripts/offline_evidence_pack.py"
       - "engines/fieldlab_cube_bridge.py"
       - "scripts/fieldlab_*.py"
       - "scripts/install_fieldlab_windows.ps1"
@@ -16,6 +18,8 @@ on:
     branches: [main]
     paths:
       - "engines/fieldlab_local.py"
+      - "engines/offline_evidence_pack.py"
+      - "scripts/offline_evidence_pack.py"
       - "scripts/fieldlab_*.py"
       - "scripts/install_fieldlab_windows.ps1"
       - "Dockerfile.fieldlab"
@@ -95,8 +99,8 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path fieldlab-release/engines,fieldlab-release/scripts,fieldlab-release/deploy/fieldlab | Out-Null
-          Copy-Item engines/fieldlab_local.py,engines/fieldlab_cube_bridge.py,engines/cube_grover_research.py fieldlab-release/engines/
-          Copy-Item scripts/fieldlab_cli.py,scripts/fieldlab_desktop.py,scripts/fieldlab_wheelhouse.py,scripts/install_fieldlab_windows.ps1 fieldlab-release/scripts/
+          Copy-Item engines/fieldlab_local.py,engines/fieldlab_cube_bridge.py,engines/cube_grover_research.py,engines/offline_evidence_pack.py fieldlab-release/engines/
+          Copy-Item scripts/fieldlab_cli.py,scripts/fieldlab_desktop.py,scripts/fieldlab_wheelhouse.py,scripts/offline_evidence_pack.py,scripts/install_fieldlab_windows.ps1 fieldlab-release/scripts/
           python -m py_compile scripts/fieldlab_cli.py scripts/fieldlab_desktop.py engines/fieldlab_cube_bridge.py
           Copy-Item deploy/fieldlab/requirements.txt fieldlab-release/deploy/fieldlab/
           Copy-Item docs/integrations/fieldlab-offline-workstation-20261123.md fieldlab-release/FIELDLAB-README.md
