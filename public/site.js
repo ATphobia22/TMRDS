@@ -24,9 +24,9 @@ async function sha256(value) {
   const hash = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(hash), (b) => b.toString(16).padStart(2, "0")).join("");
 }
-async function getJson(url) {
+async function getJson(url, timeoutMs = 12000) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
       method: "GET", mode: "cors", credentials: "omit",
@@ -106,15 +106,15 @@ async function showRecords(target, records, seq) {
   }
 }
 function errorLabel(error) {
-  return error && error.name === "AbortError" ? "Timed out (12 s)" :
+  return error && error.name === "AbortError" ? "Upstream timed out" :
     error && /^HTTP \d{3}$/.test(error.message) ? error.message :
     "Unavailable or blocked by network/CORS";
 }
 async function loadLiterature(query, seq) {
   setStatus("literature", "wait", "Checking source…");
   try {
-    const url = "https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&resultType=core&pageSize=6&query=" + encodeURIComponent(query);
-    const out = await getJson(url);
+    const url = "https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&resultType=lite&pageSize=6&query=" + encodeURIComponent(query);
+    const out = await getJson(url, 25000);
     if (seq !== requestSequence) return;
     const entries = (((out.data || {}).resultList || {}).result || []);
     if (!Array.isArray(entries)) throw new Error("Unexpected schema");

@@ -15,6 +15,8 @@ The separate 25-source Python federated engine, its evidence ledger, and optiona
 | Open Targets, RCSB PDB, ChEMBL, ClinVar | Source reference links only | No live connection or clinical proof claimed. |
 | IBM Quantum, Qiskit and internal models | Not executed | No quantum hardware or clinical validation claimed. |
 
+The literature endpoint uses its lite metadata response and a 25-second timeout, while the trials endpoint retains a 12-second timeout. These limits bound browser waiting without turning a timeout into a false empty-result claim.
+
 Every successful response gets a retrieval timestamp, the date supplied by the origin, a stable source identifier, its original URL, and a local SHA-256 digest over normalized display fields. The digest is not an upstream signature or independent authentication. Errors and browser CORS failures are displayed without fake fallback data. No patient-specific advice or clinical grading is performed.
 
 ## Deploy
