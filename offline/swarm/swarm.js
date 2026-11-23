@@ -136,8 +136,9 @@ if (nodeName === "evidence") {
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const term = $("evidenceSearchTerm").value.trim();
+      const validDoi = term.startsWith("10.") && term.indexOf("/") > 3;
       if (term.length < 2 || term.length > 80 || term.includes("@") ||
-          term.includes("/") || term.includes("\\\\") || term.includes("..")) {
+          (term.includes("/") && !validDoi) || term.includes("\\\\") || term.includes("..")) {
         status.textContent = "Enter only a public biomedical topic or source identifier; no patient data.";
         return;
       }
