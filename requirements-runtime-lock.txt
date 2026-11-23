@@ -22,7 +22,7 @@ pycparser==3.12
 pydantic==2.14.4
 pydantic-core==2.50.5
 python-dotenv==1.2.4
-python-multipart==0.0.32
+python-multipart==0.0.34
 pytz==2026.6
 PyYAML==6.0.3
 requests==2.34.2
