@@ -77,7 +77,7 @@ class OfflineSwarmTests(unittest.TestCase):
             build_server(host="localhost", port=0)
         for path in ("/../../etc/passwd", "/api/local/ingest", "/clinical/patient", "/api/local/ehr"):
             self.assertNotIn(path, OfflineSwarmHandler.ALLOWED_GET_PATHS)
-        self.assertEqual(OfflineSwarmHandler.ALLOWED_POST_PATHS, {"/api/local/run"})
+        self.assertEqual(OfflineSwarmHandler.ALLOWED_POST_PATHS, {"/api/local/run", "/api/local/evidence-search"})
 
     def test_offline_html_swarm_has_real_specialist_pages_and_no_external_runtime_scripts(self):
         root = ROOT / "offline" / "swarm"
