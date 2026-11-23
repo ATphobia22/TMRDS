@@ -120,6 +120,17 @@
           <p class="method-note">Cross-check legal claims with <a href="https://www.uspto.gov/patents/maintain" target="_blank" rel="noopener noreferrer">USPTO maintenance and status</a>,
             <a href="https://www.fda.gov/drugs/drug-approvals-and-databases/orange-book-data-files" target="_blank" rel="noopener noreferrer">FDA Orange Book definitions</a>, and qualified patent counsel. Patent expiry, exclusivity, and freedom to operate are different questions.</p>
         </section>
+        <section id="element-reference" class="research-extensions" aria-labelledby="elementTitle">
+          <h3 id="elementTitle">PubChem periodic-table reference</h3>
+          <p>Inspect one chemical element using original NCBI PubChem data: atomic number, element name, source-reported atomic weight, electron configuration, electronegativity and standard state. These are reference properties, not evidence about human exposure, chemical safety, drugs or treatment.</p>
+          <form id="elementForm" class="structure-form">
+            <label for="elementSymbol">Element symbol (capitalization matters)</label>
+            <div><input id="elementSymbol" name="symbol" type="text" minlength="1" maxlength="2" value="Fe" required autocapitalize="off" spellcheck="false"><button type="submit" id="elementSubmit">Lookup element</button></div>
+          </form>
+          <div id="elementState" aria-live="polite">Original-source lookup requires independently hosted backend.</div>
+          <div id="elementRecords" class="extension-results" aria-live="polite"><p class="empty">Lookup original PubChem atomic properties.</p></div>
+          <p class="method-note"><a href="https://pubchem.ncbi.nlm.nih.gov/periodic-table/" target="_blank" rel="noopener noreferrer">Open original PubChem periodic table</a></p>
+        </section>
         <section id="pmc-bridge" class="research-extensions" aria-labelledby="pmcBridgeTitle">
           <h3 id="pmcBridgeTitle">NIH PubMed Central identifier bridge</h3>
           <p>Convert one original PMID, PMCID or DOI through the official NIH PMC ID Converter. A matching article identifier joins bibliographic records only; it is not independent replication, peer-review proof or a license to redistribute full text. This feature runs only on the separately hosted research backend.</p>
