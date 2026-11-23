@@ -1,0 +1,56 @@
+name: TMRDS Offline Specialist Workstation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "offline/swarm/**"
+      - "engines/offline_specialist_swarm.py"
+      - "scripts/run_offline_swarm.py"
+      - "tests/test_offline*"
+      - ".github/workflows/offline-swarm.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "offline/swarm/**"
+      - "engines/offline_specialist_swarm.py"
+      - "scripts/run_offline_swarm.py"
+      - "tests/test_offline*"
+      - ".github/workflows/offline-swarm.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  local-swarm:
+    name: Offline loopback and synthetic policy tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact source revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.11'
+      - name: Verify local source compiles
+        run: python -m compileall -q engines/offline_specialist_swarm.py scripts/run_offline_swarm.py
+      - name: Check standalone browser script
+        run: node --check offline/swarm/swarm.js
+      - name: Run actual loopback HTTP and synthetic orchestration tests
+        run: |
+          python -m unittest discover -s tests -p 'test_offline_specialist_swarm.py' -v
+          python -m unittest discover -s tests -p 'test_offline_swarm_http.py' -v
+      - name: Confirm the HTML portals include no third-party runtime URLs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          pages = list(Path("offline/swarm").glob("*.html"))
+          assert len(pages) >= 9
+          assert all("https://" not in p.read_text() and
+                     "http://" not in p.read_text() for p in pages)
+          print("Verified local-only specialist HTML pages:", len(pages))
+          PY

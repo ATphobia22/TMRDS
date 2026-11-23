@@ -1,0 +1,102 @@
+openapi: 3.1.0
+info:
+  title: TMRDS Offline Synthetic Specialist Coordinator
+  version: 1.0.0
+  description: |
+    Standalone localhost-only research/synthetic demonstration.
+    NOT a patient, EHR, diagnostic or clinical file upload service.
+servers:
+  - url: http://127.0.0.1:8765
+    description: Local default; port may be changed at launch.
+paths:
+  /api/local/health:
+    get:
+      summary: Test local process availability, NOT model or source validity.
+      responses:
+        '200':
+          description: Local process ready.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { const: ready }
+                  mode: { const: loopback_only }
+                  offline: { const: true }
+                  external_sources_verified: { const: false }
+                  clinical_inference_enabled: { const: false }
+  /api/local/capabilities:
+    get:
+      summary: Report available and missing local research capabilities.
+      responses:
+        '200':
+          description: No patient data, model weights or external connectors.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [schema_version, mode, offline, nodes, scenarios, optional_integrations]
+                properties:
+                  schema_version: { const: '1.0' }
+                  mode: { const: loopback_only }
+                  offline: { const: true }
+                  public_patient_upload_enabled: { const: false }
+                  nodes:
+                    type: array
+                    items: { type: string }
+                  scenarios:
+                    type: array
+                    items: { type: string }
+                  optional_integrations:
+                    type: object
+                    additionalProperties: { type: string }
+  /api/local/run:
+    post:
+      summary: Run a built-in nonidentifying synthetic research fixture.
+      description: |
+        No free text, patient identifiers, files, clinical prompts, URLs or external calls.
+        Requires Content-Type application/json and X-TMRDS-Local-Only synthetic-demo.
+      parameters:
+        - in: header
+          name: X-TMRDS-Local-Only
+          required: true
+          schema: { type: string, const: synthetic-demo }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [scenario]
+              properties:
+                scenario:
+                  enum: [synthetic_all, synthetic_lab, synthetic_genomics]
+      responses:
+        '200':
+          description: Deterministic synthetic provenance report and node events.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [schema_version, scenario, nodes, events, receipt_sha256, offline, human_authority_final]
+                properties:
+                  schema_version: { const: '1.0' }
+                  scenario:
+                    enum: [synthetic_all, synthetic_lab, synthetic_genomics]
+                  offline: { const: true }
+                  patient_data_accepted: { const: false }
+                  treatment_recommended: { const: false }
+                  human_authority_final: { const: true }
+                  nodes:
+                    type: object
+                    additionalProperties: { type: object }
+                  events:
+                    type: array
+                    items:
+                      type: object
+                  receipt_sha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+        '403': { description: Disallowed origin or hostname. }
+        '413': { description: Oversized request. }
+        '415': { description: Missing local synthetic request policy headers. }
+        '422': { description: Only fixed synthetic scenarios are accepted. }

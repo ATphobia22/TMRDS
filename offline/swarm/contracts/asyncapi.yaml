@@ -1,0 +1,38 @@
+asyncapi: 3.0.0
+info:
+  title: TMRDS Offline Swarm Event Contract
+  version: 1.0.0
+  description: |
+    DOCUMENTATION ONLY of the browser in-memory CustomEvent contract.
+    There is no WebSocket server, persistent broker, JSON-RPC endpoint,
+    EHR transport, patient data channel, or OpenMI-conformant host.
+channels:
+  nodeEvents:
+    address: tmrds.offline.node.v1
+    messages:
+      nodeCompleted:
+        $ref: '#/components/messages/nodeCompleted'
+operations:
+  reviewSyntheticResult:
+    action: receive
+    channel:
+      $ref: '#/channels/nodeEvents'
+    messages:
+      - $ref: '#/channels/nodeEvents/messages/nodeCompleted'
+components:
+  messages:
+    nodeCompleted:
+      name: nodeCompleted
+      contentType: application/json
+      payload:
+        type: object
+        required: [schema_version, event_id, channel, node, data_class, status, result_sha256, clinical_promotion_allowed]
+        properties:
+          schema_version: { const: '1.0' }
+          event_id: { type: string }
+          channel: { const: tmrds.offline.node.v1 }
+          node: { type: string }
+          data_class: { const: synthetic_nonidentifying }
+          status: { type: string }
+          result_sha256: { type: string }
+          clinical_promotion_allowed: { const: false }
