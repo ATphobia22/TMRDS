@@ -89,15 +89,31 @@ def _inspect_dicom(path: Path, *, include_pixel_summary: bool) -> dict[str, Any]
         ds = pydicom.dcmread(path, force=False, stop_before_pixels=not include_pixel_summary)
         if "PixelData" not in ds and include_pixel_summary:
             raise FieldLabError("No DICOM pixel array available for local inspection")
-        def bounded_int(name: str, default: int = 1) -> int:
-            v = int(getattr(ds, name, default))
-            if not 1 <= v <= 4096:
+        def bounded_int(name: str, default: int | None = None) -> int | None:
+            value = getattr(ds, name, None)
+            if value is None:
+                return default
+            try:
+                parsed = int(value)
+            except (ValueError, TypeError, OverflowError):
+                raise FieldLabError("Invalid DICOM dimension value") from None
+            if not 1 <= parsed <= 4096:
                 raise FieldLabError("Invalid or excessive DICOM dimensions")
-            return v
+            return parsed
         rows, cols = bounded_int("Rows"), bounded_int("Columns")
-        frames, channels = bounded_int("NumberOfFrames"), bounded_int("SamplesPerPixel")
-        if frames > 64 or channels > 4 or rows * cols * frames * channels > MAX_PIXEL_SAMPLES:
-            raise FieldLabError("DICOM pixel count exceeds bounded local analysis limit")
+        if (rows is None) != (cols is None):
+            raise FieldLabError("Incomplete image dimensions in DICOM source")
+        frames = bounded_int("NumberOfFrames", 1 if rows is not None else None)
+        channels = bounded_int("SamplesPerPixel")
+        if rows is not None and cols is not None:
+            if include_pixel_summary and (frames is None or channels is None):
+                raise FieldLabError("Missing image dimensions required for pixel processing")
+            if (frames is not None and frames > 64) or (channels is not None and channels > 4):
+                raise FieldLabError("DICOM frame or channel count exceeds bound")
+            if rows * cols * (frames or 1) * (channels or 1) > MAX_PIXEL_SAMPLES:
+                raise FieldLabError("DICOM pixel count exceeds bounded local analysis limit")
+        elif include_pixel_summary:
+            raise FieldLabError("No image geometry available for pixel processing")
         modality = str(getattr(ds, "Modality", "") or "")
         if not re.fullmatch(r"[A-Z]{2,6}", modality):
             modality = "UNSPECIFIED"
