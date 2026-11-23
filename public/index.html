@@ -15,7 +15,7 @@
   <header class="masthead">
     <div class="wrap mast-inner">
       <a class="brand" href="./" aria-label="TMRDS Home"><span class="brand-icon">T</span><span>TMRDS <small>OPEN EVIDENCE ATLAS</small></span></a>
-      <nav class="top-nav" aria-label="Site navigation"><a href="#research">Research</a><a href="#cube">Six evidence planes</a><a href="#sources">Sources</a><a href="https://github.com/ATphobia22/TMRDS" target="_blank" rel="noopener noreferrer">Source code ↗</a></nav>
+      <nav class="top-nav" aria-label="Site navigation"><a href="#research">Research</a><a href="#cube">Six evidence planes</a><a href="#sources">Sources</a><a href="#medical-projects">Medical software</a><a href="https://github.com/ATphobia22/TMRDS" target="_blank" rel="noopener noreferrer">Source code ↗</a></nav>
     </div>
   </header>
   <main class="wrap">
@@ -68,6 +68,39 @@
         <article class="facet"><span>05</span><h3>Trials &amp; labels</h3><p>Inspect trial status, populations, outcomes and regulatory boundaries.</p><a href="https://clinicaltrials.gov/" target="_blank" rel="noopener noreferrer">ClinicalTrials.gov ↗</a></article>
         <article class="facet"><span>06</span><h3>Population &amp; equity</h3><p>Identify who was included, excluded, or underrepresented.</p><a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank" rel="noopener noreferrer">ClinVar ↗</a></article>
       </div>
+    </section>
+    <section id="medical-projects" class="medical-section" aria-labelledby="medical-title">
+      <div class="section-heading"><div><span class="eyebrow">04 / OPEN-SOURCE MEDICAL ECOSYSTEM</span><h2 id="medical-title">Connected evidence. Explicit boundaries.</h2>
+        <p>Discover official open-source projects by category. The catalog records interface and licensing-review status; listing a platform does not mean it is installed, connected to an EHR/PACS, licensed for use, or independently validated.</p></div></div>
+      <div class="medical-toolbar"><label for="medicalCategory">Filter projects</label>
+        <select id="medicalCategory" aria-controls="medicalList"><option value="all">All categories</option></select>
+        <span id="medicalCount" aria-live="polite">Reading audited project catalog…</span></div>
+      <div id="medicalList" class="medical-grid" aria-live="polite"><p class="empty">Loading verified references…</p></div>
+      <p id="medicalRegistryStatus" class="method-note">Public source catalog is a static registry, not a live clinical connection or a software installer. Each dependency requires separate license, version, configuration, and security review.</p>
+      <section class="research-extensions" aria-labelledby="extensionTitle">
+        <h3 id="extensionTitle">Research-only API integrations</h3>
+        <div class="extension-grid">
+          <div class="extension-card">
+            <h4>PubMed — original NCBI citations</h4>
+            <p>Only when the same-origin research API is deployed: bounded NCBI E-utilities metadata (PMIDs, titles, journal and source dates); no article body redistribution.</p>
+            <div id="pubmedBackendState" aria-live="polite">Checking whether the read-only backend is deployed…</div>
+            <div id="pubmedBackendRecords" class="extension-results"><p class="empty">Search a research topic above to retrieve PubMed citations from the backend.</p></div>
+            <a href="https://pubmed.ncbi.nlm.nih.gov/" target="_blank" rel="noopener noreferrer">PubMed official search</a>
+          </div>
+          <div class="extension-card">
+            <h4>AlphaFold DB — predicted structures</h4>
+            <p>Lookup is keyed by an exact public UniProt accession. The AlphaFold DB is not AlphaFold 3 inference, and prediction confidence does not establish therapeutic efficacy.</p>
+            <form id="structureForm" class="structure-form">
+              <label for="uniprotAccession">UniProt accession (public identifier only)</label>
+              <div><input id="uniprotAccession" name="uniprotAccession" type="text" minlength="6" maxlength="10" value="P13569" spellcheck="false" autocapitalize="characters" required><button type="submit" id="structureSubmit">Lookup structure</button></div>
+            </form>
+            <p id="structureBackendState" aria-live="polite">A separate research backend is needed for metadata retrieval.</p>
+            <div id="structureBackendRecords" class="extension-results"><p class="empty">No structure lookup submitted.</p></div>
+            <a href="https://alphafold.ebi.ac.uk/" target="_blank" rel="noopener noreferrer">AlphaFold Database official site</a>
+          </div>
+        </div>
+        <p class="method-note">AlphaFold 3 local inference remains unconfigured: code is Apache-2.0, while its weights and outputs have separate restrictions. This public site never downloads AF3 weights or submits molecular calculations.</p>
+      </section>
     </section>
     <section id="sources" class="sources-section" aria-labelledby="sources-title">
       <div class="section-heading"><div><span class="eyebrow">03 / SOURCE AND COMPUTE REGISTRY</span><h2 id="sources-title">Know the difference between connected and referenced</h2></div></div>
