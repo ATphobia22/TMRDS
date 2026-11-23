@@ -42,7 +42,7 @@ def test_local_authorization_required_and_unsupported_files_fail_closed(tmp_path
     p.write_text("code,value,unit\n718-7,12,g/dL\n")
     with pytest.raises(OfflineWorkstationError, match="authorization"):
         inspect_local_file(p)
-    with pytest.raises(OfflineWorkstationError, match="reader"):
+    with pytest.raises(OfflineWorkstationError, match="missing"):
         inspect_local_file(tmp_path / "notthere.exe", authorized_local=True)
     other = tmp_path / "other.exe"
     other.write_bytes(b"MZ")
