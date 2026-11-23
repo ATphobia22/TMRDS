@@ -129,6 +129,17 @@ INTEGRATIONS: List[Dict[str, Any]] = [
         "doctor_value": "Phenotype–gene–disease associations",
     },
     {
+        "id": "gwas_catalog_v2",
+        "name": "NHGRI–EBI GWAS Catalog v2",
+        "cube_faces": ["disease", "target", "equity"],
+        "access": "public_api",
+        "license_note": "Public metadata API; verify source-specific terms before bulk reuse",
+        "url": "https://www.ebi.ac.uk/gwas/",
+        "api": "https://www.ebi.ac.uk/gwas/rest/api/v2/associations",
+        "tmrds": "engines/gwas_catalog_v2_pipeline.py; GET /api/v1/research/gwas-associations",
+        "doctor_value": "Curated variant–trait research associations; not causal, pathogenicity or efficacy evidence",
+    },
+    {
         "id": "uniprot",
         "name": "UniProt",
         "cube_faces": ["structure", "target"],
