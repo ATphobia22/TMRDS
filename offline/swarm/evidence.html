@@ -26,6 +26,14 @@
 <button type="button" id="run">Run local specialist swarm</button>
 <p id="execution" role="status" aria-live="polite">No computations executed this session.</p>
 <div id="results" aria-live="polite"></div></section>
+<section aria-labelledby="offlinePackTitle"><h2 id="offlinePackTitle">Search verified offline publication metadata</h2>
+<p>When a public-source citation pack has been prepared on a connected computer and installed locally, this search runs entirely on this laptop. The pack contains only original-source bibliographic metadata, never article bodies or patient data. A missing, stale or corrupted pack cannot establish that evidence is absent.</p>
+<form id="evidenceSearchForm" autocomplete="off"><label for="evidenceSearchTerm">Public disease, target or citation identifier (never a patient's details)</label>
+<input id="evidenceSearchTerm" type="search" minlength="2" maxlength="80" required value="CFTR" placeholder="CFTR or DOI/PMID">
+<button type="submit" id="evidenceSearchBtn">Search offline source cache</button></form>
+<p id="evidenceSearchStatus" role="status" aria-live="polite">No local citation pack searched yet.</p>
+<div id="evidenceSearchResults" aria-live="polite"></div>
+<p>To prepare a source pack before travel: use the reviewed local `scripts/offline_evidence_pack.py prepare` command and transfer the resulting JSON to the prescribed local data directory. Check source licenses and integrity first.</p></section>
 <section><h2>Human review gate</h2><p>Results describe research processing and missing capabilities only. A clinician must independently review any original data; these synthetic outputs are not diagnoses, interpretations, treatment recommendations, or regulatory determinations.</p>
 <p>Source code, contracts, CI gates, and licensing decisions are governed by the TMRDS repository. The repository is not an online patient database or a runtime dependency for this offline page.</p></section></main>
 <footer>Offline means no cloud and no automatic source freshness. Disconnect the laptop network to verify isolation. Human Authority Final.</footer></body></html>
