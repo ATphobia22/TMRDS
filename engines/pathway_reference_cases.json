@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "created_at": "2026-11-23",
+  "purpose": "technical reference consistency for exact identifier joins; not a clinical benchmark of therapeutic efficacy",
+  "independent_human_review_completed": false,
+  "source_review_status": "official source anchors identified; independent adjudication and live recertification outstanding",
+  "expected_links": [
+    {
+      "case_id": "cftr_ivacaftor_reference",
+      "disease_id": "MONDO_0009061",
+      "target_id": "ENSG00000001626",
+      "compound_id": "CHEMBL2010601",
+      "basis": "FDA KALYDECO labeling indicates ivacaftor CFTR potentiation for genetically eligible cystic fibrosis, not all CFTR genotypes",
+      "citations": [
+        {
+          "authority": "U.S. FDA",
+          "url": "https://www.accessdata.fda.gov/drugsatfda_docs/label/2026/207925s021lbl.pdf",
+          "kind": "regulatory_label"
+        },
+        {
+          "authority": "NCBI Gene",
+          "url": "https://www.ncbi.nlm.nih.gov/gene/1080",
+          "kind": "gene_identifier"
+        },
+        {
+          "authority": "Open Targets drug",
+          "url": "https://platform.opentargets.org/drug/CHEMBL2010601",
+          "kind": "compound_identifier"
+        },
+        {
+          "authority": "ClinGen",
+          "url": "https://search.clinicalgenome.org/kb/conditions/MONDO%3A0009061",
+          "kind": "disease_ontology"
+        }
+      ]
+    }
+  ],
+  "negative_controls": [
+    {
+      "case_id": "negative_aspirin_tp53",
+      "disease_id": "MONDO_0009061",
+      "target_id": "ENSG00000141510",
+      "compound_id": "CHEMBL25",
+      "basis": "Synthetic unrelated triple; should never be emitted merely due to name similarity or co-occurrence. Not a claim of absent or ineffective biology."
+    }
+  ],
+  "methodology": {
+    "sampling": "single annotated positive case, one synthetic negative control",
+    "measurements": "exact triple precision and disallowed-link rejection",
+    "missing": "independent domain reviewers, blinded additional diseases, specificity and sensitivity estimates, current live source snapshot, patient-outcome validation",
+    "warning": "This file does NOT assert independent review completed, validated efficacy, or that all drugs/targets are represented."
+  }
+}
