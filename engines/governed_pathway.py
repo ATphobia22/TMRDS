@@ -138,10 +138,18 @@ def _release_meta(meta: Any) -> str | None:
     if not isinstance(meta, dict) or not isinstance(meta.get("dataVersion"), dict):
         return None
     data = meta["dataVersion"]
-    parts = (data.get("year"), data.get("month"), data.get("iteration"))
-    if any(type(v) is not int or v < 0 or v > 9999 for v in parts):
+    def parse_part(value: Any) -> int | None:
+        if type(value) is int and 0 <= value <= 9999:
+            return value
+        if isinstance(value, str) and value.isascii() and value.isdecimal() and 1 <= len(value) <= 4:
+            return int(value)
         return None
-    return f"{parts[0]:02d}.{parts[1]:02d}.{parts[2]}"
+    year, month = parse_part(data.get("year")), parse_part(data.get("month"))
+    iteration_raw = data.get("iteration")
+    iteration = parse_part(iteration_raw) if iteration_raw is not None else None
+    if year is None or month is None or (iteration_raw is not None and iteration is None):
+        return None
+    return f"{year:02d}.{month:02d}" + (f".{iteration}" if iteration is not None else "")
 
 
 def normalize_pathway(query: str, source: dict[str, Any], retrieved_at: str,
@@ -159,6 +167,13 @@ def normalize_pathway(query: str, source: dict[str, Any], retrieved_at: str,
         raise PathwaySourceError("source relation fields absent")
     target_rows = _strict_list(targets.get("rows"), "associatedTargets")
     drug_rows = _strict_list(drugs.get("rows"), "drugAndClinicalCandidates")
+    for context, block, retrieved in (
+        ("associatedTargets", targets, target_rows),
+        ("drugAndClinicalCandidates", drugs, drug_rows),
+    ):
+        count = block.get("count")
+        if type(count) is not int or count < len(retrieved) or count < 0:
+            raise PathwaySourceError("invalid source row count in " + context)
     target_index: dict[str, dict] = {}
     for row in target_rows:
         if not isinstance(row, dict) or not isinstance(row.get("target"), dict):
@@ -183,7 +198,12 @@ def normalize_pathway(query: str, source: dict[str, Any], retrieved_at: str,
         for mechanism_row in _strict_list(mechanism.get("rows"), "mechanismsOfAction"):
             if not isinstance(mechanism_row, dict):
                 raise PathwaySourceError("malformed mechanism row")
-            for target in _strict_list(mechanism_row.get("targets"), "mechanism targets"):
+            reported_targets = mechanism_row.get("targets")
+            # Current upstream mechanisms may report null when targets have not
+            # been established. Do not infer targets or fail other usable rows.
+            if reported_targets is None:
+                continue
+            for target in _strict_list(reported_targets, "mechanism targets"):
                 if not isinstance(target, dict):
                     raise PathwaySourceError("malformed mechanism target")
                 tid = _strict_id(target.get("id"), _TARGET_ID, "mechanism target")
