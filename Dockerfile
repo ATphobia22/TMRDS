@@ -22,7 +22,6 @@ RUN groupadd --system --gid 10001 tmrds \
 COPY --chown=tmrds:tmrds api/ /app/api/
 COPY --chown=tmrds:tmrds frontend/medical_research_workbench_demo.html /app/frontend/medical_research_workbench_demo.html
 COPY --chown=tmrds:tmrds engines/ /app/engines/
-COPY --chown=tmrds:tmrds public/ /app/public/
 COPY --chown=tmrds:tmrds scripts/ /app/scripts/
 COPY --chown=tmrds:tmrds migrations/ /app/migrations/
 
