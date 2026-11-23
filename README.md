@@ -2,6 +2,23 @@
 
 > **Research software — not a medical device.** TMRDS helps doctors and researchers find and cross-check public biomedical evidence faster. It does not diagnose, prescribe, treat, or replace clinical judgment. It is not FDA-cleared, clinically validated, HIPAA-compliant, ONC-certified, or connected to any live hospital system.
 
+## New: Sovereign rural laptop workstation and specialist HTML swarm
+
+**A real, separate offline execution profile** has been added alongside the existing public research site. The Windows x64 CI profile **installs and executes** pinned open-source medical/scientific readers, rather than merely cataloguing them:
+
+- **pydicom + NumPy:** local Part-10 DICOM metadata and bounded synthetic MRI/CT pixel quality checks (including CT modality LUT where applicable).
+- **Biopython:** real local FASTA/FASTQ sequence parsing and aggregate quality statistics; no raw sequence export.
+- **RDKit:** real SMILES/SDF chemical parsing and molecular descriptors; no unsupported affinity, toxicity or therapeutic claims.
+- **pypdf:** local PDF text-extraction/page capability verification, without returning source text.
+- **Standard-library FHIR and laboratory formats:** bounded local FHIR Observation/Bundle JSON, CSV and TSV structural counts, no patient-field export.
+- **Six-plane Grover algorithm:** actual classical statevector mathematics for abstract evidence-coverage planning, not QPU execution or medical diagnosis.
+
+Seven **linked HTML specialist micro-apps** (`deploy/offline/swarm/`) now run on a loopback-only **JSON-RPC 2.0** Python coordinator: overview/swarm, lab, DICOM imaging, molecular, quantum, offline knowledge and human review. A concurrent *synthetic* demonstration invokes actual installed modules, reports each missing dependency explicitly and preserves clinician authority. No EHR/PACS patient upload, prescription/differential generator, unsupported agent framework, licensed AlphaFold 3 weights or hospital integration is switched on by these pages. **GitHub remains an auditable source-code registry, never a live patient database.**
+
+A GitHub Actions Windows runner downloads and hashes a pinned Python wheelhouse, verifies it, installs its packages using `pip --no-index`, then executes actual library tests and assembles the research-preview artifact. This is **not yet a self-contained .exe**: Python 3.11 x64 is required on the offline workstation; a successful Windows workflow must be verified before downloading or trusting its artifact.
+
+See [Windows offline setup and clinical limits](docs/operations/portable-offline-workstation.md) and [specialist HTML swarm + JSON-RPC security protocol](docs/architecture/offline-html-swarm.md). The program is **not clinically validated, FDA-cleared or certified for unsupervised decisions**; no performance guarantee of diagnostic results “in minutes” has been established.
+
 ## Try it now
 
 **[Open the fully connected TMRDS research workspace](https://tmrds-public-evidence-api.onrender.com/)** — a free, anonymous, same-origin Docker-backed research interface. **[GitHub Pages static atlas](https://atphobia22.github.io/TMRDS/)** remains the independently deployed static version with a rotating, interactive **3D Rubik's Cube**. The 26 visible cubies rotate continuously and their layers turn while searches run. You can select **Rotate a layer** to turn a face manually; reduced-motion preferences are respected. Search the live **Europe PMC**, **ClinicalTrials.gov v2** and **Crossref** services, inspect source identifiers and retrieval dates, and follow records to their origin.
