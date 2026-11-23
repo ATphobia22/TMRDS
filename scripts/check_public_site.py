@@ -84,9 +84,10 @@ def main() -> None:
     assert len(css) > 1000
     for asset in inspector.local_assets:
         assert (PUBLIC / asset.removeprefix("./")).is_file(), asset
-    assert {"pmcForm", "pmcIdentifier", "pmcSubmit", "pmcState", "pmcRecords", "formatState", "format-safety", "pmc-bridge"} <= inspector.ids
+    assert {"pmcForm", "pmcIdentifier", "pmcSubmit", "pmcState", "pmcRecords", "formatState", "format-safety", "pmc-bridge", "elementForm", "elementSymbol", "elementSubmit", "elementState", "elementRecords", "element-reference"} <= inspector.ids
     for token in ("api/v1/research/pmc-identifiers", "22 source requests responded",
-                  "PMC ID Converter", "Local synthetic-only parser", "NLM Dataset Catalog"):
+                  "PMC ID Converter", "Local synthetic-only parser", "NLM Dataset Catalog",
+                  "api/v1/research/periodic-element", "PubChem periodic-table reference"):
         assert token in js or token in html, token
     assert "credentials: \"omit\"" in js
     assert "cache: \"no-store\"" in js
