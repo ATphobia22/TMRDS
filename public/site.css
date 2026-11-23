@@ -81,3 +81,6 @@
 #source-portals .medical-grid{margin-top:18px}
 @media(max-width:950px){.results-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.results-grid{grid-template-columns:1fr}}
+
+/* Do not show the external backend link when already on the same-origin hosted API. */
+#connectedWorkspaceLink[hidden]{display:none!important}
