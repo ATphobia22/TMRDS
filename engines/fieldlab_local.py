@@ -159,7 +159,7 @@ def _inspect_dicom(path: Path, *, include_pixel_summary: bool) -> dict[str, Any]
         return result
     except FieldLabError:
         raise
-    except (ValueError, TypeError, OverflowError, OSError, AttributeError) as exc:
+    except (ValueError, TypeError, OverflowError, OSError, AttributeError, pydicom.errors.InvalidDicomError) as exc:
         raise FieldLabError("DICOM header malformed or inaccessible") from None
 
 
@@ -190,7 +190,7 @@ def _inspect_nifti(path: Path) -> dict[str, Any]:
         return result
     except FieldLabError:
         raise
-    except (ValueError, TypeError, OSError, OverflowError, IndexError) as exc:
+    except (ValueError, TypeError, OSError, OverflowError, IndexError, nib.filebasedimages.ImageFileError) as exc:
         raise FieldLabError("NIfTI header malformed or unsupported") from None
 
 
