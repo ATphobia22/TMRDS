@@ -41,15 +41,18 @@
       "source_id": "gwas_catalog_v2",
       "name": "GWAS Catalog v2",
       "domain": "genetic_association",
-      "implementation_status": "candidate",
+      "implementation_status": "implemented_adapter",
       "documentation_url": "https://www.ebi.ac.uk/gwas/docs/programmatic-access/rest-api/",
-      "discovery_or_api_url": "https://www.ebi.ac.uk/gwas/rest/api/v2/",
+      "discovery_or_api_url": "https://www.ebi.ac.uk/gwas/rest/api/v2/associations",
       "license_notes": "Review current data terms before ingestion",
-      "gap_addressed": "Direct curated variant-trait and ancestry metadata, beyond aggregated target scores.",
+      "gap_addressed": "Curated, source-linked variant–trait association IDs, EFO traits, p-values, literature PMID and study accession. Ancestry requires separate study/cohort metadata and is not inferred.",
       "limitations": [
-        "Use v2; v1 retired August 2026. No current summary-statistics API. Association is not causality."
+        "API v2 curated top associations only, not the full genome-wide summary statistics; v1 retired August 2026.",
+        "Results are not proof of causality, pathogenicity, therapeutic benefit, or patient-level applicability.",
+        "One bounded page per query, child trait expansion disabled; absence is not a negative finding.",
+        "Upstream access may fail or be throttled; individual study license and population metadata require review."
       ],
-      "reviewed_on": "2026-11-07",
+      "reviewed_on": "2026-11-23",
       "runtime_health": "not_checked",
       "background_or_compute_execution_enabled": false
     },
