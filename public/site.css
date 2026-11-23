@@ -64,3 +64,20 @@
 .structure-form button{background:var(--accent);color:#063447;border:0;border-radius:7px;padding:9px 12px;font-weight:700;cursor:pointer}
 .structure-form button:disabled{opacity:.5}
 @media(max-width:720px){.extension-grid{grid-template-columns:1fr}.structure-form>div{flex-wrap:wrap}}
+
+
+/* Three public research sources + clearly separated legal research metadata */
+.results-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.source-statuses{flex-wrap:wrap}
+.research-extensions{scroll-margin-top:28px}
+#patent-explorer{padding:20px 0 0}
+#patent-explorer>.extension-results{max-height:480px;overflow:auto}
+#patent-explorer .structure-form input{width:min(300px,100%);flex:1}
+#patentState{padding:10px 0;color:var(--accent2);font-size:13px}
+#crosscheck-panel{margin-top:22px;scroll-margin-top:30px}
+#crosscheckRecords{max-height:440px;overflow:auto}
+#source-portals{scroll-margin-top:22px;padding:16px 0}
+#source-portals>h3{font-size:21px}
+#source-portals .medical-grid{margin-top:18px}
+@media(max-width:950px){.results-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.results-grid{grid-template-columns:1fr}}
