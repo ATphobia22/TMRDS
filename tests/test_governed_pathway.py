@@ -125,3 +125,25 @@ def test_independent_regulatory_anchor_contract_has_explicit_review_boundary():
     mutated = copy.deepcopy(result)
     mutated["links"] = []
     assert validate_reference_pathways(mutated, references)["technical_consistency"] == "fail"
+
+
+def test_real_upstream_release_strings_and_nullable_mechanism_targets():
+    """Observed Open Targets September 2026 metadata has string numbers and null iteration."""
+    observed = copy.deepcopy(FIXTURE)
+    observed["meta"]["dataVersion"] = {"year": "26", "month": "09", "iteration": None}
+    observed["disease"]["drugAndClinicalCandidates"]["rows"][1]["drug"]["mechanismsOfAction"]["rows"][0]["targets"] = None
+    result = normalize_pathway("MONDO_0009061", observed, NOW.isoformat())
+    assert result["source_freshness"]["source_release"] == "26.09"
+    assert result["source_freshness"]["upstream_release"] == "observed_not_independently_verified"
+    assert result["links"][0]["compound"]["id"] == "CHEMBL2010601"
+
+
+def test_null_and_bad_count_have_explicit_safe_handling():
+    observed = copy.deepcopy(FIXTURE)
+    observed["disease"]["drugAndClinicalCandidates"]["count"] = None
+    with pytest.raises(PathwaySourceError):
+        normalize_pathway("MONDO_0009061", observed, NOW.isoformat())
+    observed["disease"]["drugAndClinicalCandidates"]["count"] = 2
+    observed["disease"]["associatedTargets"]["count"] = "two"
+    with pytest.raises(PathwaySourceError):
+        normalize_pathway("MONDO_0009061", observed, NOW.isoformat())
