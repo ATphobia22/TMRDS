@@ -19,6 +19,20 @@ A GitHub Actions Windows runner downloads and hashes a pinned Python wheelhouse,
 
 See [Windows offline setup and clinical limits](docs/operations/portable-offline-workstation.md) and [specialist HTML swarm + JSON-RPC security protocol](docs/architecture/offline-html-swarm.md). The program is **not clinically validated, FDA-cleared or certified for unsupervised decisions**; no performance guarantee of diagnostic results “in minutes” has been established.
 
+## New: local offline specialist HTML swarm (synthetic pilot)
+
+TMRDS now includes an **executable, air-gapped, nine-page specialist HTML workstation** alongside the connected public research service. It uses a Python standard-library coordinator bound to **127.0.0.1 only**, actual existing synthetic laboratory/VCF parsers, the six-qubit Grover research simulation, an in-memory specialist event contract, and a deterministic SHA-256 research receipt. Imaging, pharmaceutical simulations, WikiMed ZIM archives and EHR integrations report their uninstalled/unavailable state rather than fabricate analyses.
+
+Start from a reviewed local source checkout with Python 3.11+:
+
+```sh
+python -m scripts.run_offline_swarm --port 8765
+```
+
+Then open **http://127.0.0.1:8765/** in a laptop browser. This demonstration can run with the laptop disconnected from the network. It accepts **only built-in, nonidentifying synthetic fixtures**—no patient uploads, medical diagnoses, clinical suggestions, prescriptions or institutional data. It is not yet a Windows installer or an approved clinical workstation.
+
+[Offline-workstation implementation, exact local APIs, AsyncAPI/event contract, current installed modules and clinical authorization gates](docs/integrations/offline-specialist-swarm-20261123.md).
+
 ## Try it now
 
 **[Open the fully connected TMRDS research workspace](https://tmrds-public-evidence-api.onrender.com/)** — a free, anonymous, same-origin Docker-backed research interface. **[GitHub Pages static atlas](https://atphobia22.github.io/TMRDS/)** remains the independently deployed static version with a rotating, interactive **3D Rubik's Cube**. The 26 visible cubies rotate continuously and their layers turn while searches run. You can select **Rotate a layer** to turn a face manually; reduced-motion preferences are respected. Search the live **Europe PMC**, **ClinicalTrials.gov v2** and **Crossref** services, inspect source identifiers and retrieval dates, and follow records to their origin.
