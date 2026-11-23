@@ -49,7 +49,10 @@ def main() -> None:
     import json
     backend_config = json.loads((PUBLIC / "backend-config.json").read_text())
     assert backend_config["api_mode"] == "disabled", "public Pages must never claim deployed backend"
-    assert {"rubiksCube", "cubeMoveBtn", "cubeActivity", "backendState", "pathwayRecords", "pathwayFootnote"} <= inspector.ids
+    assert {"rubiksCube", "cubeMoveBtn", "cubeActivity", "backendState", "pathwayRecords", "pathwayFootnote", "connectedWorkspaceLink"} <= inspector.ids
+    assert 'id="connectedWorkspaceLink"' in html and 'href="https://tmrds-public-evidence-api.onrender.com/"' in html
+    assert 'liveWorkspaceLink.hidden = backendEnabled' in js
+    assert "#connectedWorkspaceLink[hidden]{display:none!important}" in css
     for token in ("turnCubeLayer", "rotateVector", "startCubeSearch", "stopCubeSearch", "backendConfiguration", "loadGovernedPathway"):
         assert token in js, token
     assert "@keyframes cube-idle" in css and "@keyframes cube-working" in css
