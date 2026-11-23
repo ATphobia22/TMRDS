@@ -451,15 +451,3 @@ async def pdb_structure_metadata(request: Request, pdb_id: str) -> dict:
         return await RCSBPipeline().entry(pdb_id)
     except Exception as exc:
         raise safe_upstream_error("RCSB PDB", exc, status_code=502) from exc
-
-# Same-origin deployment of the research-only public atlas. API routes win.
-# The Pages copy is static and does not claim an API connection.
-from fastapi.staticfiles import StaticFiles
-
-
-@app.get("/backend-config.json", include_in_schema=False)
-async def backend_public_configuration() -> dict[str, str]:
-    return {"schema_version": "1.0", "api_mode": "same-origin"}
-
-
-app.mount("/", StaticFiles(directory=str(Path(__file__).resolve().parents[1] / "public"), html=True), name="public-atlas")
