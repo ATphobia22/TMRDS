@@ -30,11 +30,7 @@ def test_real_rdkit_molecule_descriptor_values_and_invalid_smiles():
 
 def test_biopython_fasta_and_fastq_are_really_decoded_without_identifiers(tmp_path):
     fasta = tmp_path / "synthetic.fa"
-    fasta.write_text(">synthetic-sequence-PRIVATE
-ACGTACGT
->synthetic2
-NNNN
-")
+    fasta.write_text(">synthetic-sequence-PRIVATE\nACGTACGT\n>synthetic2\nNNNN\n")
     result = inspect_local_file(fasta, private_local=True)
     assert result["reader"] == "Bio.SeqIO"
     assert result["format"] == "fasta"
@@ -44,11 +40,7 @@ NNNN
     assert result["sequence_data_released"] is False
     assert "PRIVATE" not in json.dumps(result)
     fastq = tmp_path / "synthetic.fastq"
-    fastq.write_text("@private-read
-ACGT
-+
-IIII
-")
+    fastq.write_text("@private-read\nACGT\n+\nIIII\n")
     fq = inspect_local_file(fastq, private_local=True)
     assert fq["format"] == "fastq"
     assert fq["records"] == 1
