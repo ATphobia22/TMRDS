@@ -177,3 +177,13 @@ def test_nonimage_dicom_does_not_fabricate_one_pixel_per_axis(tmp_path):
     assert report["samples_per_pixel"] is None
     assert report["pixel_summary_computed"] is False
     assert "RESTRICTED-LOCAL-ID" not in json.dumps(report)
+
+
+def test_malformed_medical_imaging_raises_sanitized_local_reader_error(tmp_path):
+    for filename in ("malformed.dcm", "malformed.nii.gz"):
+        file = tmp_path / filename
+        file.write_bytes(b"NOT A VALID MEDICAL IMAGE")
+        with pytest.raises(FieldLabError) as raised:
+            inspect_local_file(file, private_local=True)
+        assert filename not in str(raised.value)
+        assert "NOT A VALID MEDICAL IMAGE" not in str(raised.value)
