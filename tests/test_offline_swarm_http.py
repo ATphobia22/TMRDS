@@ -74,7 +74,7 @@ class SwarmHttpTests(unittest.TestCase):
         from pathlib import Path
         from unittest.mock import patch
         from engines.offline_evidence_pack import build_pack, save_pack
-        from tests.test_offline_evidence_pack import source
+        from test_offline_evidence_pack import source
         packet = build_pack(source(), query="CFTR", retrieved_at="2026-11-23T08:00:00+00:00")
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "citations.json"
