@@ -1,384 +1,248 @@
-# TMRDS — Transparent Medical Research Decision Support
+# TMRDS
+## Tucker Medical Research and Development System
 
-> **Research software — not a medical device.** TMRDS helps doctors and researchers find and cross-check public biomedical evidence faster. It does not diagnose, prescribe, treat, or replace clinical judgment. It is not FDA-cleared, clinically validated, HIPAA-compliant, ONC-certified, or connected to any live hospital system.
+**A portable, evidence-grounded biomedical research workspace—designed to make trustworthy medical knowledge and scientific tools more accessible, especially where infrastructure and specialist resources are limited.**
 
-## Verified main release and branch reconciliation — 2026-11-23
+[Explore the public research workspace](https://tmrds-public-evidence-api.onrender.com/) · [Static evidence atlas](https://atphobia22.github.io/TMRDS/) · [Offline FieldLab guide](docs/integrations/fieldlab-offline-workstation-20261123.md) · [Intended use and safety boundaries](docs/INTENDED_USE.md)
 
-The [audited `main` release](https://github.com/ATphobia22/TMRDS/commit/6d295e307b137e7c019b88bdfe0d54f487d3604f) at commit `6d295e307b137e7c019b88bdfe0d54f487d3604f` passed **all ten associated GitHub workflows**, including the Windows 11 x64 real scientific-reader installation, offline wheelhouse ZIP upload, public Pages, security, provenance, CodeQL, and synthetic imaging tests. This confirms the CI environment, not a clinical trial or a clean-device field performance evaluation.
+> **Current status: research and engineering platform—not a clinical diagnostic product.** TMRDS can retrieve and organize public biomedical evidence, inspect certain local scientific files, and run bounded research demonstrations. It does **not** currently provide validated patient diagnoses, treatment recommendations, autonomous clinical decisions, MRI/CT interpretation, gene-editing instructions, or drug-efficacy predictions. It is not FDA-cleared, ONC-certified, or independently validated for patient care. Do not upload patient records to the public website.
 
-**Pull requests:** no open PRs. **Branches:** all **50** non-main refs were compared against that baseline: **33 strictly behind** (nothing to merge) and **17 historically diverged** from previously squash-merged features or superseded dependency updates. Replaying old branch histories would risk overwriting tested software. [Full branch-by-branch reconciliation and evidence](docs/operations/branch-reconciliation-20261123.md).
+---
 
-### Choose the actual execution environment
+## Why TMRDS exists
 
-| Use case | Verified software | Essential boundary |
-|---|---|---|
-| Public biomedical evidence cross-check | [Connected research website](https://tmrds-public-evidence-api.onrender.com/); 22 bounded metadata sources and six-plane Grover *research-coverage* demonstration | Internet required; **never upload patient records**; not a validated diagnosis or treatment engine |
-| Windows 11 laptop without Internet | [FieldLab Win11 artifact workflow](https://github.com/ATphobia22/TMRDS/actions/runs/45173817549): hashed wheelhouse, actual pydicom / NiBabel / Biopython / RDKit readers, local Tkinter UI | **Python 3.11 x64 must be preinstalled**. Transfer/verify the ZIP before travel. No signed one-click native installer or validated imaging diagnosis |
-| Low-dependency local research demonstration | `python -m scripts.run_offline_swarm --port 8765`, then `http://127.0.0.1:8765/` | Nine-page stdlib fallback accepts **built-in synthetic fixtures plus optional, verified public citation metadata packs**; no patient-file uploads. Separate seven-page JSON-RPC research profile is described below; neither is a licensed hospital network |
-| Clinical patient care, MRI/CT interpretation, gene editing, drug binding, or actual hospital data | No production-validated capability claimed | Requires authorized local clinical infrastructure, appropriately licensed model/data, case-level validation and regulatory/privacy review |
+A physician working in a rural clinic, a researcher at a small institution, or a healthcare team serving a remote community should not have to choose between access to scientific knowledge and the ability to work without reliable Internet, expensive enterprise software, or a large laboratory infrastructure.
 
-Latest audited cloud deployment is **Render `23aeca451d9cc5ffa867f63ee4b1b7b438eedd4e`**, which serves the research-only frontend/backend, while newer `main` commits add **separate offline profiles**. CI-green offline modules do not imply they have been installed in the cloud service or on a rural laptop.
+Modern biomedical knowledge is scattered across publications, clinical-trial registries, drug labels, molecular databases, genomic resources, imaging formats, and local records. Finding a paper is relatively easy; establishing **where the information came from, how recent it is, what it actually supports, and what remains uncertain** is harder. Internet outages and limited hardware make that problem worse.
 
-## New: working offline biomedical citation cache — connected preparation → disconnected search
+**TMRDS was created to narrow that gap.** Its long-term goal is a portable, affordable, multidisciplinary research assistant that gives qualified professionals a coherent workspace for literature, laboratory data, imaging research, genomics, pharmacology, and scientific computation—with a practical offline path for under-resourced settings.
 
-TMRDS now supports an **executable, offline-searchable public research metadata pack**, not merely a catalog entry. Prepare a bounded snapshot of actual PubMed/PMC/clinical-trial/other reviewed source citations on a connected preparation computer using the existing **22-source research cross-check API**. Transfer the pack to the field laptop, verify its complete SHA-256 and provider-rights receipt, and search citation titles, DOIs, PMIDs, PMCIDs and NCT references entirely offline in the local evidence specialist page or CLI.
+The intended result is **faster access to reviewable information**, not a machine that replaces a physician. The aspiration to move useful research workflows from days toward minutes is a design goal, **not a demonstrated clinical turnaround-time guarantee**.
 
-```sh
-# Connected trusted preparation computer (PUBLIC research terms only):
-python scripts/offline_evidence_pack.py prepare --query CFTR --out citations.json
+### Principles behind the design
 
-# After trusted transfer, on the OFFLINE research laptop:
-python scripts/offline_evidence_pack.py verify --path data/offline/citations.json
-python scripts/offline_evidence_pack.py search --path data/offline/citations.json --term CFTR
-python -m scripts.run_offline_swarm --port 8765
-# Open http://127.0.0.1:8765/evidence.html and search the local evidence snapshot.
+1. **Access:** public research should be usable without a subscription or personal account where feasible.
+2. **Offline resilience:** essential local tools should continue operating on a prepared laptop without cloud access.
+3. **Evidence before answers:** every sourced finding should retain an origin, identifier, retrieval date, and limitations.
+4. **Real integration:** executable software and tested interfaces take priority over a long catalog of links.
+5. **One workspace, many disciplines:** literature, imaging, chemistry, genomics, lab formats, and model governance should connect through explicit contracts.
+6. **Human authority is final:** research outputs and AI predictions are never silently promoted to clinical facts.
+7. **Honest failure states:** stale, partial, inaccessible, conflicting, or unverified evidence stays visibly marked.
+
+## What you can use today
+
+TMRDS has **multiple distinct execution environments**. A feature implemented in one is not automatically installed or available in the others.
+
+| Capability | What is implemented | Where it works | Important limit |
+|---|---|---|---|
+| **Public evidence atlas** | Source-linked biomedical search and interactive 3D research navigation | Web browser, connected | Public metadata only; network and upstream availability required |
+| **Cross-source evidence review** | Governed, bounded federation across **22 source adapters**, with identifiers, statuses, timestamps, and source receipts | Connected Python research API | Not exhaustive; correlated database records are not independent experimental validation |
+| **Research dossiers and disease pathways** | Cited evidence exports; exact-ID disease → target → compound research links | Backend research endpoints | Associations and registry records do not prove treatment efficacy |
+| **Offline citation pack** | Prepare, hash-check, transfer, and search a bounded cache of public citation metadata | Connected preparation, then offline laptop | Not a complete medical library or full-text archive |
+| **FieldLab scientific readers** | Execute actual pydicom, NiBabel, Biopython, RDKit, and bounded lab-file inspection | Offline Windows 11 x64 with Python 3.11 | File inspection, not validated clinical interpretation |
+| **Offline specialist swarm** | Local-only research interface, deterministic demonstrations, synthetic data and reviewed citation search | Offline Python/browser on loopback | HTML demonstration does not accept patient uploads |
+| **Imaging research workflow** | Bounded DICOMweb reads, an OHIF provenance/review mode, MONAI bundle review, human annotation and static exports | Separately configured research sandbox | Not a hospital PACS deployment or clinically validated AI |
+| **Genomics and molecular research** | Public variant/target/pathway metadata; local sequence parsing and chemical descriptors | Connected API and selected offline tools | No patient-level variant interpretation, docking efficacy, or gene-editing recommendations |
+| **Interoperability prototypes** | Synthetic FHIR R4 workflows, selected resource validation, audit/provenance contracts and OMOP-oriented design | Development and research environments | No live EHR/HIE connection or certified FHIR/US Core conformance |
+| **Quantum-inspired research planning** | Rotating Rubik's Cube visualization and a real **classically simulated six-qubit Grover search** over abstract evidence-coverage configurations | Web/API and selected offline research workflows | No quantum speedup, clinical likelihood calculation, or connected quantum hardware by default |
+
+**Software catalog versus installed capability:** the repository also documents a larger medical software and source registry (currently **122 entries**). Entries may be integrated, optional, not installed, or reference-only. Inclusion in the catalog **does not** mean a tool, trained model, dataset, or its license has been installed, approved, or clinically validated. See [the source/software inventory](docs/reference/open-source-medical-software.md).
+
+## The TMRDS workspace
+
+### 1. Research across biomedical knowledge
+
+TMRDS provides one research entry point to several kinds of evidence:
+
+- **Publications and citations:** PubMed, Europe PMC, Crossref, OpenAlex, Semantic Scholar, arXiv, and bioRxiv/medRxiv.
+- **Trials, regulatory information, and drug labels:** ClinicalTrials.gov, openFDA, DailyMed, and FDA Orange Book patent/exclusivity metadata.
+- **Molecules, compounds, and proteins:** PubChem, ChEMBL, RxNorm, UniProtKB, and separate AlphaFold Database structure metadata lookups.
+- **Genetics and disease biology:** Ensembl, ClinVar, gnomAD, GTEx, GWAS Catalog v2, Open Targets, STRING, Reactome, Monarch, NCATS Node Normalization, and MeSH.
+
+The repository contains approximately **25 federated public metadata adapters**, with **22** wired into the governed multi-source cross-check. Individual frontends expose smaller subsets: the static GitHub Pages atlas performs direct browser lookups, while the separate Python gateway provides the bounded federated routes. A source may fail, impose rate limits, or return no matches; TMRDS preserves that distinction.
+
+Reviewers can inspect DOI, PMID, PMCID, NCT, genomic identifiers, provider attribution, retrieval timestamps, source errors, and bibliographic overlap. The [research dossier](docs/operations/research-dossier.md) and [governed evidence pathway](docs/integrations/governed-evidence-pathway.md) are designed to make the underlying evidence inspectable rather than delivering an unexplained conclusion.
+
+### 2. The Quantum Rubik's Cube engine
+
+The interactive **3D Rubik's Cube** represents the challenge of bringing multiple independent research disciplines into alignment. Its visible cubies animate and support manual layer turns, while the backend includes an actual **six-qubit classical statevector implementation of Grover's algorithm** for a bounded research-coverage planning experiment.
+
+The six evidence-coverage planes are an organizing model, **not medical measurements**. The simulator evaluates abstract combinations, reports its oracle configuration and reproducible calculation receipt, and distinguishes its results from source-backed medical evidence.
+
+**A rotating cube is not a quantum computer.** The demo does not use a QPU, solve disease, infer treatment effectiveness, predict drug binding, or turn probability amplitudes into diagnostic confidence. IBM Quantum integration is optional and disabled for remote submission unless deliberately configured and authorized. See [the QRCE technical roadmap](docs/integrations/qrce-grover-molecular-roadmap-20261123.md) and [IBM Quantum operations](docs/integrations/ibm-quantum-compute.md).
+
+### 3. A scientific FieldLab on a disconnected laptop
+
+The **FieldLab** research preview executes scientific libraries locally rather than simply listing them. The supported bounded operations include:
+
+| Actual local library | Supported research function |
+|---|---|
+| **pydicom** | Read DICOM Part-10 headers and optional bounded pixel statistics, including modality-LUT handling where supported |
+| **NiBabel** | Inspect NIfTI headers, image dimensions, geometry and voxel spacing |
+| **Biopython** | Parse FASTA/FASTQ and compute limited sequence and quality summaries |
+| **RDKit** | Parse public SMILES and calculate basic molecular descriptors |
+| **Python/standard-library helpers** | Inspect selected numeric lab CSV/TSV and structured synthetic FHIR resources |
+| **pypdf** (separate workstation profile) | Inspect PDF page/text-extraction capability without returning document contents |
+
+This is a **real offline execution path**, not a validated MRI reader, genetics diagnosis engine, automated laboratory instrument, or molecular docking service. The standalone FieldLab Tkinter GUI requires **no browser or local HTTP server**. A separate offline HTML specialist interface uses a loopback-only Python coordinator for synthetic demonstrations and approved local research metadata.
+
+**Current distribution:** a hashed Windows wheelhouse/ZIP research artifact, **not** a self-contained or signed one-click installer. Python **3.11 x64 must be installed before disconnecting**. See [FieldLab installation](docs/integrations/fieldlab-offline-workstation-20261123.md), [offline workstation](docs/operations/portable-offline-workstation.md), and [specialist swarm architecture](docs/architecture/offline-html-swarm.md).
+
+### 4. Imaging, laboratory, genomic, and molecular research
+
+TMRDS is being engineered to join disciplines that normally sit in separate programs:
+
+- **Imaging:** bounded QIDO-RS DICOMweb query support; OHIF research mode displaying Study/Series/SOP UIDs, provenance and review state; optional local Orthanc sandbox; checksum and license review before MONAI research weights are loaded; human annotation workflows and static research exports.
+- **Laboratory and interoperability:** synthetic FHIR Observation/Bundle workbench, lab metadata and trends for test data, explicit source/units/status semantics, and versioned evidence records.
+- **Genomics:** public variant-frequency, consequence, association, gene-expression and pathway references, with separate local FASTA/FASTQ parsing.
+- **Pharmacology and chemistry:** source-linked compound and assay metadata, FDA labels and Orange Book research records, plus RDKit descriptors.
+
+These are **research components at different maturity levels**. The imaging sandbox has not demonstrated a clinically validated model reading patient CT/MRI studies. Genomic associations do not establish causation; molecular descriptors do not predict efficacy; patent listings do not constitute a freedom-to-operate opinion. The [imaging implementation notes](docs/integrations/imaging-research-workflow.md) specify the executable boundaries and human-review gates.
+
+### 5. Traceable evidence, safety, and governance
+
+TMRDS favors a source-first architecture:
+
+```text
+Public biomedical sources                  Authorized local research files
+          |                                            |
+Bounded source-specific adapters                 Offline scientific readers
+          |                                            |
+Source identity + timestamps + status          Local bounded inspection
+          |                                            |
+Governed evidence review                      Human review and local outputs
+          |
+Research dossier / approved metadata snapshot
+          |
+Verified offline citation cache
 ```
 
-The self-verifying pack is deliberately **metadata-only**: no full-text redistribution, patient records, source images, restricted credentials or clinical findings are included. Missing or corrupt packs return an explicit unavailable state. Cached results preserve source failures and a 90-day staleness warning; an offline search with no cached matches does **not** mean the research literature contains no evidence. Preparing the pack requires Internet, and **does not confer permission to redistribute licensed biomedical data**. The local CLI and module are included in the Windows FieldLab ZIP; the HTML swarm remains a separately supplied local source checkout.
+The connected API and offline tools are intentionally separate from clinical systems. Records are normalized into evidence envelopes with provenance. Data-store options include PostgreSQL/pgvector for governed research records and Neo4j for derived relationships; neither a vector result nor a graph edge replaces an original source.
 
-[Exact implementation, security boundaries, Windows packaging and tests](docs/integrations/offline-citation-metadata-pack-20261123.md).
+Controls and conventions include bounded requests, explicit source unavailability, checksums, model-weight review, synthetic test fixtures, audit metadata, human-review states, and separation between observed data and predictions.
 
-## New: Sovereign rural laptop workstation and specialist HTML swarm
+**Do not treat a passing test, a checksum, or a source citation as proof of clinical safety, authenticity, regulatory clearance, de-identification, or data-use permission.**
 
-**A real, separate offline execution profile** has been added alongside the existing public research site. The Windows x64 CI profile **installs and executes** pinned open-source medical/scientific readers, rather than merely cataloguing them:
+## How to get started
 
-- **pydicom + NumPy:** local Part-10 DICOM metadata and bounded synthetic MRI/CT pixel quality checks (including CT modality LUT where applicable).
-- **Biopython:** real local FASTA/FASTQ sequence parsing and aggregate quality statistics; no raw sequence export.
-- **RDKit:** real SMILES/SDF chemical parsing and molecular descriptors; no unsupported affinity, toxicity or therapeutic claims.
-- **pypdf:** local PDF text-extraction/page capability verification, without returning source text.
-- **Standard-library FHIR and laboratory formats:** bounded local FHIR Observation/Bundle JSON, CSV and TSV structural counts, no patient-field export.
-- **Six-plane Grover algorithm:** actual classical statevector mathematics for abstract evidence-coverage planning, not QPU execution or medical diagnosis.
+### Option A — Explore public research online
 
-Seven **linked HTML specialist micro-apps** (`deploy/offline/swarm/`) now run on a loopback-only **JSON-RPC 2.0** Python coordinator: overview/swarm, lab, DICOM imaging, molecular, quantum, offline knowledge and human review. A concurrent *synthetic* demonstration invokes actual installed modules, reports each missing dependency explicitly and preserves clinician authority. No EHR/PACS patient upload, prescription/differential generator, unsupported agent framework, licensed AlphaFold 3 weights or hospital integration is switched on by these pages. **GitHub remains an auditable source-code registry, never a live patient database.**
+Visit the [connected research workspace](https://tmrds-public-evidence-api.onrender.com/) or [GitHub Pages atlas](https://atphobia22.github.io/TMRDS/). Use **public research terms only**. The static Pages site does not run the Python backend; the connected workspace provides a separate same-origin research gateway. Public hosting and upstream provider availability can change.
 
-A GitHub Actions Windows runner downloads and hashes a pinned Python wheelhouse, verifies it, installs its packages using `pip --no-index`, then executes actual library tests and assembles the research-preview artifact. This is **not yet a self-contained .exe**: Python 3.11 x64 is required on the offline workstation; a successful Windows workflow must be verified before downloading or trusting its artifact.
+**Never submit patient names, scans, genomic records, laboratory results, clinical identifiers, or confidential institutional information to the public endpoints.**
 
-See [Windows offline setup and clinical limits](docs/operations/portable-offline-workstation.md) and [specialist HTML swarm + JSON-RPC security protocol](docs/architecture/offline-html-swarm.md). The program is **not clinically validated, FDA-cleared or certified for unsupervised decisions**; no performance guarantee of diagnostic results “in minutes” has been established.
-
-## New: local offline specialist HTML swarm (synthetic pilot)
-
-In addition to the existing **scientific offline workstation** (`scripts/qrce_swarm_local.py`, `scripts/qrce_offline_workstation.py`, and the Windows Python wheelhouse containing real pinned pydicom, Biopython, RDKit, and pypdf readers), TMRDS now includes a **zero-third-party-package, low-resource fallback**: an executable, air-gapped, nine-page specialist HTML workstation alongside the connected public research service. It uses a Python standard-library coordinator bound to **127.0.0.1 only**, actual existing synthetic laboratory/VCF parsers, the six-qubit Grover research simulation, an in-memory specialist event contract, and a deterministic SHA-256 research receipt. Imaging, pharmaceutical simulations, WikiMed ZIM archives and EHR integrations report their uninstalled/unavailable state rather than fabricate analyses.
-
-Start from a reviewed local source checkout with Python 3.11+:
-
-```sh
-python -m scripts.run_offline_swarm --port 8765
-```
-
-Then open **http://127.0.0.1:8765/** in a laptop browser. This demonstration can run with the laptop disconnected from the network. It accepts **only built-in, nonidentifying synthetic fixtures**—no patient uploads, medical diagnoses, clinical suggestions, prescriptions or institutional data. It is not yet a Windows installer or an approved clinical workstation.
-
-[Offline-workstation implementation, exact local APIs, AsyncAPI/event contract, current installed modules and clinical authorization gates](docs/integrations/offline-specialist-swarm-20261123.md).
-
-## New: executable offline FieldLab for Windows 11 x64
-
-The **separate FieldLab workstation** is a real locally executed, no-server Python research application—not a list of project links. It runs actual **pydicom** DICOM image-header/pixel inspection, **NiBabel** NIfTI scan geometry inspection, **Biopython** FASTA/FASTQ summaries, **RDKit** SMILES molecular descriptors, and bounded numerical lab CSV inspection. A **Tkinter desktop window** and a command-line interface operate entirely locally; an optional **FieldLab → offline six-plane Grover research review-plan** bridge uses only the type of inspected file, never a patient measurement or original sequence. It does not establish a diagnosis, target or treatment; patient identifiers and original images are not emitted in the structured report. It does not upload patient files to GitHub Pages or Render.
-
-The [Windows 11 x64 offline wheelhouse workflow](.github/workflows/fieldlab-offline.yml) creates a ZIP containing predownloaded real package wheels, wheel-by-wheel SHA-256 checks, an offline-only PowerShell installer and scripts. **Python 3.11 x64 must already be installed**, and the ZIP must be copied to the laptop before disconnecting. The package is a research-only file inspector: it is **not** MRI/CT diagnosis, clinical interpretation, validated variant calling, protein docking, gene editing, or an autonomous cure engine. The workflow must pass before a completed Windows package can be claimed.
-
-[Installation commands, exact package versions, safe offline execution, supported formats and limitations](docs/integrations/fieldlab-offline-workstation-20261123.md).
-
-## Try it now
-
-**[Open the fully connected TMRDS research workspace](https://tmrds-public-evidence-api.onrender.com/)** — a free, anonymous, same-origin Docker-backed research interface. **[GitHub Pages static atlas](https://atphobia22.github.io/TMRDS/)** remains the independently deployed static version with a rotating, interactive **3D Rubik's Cube**. The 26 visible cubies rotate continuously and their layers turn while searches run. You can select **Rotate a layer** to turn a face manually; reduced-motion preferences are respected. Search the live **Europe PMC**, **ClinicalTrials.gov v2** and **Crossref** services, inspect source identifiers and retrieval dates, and follow records to their origin.
-
-**[TMRDS 2 — earlier public workspace preview](https://muse.ai/s/tmrds-2-xxd6j1fn9xyxwxf/DtP0Ir8DQV7MepeJdlvuTQBszwBcsygUi_QoYBYFruw)** documents the October 2026 research concept and is not the current production evidence atlas.
-
-**Important hosting boundary:** GitHub Pages serves static HTML/CSS/JavaScript; it **does not run the Python research adapters**. The independent [free-plan Render HTTPS deployment](https://tmrds-public-evidence-api.onrender.com/) serves the same frontend and the read-only Python research API. Render free-plan availability and latency are not guaranteed, and its service readiness does **not** establish upstream data availability. The Rubik's Cube is a visual search indicator, **not** quantum computation.
-
-### Deployment and verification status
-
-| Capability | Verified status (November 23, 2026) |
-|---|---|
-| Animated 3D cube and manual layer turns | Live on GitHub Pages; browser smoke-tested |
-| Public literature and trial searches | Live browser queries to Europe PMC and ClinicalTrials.gov returned real linked results |
-| Public read-only research backend | **Public HTTPS deployed on Render free plan**; readiness/config/source metadata routes returned HTTP 200; original PMC, PubChem and bounded 22-source research queries independently tested |
-| Federated research adapters | ~25 repository adapters; **22 metadata-only adapters wired into governed concurrent cross-check**. CFTR one-record-per-source live check: **18 responded, four source-unavailable**; does not prove complete coverage |
-| Disease → target → compound link | Open Targets source-reported mechanism, exact MONDO / Ensembl / ChEMBL identifiers; bounded research lookup |
-| Freshness, source rights, and provenance | Dated source receipts, release observations, conservative license-review gate, limited SHA-256 record hashes |
-| Independent efficacy / clinical validation | **Not established**; one FDA-anchored technical reference case and a synthetic negative control are not a blinded clinical benchmark |
-
-The [November 23 source audit](https://github.com/ATphobia22/TMRDS/actions/workflows/source-governance.yml) reported responses from **five** official APIs (Open Targets, ChEMBL, Europe PMC, ClinicalTrials.gov, GWAS Catalog v2), and its one-case CFTR/ivacaftor **technical identifier-consistency check passed**. That does not certify license permission, data currency, comprehensive coverage, or treatment effectiveness.
-
-### New: Six-plane Grover search demonstration (no clinical inference)
-
-The connected Rubik's Cube now has a **reproducible, bounded six-qubit Grover simulator**: `GET /api/v1/research/cube-search?required=disease_phenotype,target_pathway,trials_labels&max_planes=4`. An actual phase oracle and Grover diffuser amplify **synthetic research-coverage configurations** across 64 bitstrings and show a classical 64-evaluation baseline, exact success probability, deterministic SHA-256 oracle digest, and a no-quantum-hardware execution receipt. The static GitHub Pages version links to the separately deployed Python simulator; it cannot run that Python backend. **The reported probability is only a probability of selecting a source-coverage plan—not likelihood a treatment is effective or a cure exists.**
-
-**Sparse Blossom/PyMatching is a quantum error-correction decoder, not a medical search algorithm.** The molecular graph-transformer named GROVER is unrelated to Grover's quantum algorithm. Seven verified, optional open-source software candidates (PyMatching, Stim, DeepChem, Boltz-2, scispaCy, medspaCy, Presidio) were added to the public registry as `optional_not_installed`, bringing the catalog to **122** entries, with zero new patient-data routes or unreviewed model installations. Mathematical tests and [implementation/validation notes](docs/integrations/qrce-grover-molecular-roadmap-20261123.md) accompany the code.
-
-### Public research API deployment, independent verification and monitoring
-
-- **HTTPS research runtime:** [https://tmrds-public-evidence-api.onrender.com/](https://tmrds-public-evidence-api.onrender.com/) — Docker `api.public_gateway`, read-only public methods, no PHI upload; Render free plan, Ohio region, auto-deploys from `main`.
-- **Verified release:** `0ec2669c16ddca030ed3fc1dec9cd6b246cb13c9`, Render deployed **2026-11-23**. Live `/health/ready` HTTP 200 (`external_sources_verified:false`), `/backend-config.json` HTTP 200 (`same-origin`), public project and synthetic format endpoints HTTP 200.
-- **Original-source checks:** live `/pmc-identifiers?identifier=PMC3531190` returned PMID `23193287`, PMCID `PMC3531190`, DOI `10.1093/nar/gks1195`; live `/periodic-element?symbol=Fe` returned the PubChem original **118-row table** with iron atomic number 26, without clinical inference.
-- **Twenty-two-source fan-out:** live `/cross-check?query=CFTR&limit=1` HTTP 200, **18 of 22 sources responded**, 14 returned records, and four source requests failed. One-record bounds and a provider outage are not evidence-quality judgments or full-data discovery.
-- **Operations:** scheduled [HTTPS contract smoke workflow](.github/workflows/public-api-smoke.yml), [operator documentation](docs/integrations/live-public-backend-20261123.md), plus the separate weekly upstream source audit. Public service uptime, upstream freshness, privacy compliance, clinical effect and model efficacy require independent assessment.
-
-## Current: 22-source QRCE cross-check, PMC identifier bridge and live FDA/PubChem research
-
-The [public evidence atlas](https://atphobia22.github.io/TMRDS/) searches
-**Europe PMC, ClinicalTrials.gov and Crossref DOI metadata** directly from
-the browser, with a separate ingredient-only **FDA Orange Book** search
-for patent/exclusivity metadata. It also links to 20 official biomedical
-research portals for human-triggered original-source searches.
-
-The read-only research-only Python gateway now exposes
-`GET /api/v1/research/cross-check`: **22 existing source adapters** queried
-concurrently, with original-source bibliographic cross-reference by exact
-DOI / PMID / PMCID / NCT, molecular context links that never merge independent
-experiments, source failure isolation,
-source provenance, metadata disagreements, hash-scoped receipt, and a
-typed **OpenMI-inspired, nonclinical model exchange** (not OGC OpenMI
-conformance). Each database's copyright and terms remain applicable.
-Duplicate bibliographic indexing does NOT count as independent
-experimental confirmation.
-
-`GET /api/v1/research/patent-landscape?ingredient=METFORMIN&limit=2`
-queries original **FDA Orange Book** records without asserting patent
-expiration or freedom to operate. The FDA's reported dates (including
-pediatric extension markers), US patent claims, regulatory exclusivity,
-jurisdiction and current USPTO status require **separate legal review**.
-Nothing here identifies a drug as an established new indication or cure.
-
-The public catalog now lists **122 research databases, tools and scientific projects**, clearly distinguishing existing adapters from software not installed, catalog references and approval-gated resources. The **local-only synthetic research fixture inspector** handles CSV/TSV, selected FHIR JSON, sample-free VCF, FASTA and FASTQ within strict bounds; it never grants patient-level clinical ingestion.
-
-`GET /api/v1/research/pmc-identifiers` maps official NIH PMC identifiers; `GET /api/v1/research/periodic-element?symbol=Fe` returns original PubChem periodic-table metadata. `GET /api/v1/research/file-format-capabilities` reports honest local-only parser support. These routes are present in the separately deployable research-only Python gateway.
-
-The **static GitHub Pages site does not host a Python backend**, and no
-EHR/PACS, medical device, quantum hardware or patient-record system
-is deployed by this change.
-
-[22-source data fabric, PMC, laboratory formats, controlled datasets and verification](docs/integrations/qrce-source-fabric-20261123.md).
-
-[Source-to-QRCE architecture, official documents, uploaded-code safety
-audit and reproducible gates](docs/integrations/qrce-crosscheck-openmi-patents-20261123.md).
-
-## New: open-source medical project integration registry
-
-The [public evidence atlas](https://atphobia22.github.io/TMRDS/) now includes a
-**122-resource, category-filterable medical software and research catalog** with official
-repository/documentation links and explicit integration/licensing states.
-It covers EHRs (OpenEMR, OpenMRS, Bahmni, GNU Health), imaging (Orthanc,
-OHIF, Cornerstone3D, Weasis, 3D Slicer), interoperability (HAPI FHIR,
-Medplum, Open Integration Engine), imaging AI (MONAI, TotalSegmentator),
-labs, genomics, mobile/offline platforms, PubMed and AlphaFold.
-
-The **separately deployable public research API** adds read-only,
-bounded `/api/v1/research/pubmed-citations`,
-`/api/v1/research/alphafold-db/{accession}` and
-`/api/v1/research/alphafold3-status` endpoints. The same gateway also provides `/cross-check`, `/pmc-identifiers`, `/periodic-element` and `/file-format-capabilities` under the research prefix. The AlphaFold DB
-endpoint returns **real source-reported prediction metadata**,
-not AlphaFold 3 predictions. AlphaFold 3 source is Apache-2.0,
-but the weights/output have restrictive noncommercial terms;
-**AlphaFold 3 inference is not deployed or bundled**. The GitHub Pages
-copy remains static and cannot execute Python. Institutional EHR/PACS
-connectors are not connected to patient records.
-
-[Architecture, official upstream references, commands, license gates and tests](docs/integrations/open-source-medical-gateway.md).
-
-## For doctors
-
-TMRDS is a research workspace for answering "what does the evidence say?" — with every answer traceable to its source.
-
-- **Research federation with 25 cataloged public metadata adapters, plus a separate AlphaFold DB structure lookup.** The repository's full research federation supports discovery across the biomedical literature (PubMed, Europe PMC, OpenAlex, Semantic Scholar, Crossref, arXiv, bioRxiv/medRxiv), trials and drug labels (ClinicalTrials.gov, openFDA, DailyMed), chemistry (PubChem, ChEMBL, RxNorm), genomics and variants (Ensembl — including variant-consequence predictions — ClinVar with review stars, UniProtKB, gnomAD population frequencies, GTEx tissue eQTLs, GWAS Catalog v2 genetic associations), and knowledge graphs and pathways (Open Targets, STRING, Reactome, Monarch, NCATS, MeSH). Each result keeps its source, its date, and its limits. Per-source failures are disclosed rather than silently converted to negative findings. **Only eight reviewed-policy metadata adapters are queried by the isolated public API; the static Pages site queries two services.** The other adapters are not automatically represented as public/live integrations.
-- **Original-source GWAS Catalog v2 associations.** `GET /api/v1/research/gwas-associations?trait=asthma&limit=2` exposes a bounded, read-only genetic association facet with GWAS IDs, PMIDs, source provenance, per-source error status, and no causal or clinical interpretation. This is a backend endpoint, not part of the static public Pages site.
-- **A research dossier with citations.** `GET /api/v1/research/dossier` turns a search into a structured export: exact DOI/PMID matches, each record's provenance, retraction flags, and what is still unreviewed. Discovery material, not proof of a treatment or cure.
-- **A synthetic lab-trends workbench.** A FHIR R4 research workbench for reviewing laboratory trends (values, units, dates, statuses, reference ranges) and imaging metadata — **synthetic test data only**. No real patient records, no real images, no diagnosis, no reference-range interpretation. It exists so workflows can be tested safely before any real data is ever involved.
-- **Imaging research, kept separate from interpretation.** A local Orthanc/OHIF recipe lets researchers view test DICOM studies, and offline MONAI tools can evaluate segmentation masks. AI output is always labeled as AI output — never mixed with the original image or a radiologist's reading. Nothing here is validated for patient-care use.
-- **Uncertainty is shown, not hidden.** Preliminary vs. final results, missing data, conflicting sources, and low-confidence predictions are flagged for clinician review. The system never auto-diagnoses.
-
-## For hospitals and health systems
-
-TMRDS is built to be evaluated as a research platform first, with clear boundaries for anything clinical.
-
-- **No live EHR connection out of the box.** The repository enables no institutional exchange (EHR, HIE, or otherwise) by itself. A production connection would require target-system registration, authorization, BAA/DUA/IRB and privacy review, TLS/certificate management, and exact FHIR/US Core conformance testing — none of which this repository performs for you.
-- **Interoperability boundaries, not promises.** FHIR R4 with US Core 9.0.0 as the documented profile target, SMART discovery metadata, PKCE S256, structural resource validation, and Provenance/AuditEvent builders. Full profile and terminology conformance requires a real validator pinned to the exact target release.
-- **OMOP CDM v5.4** as the research normalization boundary for longitudinal records.
-- **Data stays where you put it.** PostgreSQL is the authoritative evidence store (with pgvector as a derived retrieval projection, never a source of truth); Neo4j is a governed graph projection. The API binds to loopback by default and database ports are not published.
-- **Credentials are never in the repository.** Deployment secrets come from a secret manager or environment variables. If a credential was ever exposed, revoke/rotate it at the issuing provider — removing it from source control does not revoke it.
-- **What a deployment needs:** PostgreSQL/pgvector, Neo4j, the environment variables listed under [Required production configuration](#required-production-configuration), and an operator-reviewed migration run. Production requires `TMRDS_ALLOW_PRODUCTION_MIGRATIONS=true` as an explicit opt-in.
-
-## What TMRDS is not
-
-- Not FDA-cleared Software as a Medical Device (SaMD), and not a diagnostic, prescribing, or treatment system.
-- Not clinically validated and not HIPAA-compliant as deployed — compliance is a property of a governed deployment, not of this code.
-- Not connected to any live patient data, hospital system, or registry. The workbench and imaging sandbox use synthetic data only.
-- Not a guarantee of exhaustive coverage: federated search covers the sources listed below, each with its own limits, and a source that fails reports a warning rather than pretending to be complete.
-- Not quantum hardware: classical simulations are never described as quantum execution, and the IBM Quantum adapter is opt-in, disabled by default, and submits nothing unless explicitly enabled.
-
-## Evidence sources
-
-**25 federated public metadata sources**, each queried in isolation so one failure never blocks the rest; an additional AlphaFold DB structure endpoint is separate. Two more are credential-gated and reported as unavailable, never mocked: Lens Patents and IBM Quantum.
-
-| Group | Sources |
-|---|---|
-| Literature | PubMed, Europe PMC, OpenAlex, Semantic Scholar, Crossref, arXiv, bioRxiv/medRxiv |
-| Trials, labels, safety | ClinicalTrials.gov, openFDA, DailyMed |
-| Chemistry and drugs | PubChem, ChEMBL, RxNorm |
-| Genomics and variants | Ensembl, ClinVar (review status shown with every classification), UniProtKB, gnomAD, GTEx, GWAS Catalog v2 (trait-associated variants; not causality) |
-| Knowledge and pathways | Open Targets Platform, STRING, Reactome, Monarch, NCATS Node Normalization, MeSH |
-
-Per-source limits are stated in the code (`engines/federated_evidence_search.py`) — for example, Semantic Scholar runs on the shared request pool without a free API key, and Ensembl VEP predictions are computational, not clinical assertions.
-
-## How it works
-
-**Evidence → Provenance → Interoperability → Graph → AI governance.**
-
-Public sources are queried by isolated adapters, normalized into a common evidence shape, and stored with provenance in PostgreSQL. Derived views (vectors, graphs) are projections that always trace back to source records. AI governance records model, prompt, and dataset provenance for every generated output and keeps research outputs from becoming clinical authority. The core API starts without heavy scientific dependencies; optional research engines (MONAI, quantum) are isolated from the core import path.
-
-## What's new
-
-**November 23, 2026 — [PR #72](https://github.com/ATphobia22/TMRDS/pull/72), merged to main.** Replaced the original static cube art with a working, accessible 3D Rubik's Cube (26 visible cubies, quarter-turn moves, continuous/search animation, manual control and reduced-motion support). Introduced **`api/public_gateway.py`** and **`Dockerfile.public`**: a separate, nonclinical read-only API that serves the same site and permits only eight policy-registered, bounded metadata adapters from the larger federation. Added a source-governance registry, explicit retrieval freshness vs. upstream version states, a 90-day license-review checkpoint, scheduled official-source receipts and exact-ID Open Targets disease → target → compound links. A single FDA-anchored cystic fibrosis (`MONDO_0009061`) → CFTR (`ENSG00000001626`) → ivacaftor (`CHEMBL2010601`) reference case passed the live technical check, but **independent clinical validation remains outstanding**. All seven PR workflows and the corresponding merged-`main` workflows completed successfully; the public Pages deployment was also browser-tested. The Python service is **deployable but not yet publicly hosted**.
-
-**November 23, 2026 — GWAS Catalog v2.** Added an original-source GWAS Catalog REST API v2 genetic-association metadata adapter to the federated search. The adapter uses one bounded source page, preserves association IDs, study accession, ontology traits and p-values, and explicitly refuses causal or clinical interpretation. Source rights and study population applicability need independent review. The public GitHub Pages site remains a separate static browser experience with direct Europe PMC, ClinicalTrials.gov and Crossref lookups; it does not execute the Python backend.
-
-**November 2026** — gnomAD and GTEx adapters wired into federated search (population frequencies, tissue eQTLs; 25 live sources); Ensembl VEP variant-consequence annotation (HGVS and region queries, same Ensembl source); HAPI FHIR public test-server probe with a documented synthetic-only opt-in, guards intact; degraded-open API-key posture restored per the standing directive; synthetic FHIR R4 research workbench (lab trends, imaging metadata, terminology; synthetic data only); local Orthanc/OHIF imaging research sandbox; research evidence dossiers with retraction flags; a 30-surface research-plugin capability registry with a read-only RCSB PDB metadata route; source telemetry; opt-in IBM Quantum adapter with a bounded reconciliation worker and job ledger.
-
-**October 2026** — 15 new evidence pipelines (Tier 1: Semantic Scholar, Crossref, PubChem, ChEMBL, DailyMed, RxNorm; Tier 2: Open Targets, STRING, Reactome, ClinVar, Ensembl, bioRxiv/medRxiv, NCATS, Monarch, MeSH), each verified live against its official service before coding. Operations hardening: Prometheus metrics, rate limiting, sanitized errors, optional API-key gate, and a deploy stack (Caddy + TLS, Prometheus/Alertmanager/Grafana, Keycloak). Research-only intended use (`docs/INTENDED_USE.md`, mapping the four Cures Act §520(o)(1)(E) criteria). Verified open-source medical software catalog (`docs/reference/open-source-medical-software.md`).
-
-## Run it yourself
-
-### Public research-only gateway (no patient ingestion or database)
-
-The isolated public service serves the animated website and same-origin governed lookup endpoints. It binds to **127.0.0.1:18080** by default. This is a local deployment, not a public production cloud endpoint:
+To run the isolated public gateway locally, with Docker installed:
 
 ```bash
 docker compose -f compose.public.yml config
 docker compose -f compose.public.yml up --build -d
-
-# API and same-origin configuration
 curl -fsS http://127.0.0.1:18080/health/ready
-curl -fsS http://127.0.0.1:18080/backend-config.json
 curl -fsS http://127.0.0.1:18080/api/v1/research/source-governance
-
-# Exact identifier test case; evidence discovery only
-curl -fsS 'http://127.0.0.1:18080/api/v1/research/evidence-pathway?disease=MONDO_0009061&limit=8'
 ```
 
-Open **http://127.0.0.1:18080/** for the same interactive Rubik's Cube site with research API lookup enabled. Internet publication requires an operator-controlled HTTPS reverse proxy, rate and concurrency controls, source-license review, and production monitoring. Do **not** expose the separate all-purpose medical API just to serve this public research website.
+Open `http://127.0.0.1:18080/` for the same-origin public research frontend. Readiness checks the gateway process; it does not certify the availability or currency of external sources.
 
-The public gateway has no clinical write or patient-ingestion routes. Its `/health/ready` checks the service process, **not** whether external evidence providers are live. Source failures return `source_unavailable` rather than invented evidence. The Pages copy of `backend-config.json` explicitly disables the Python backend.
+### Option B — Prepare a research metadata pack for offline use
 
-### Full development and integration stack
+From a trusted connected preparation computer with Python 3.11+ and the reviewed source checkout:
 
-Core development/CI targets **Python 3.11**. From the repository root:
+```bash
+python scripts/offline_evidence_pack.py prepare --query CFTR --out citations.json
+python scripts/offline_evidence_pack.py verify --path citations.json
+```
+
+Transfer the file to the field laptop using an authorized method. With the laptop disconnected:
+
+```bash
+python scripts/offline_evidence_pack.py verify --path data/offline/citations.json
+python scripts/offline_evidence_pack.py search --path data/offline/citations.json --term CFTR
+python -m scripts.run_offline_swarm --port 8765
+```
+
+The last command serves the local research demo at `http://127.0.0.1:8765/`; citation search is available at `/evidence.html`. The pack contains **bounded citation metadata**, not full papers or a complete offline medical knowledge base. Copy the verified pack to `data/offline/citations.json` for automatic discovery by this interface. See [offline citation pack documentation](docs/integrations/offline-citation-metadata-pack-20261123.md).
+
+### Option C — Use Windows 11 FieldLab without Internet
+
+On a trusted connected computer, obtain the successful **TMRDS Offline FieldLab Libraries and Win11 Wheel Bundle** workflow artifact, verify its published SHA-256, and transfer the ZIP. Install Python **3.11 x64** on the Windows laptop before travel, then extract the bundle.
+
+In PowerShell, from the extracted bundle directory:
+
+```powershell
+powershell.exe -NoProfile -File .\scripts\install_fieldlab_windows.ps1 -BundleDir .
+.\.fieldlab-venv\Scripts\python.exe .\scripts\fieldlab_cli.py status
+.\.fieldlab-venv\Scripts\python.exe .\scripts\fieldlab_desktop.py
+```
+
+The installer uses the included local wheels with no package index. For separately authorized local files, consult the [documented CLI flags and file limits](docs/integrations/fieldlab-offline-workstation-20261123.md). Device encryption, access control, file retention, and applicable patient-data rules remain the responsibility of the operator or institution.
+
+### Option D — Development and validation
+
+Core development targets Python 3.11:
 
 ```bash
 python scripts/check_dependency_lock.py
 python -m compileall -q api engines scripts tests
 python -m pytest -q -m "not integration"
-```
-
-For a local development stack:
-
-```bash
-cp .env.example .env
-# Replace every placeholder with unique local-only values. Do not use these values in production.
-docker compose --env-file .env config --quiet
-docker compose --env-file .env build
-docker compose --env-file .env run --rm tmrds-api python -m engines.migration_runner status
-docker compose --env-file .env run --rm tmrds-api python -m engines.migration_runner upgrade
-docker compose --env-file .env up -d
-```
-
-The migration runner is explicit and never runs at API startup. For an existing database without a migration ledger, inspect the schema and backup/restore path first; use the documented operator-reviewed `baseline --through N` command only if the existing schema truly matches every migration through that version. Never drop or recreate a persistent volume to force migration initialization.
-
-Run the new research governance and frontend checks with:
-
-```bash
-python -m pytest -q tests/test_governed_pathway.py tests/test_public_gateway.py
 python scripts/check_public_site.py
-node --check public/site.js
-docker build --pull -f Dockerfile.public -t tmrds-public:test .
 ```
 
-The `source-governance.yml` GitHub Actions workflow also runs a **weekly** bounded audit of five upstream services and uploads a dated, hashed receipt (30-day artifact retention). It reports actual response state and source version observations; it does not certify independent source currency or data-use rights.
+For the complete optional data/graph stack and safe migrations, consult the [operations runbook](docs/operations/tmrds-operations-runbook.md). It requires operator-provided secrets, explicit migration control, and deployment review. Do not expose the full development API or data stores as a substitute for the isolated public gateway.
 
-Live-source and database tests are marked `integration` and require their external services. CI does not require live PHI, institutional EHR access, or IBM Quantum hardware. A read-only [Postman smoke collection](postman/TMRDS-API-smoke.postman_collection.json) covers liveness, readiness, and research-advisory metadata.
+## The longer-term vision
 
-### Required production configuration
+The architectural goal is a **portable, multidisciplinary physician-and-researcher workstation** that can assist in remote and resource-constrained locations. Important next-stage work includes:
 
-Supply these through a deployment secret manager. Do not commit values:
+| Direction | What must happen before it is a trustworthy clinical feature |
+|---|---|
+| **AI-assisted MRI/CT and pathology analysis** | Appropriately licensed models and datasets; patient-level security; independent case-level validation, calibration, radiologist review, and applicable regulatory review |
+| **Laboratory result interpretation and clinical decision support** | Analytical and clinical validation, unit/reference governance, real workflow evaluation, explainable evidence, and appropriate regulatory review |
+| **Precision genomics, splicing, and gene-editing research** | Rigorous variant interpretation, biological verification, ethical oversight, and specialist-led validation; no autonomous therapeutic recommendations |
+| **Protein structures, cryptic pockets, docking, and drug discovery** | Reproducible structural methods, appropriate benchmarks, experimental confirmation, model/dataset licenses, and clear separation of prediction from effect |
+| **Rich offline medical knowledge** | Authorized content redistribution, dated snapshots, staleness controls, local indexing, source reconciliation, and sustainable updates |
+| **Practical low-resource deployment** | Signed self-contained installer, clean Windows 11 offline tests, hardware/performance characterization, resilience, accessibility, and operator training |
+| **Authorized institutional interoperability** | Consent, access controls, audit/retention, real FHIR/US Core and DICOMweb conformance testing, contracts, and privacy/security assessment |
 
-```text
-POSTGRES_DB
-POSTGRES_USER
-POSTGRES_PASSWORD
-NEO4J_URI
-NEO4J_USER
-NEO4J_PASSWORD
-TMRDS_DATABASE_URL
-TMRDS_HMAC_SECRET
-TMRDS_CLINICIAN_PASSWORD
-TMRDS_EMERGENCY_PIN
-TMRDS_BASE_URL
-TMRDS_US_CORE_VERSION
-TMRDS_SERVICE_ISSUER
-TMRDS_SERVICE_AUDIENCE
-TMRDS_SERVICE_JWKS_JSON
-```
+**These are engineering goals, not descriptions of completed or approved features.** An open-source library alone does not establish that TMRDS has integrated it, licensed its weights or data, tested its performance, or made it safe for clinical use.
 
-`TMRDS_HMAC_SECRET` must be at least 32 characters. Production Compose requires database, Neo4j, interoperability, and service-auth configuration to be present. `TMRDS_SERVICE_AUTH_REQUIRED=true` is the production default; ingestion and synchronization endpoints then require a valid asymmetric service token with the configured scope. The optional API-key gate (`TMRDS_API_KEYS_FILE`) degrades to loud open if a configured key file cannot be loaded (CRITICAL log + `"auth": "degraded-open"` in the ops posture) — the API keeps serving and never denies traffic over a bad key file — while intentionally public routes stay open when no key file is set. Ops posture is visible at `GET /api/v1/ops/posture`.
+## Responsible use
 
-## Safety and provenance
+TMRDS is currently **research-advisory software**. Its intended use is public biomedical discovery and bounded scientific experimentation. It is **not** a medical device cleared or approved for diagnosis or treatment, a replacement for radiologists or clinicians, a prescription engine, or an emergency decision system. The repository is not connected to a live hospital or patient database, and the hosted public service must never receive protected or identifiable patient information.
 
-1. **No fabricated medical evidence.**
-2. **No unsupported clinical claims.**
-3. **No autonomous diagnosis or prescribing authority.**
-4. **Source provenance must remain inspectable.**
-5. **Derived vectors/graphs must not silently replace authoritative evidence.**
-6. **Research predictions must be distinguishable from observed/source-backed evidence.**
-7. **Human clinical authority remains outside the software's authority boundary.**
+Any future feature processing patient images, diagnostic signals, or patient-specific clinical decisions requires an explicit **reassessment of intended use and regulatory classification**, as well as independent clinical validation and privacy/security controls. Current prototypes should not be assumed to qualify for any regulatory exemption. See [intended use](docs/INTENDED_USE.md), [SaMD checklist](docs/SAMD_CLASSIFICATION_CHECKLIST.md), and [interoperability compliance matrix](docs/INTEROPERABILITY_COMPLIANCE_MATRIX.md).
 
-AI governance records model identity and version, prompt/policy provenance, dataset and evaluation metadata, and evidence envelopes for every output, with uncertainty and human-review requirements explicit. The route audit (`python scripts/audit_api_routes.py`) inventories FastAPI routes and flags write routes without a recognized declared authentication dependency; it is a heuristic, not proof of authorization correctness.
-
-## Optional IBM Quantum integration
-
-An opt-in adapter for the **IBM Quantum Compute Service REST API**, for research workloads only — not required to run the core API, PostgreSQL store, or Neo4j projection. A regular IBM Quantum account does not by itself guarantee access to a Quantum Compute instance, backend, or job submission; configure an eligible instance CRN and IAM permissions first. Supply `IBM_QUANTUM_API_KEY` and `IBM_QUANTUM_INSTANCE_CRN` through a secret manager or untracked local environment; never commit real credentials. Remote job submission stays disabled unless explicitly enabled with `TMRDS_IBM_QUANTUM_SUBMISSION_ENABLED=true`. The database-backed local limiter defaults to four submissions per rolling minute (ceiling one through five). Uncertain submissions are recorded as `SUBMISSION_UNKNOWN` and are never automatically resubmitted. The optional one-pass reconciliation worker only polls jobs with known IBM job IDs and never creates or cancels remote jobs. See [IBM Quantum integration](docs/integrations/ibm-quantum-compute.md) and the [operations runbook](docs/operations/tmrds-operations-runbook.md). Repository CI submits no jobs to live IBM hardware and incurs no quantum execution charges.
-
-## Repository layout
+## Project structure
 
 ```text
 TMRDS/
-├── api/                 # Full medical API + isolated read-only public_gateway.py
-├── engines/             # Research, evidence, interoperability, and security engines
-├── docs/                # Architecture, security, interoperability, and operations docs
-├── migrations/          # Ordered PostgreSQL schema changes and audit tables
-├── scripts/             # Security scans, route audit, and bounded operator commands
-├── postman/             # Read-only API smoke-test collection
-├── tests/               # Unit, API-contract, and integration tests
-├── frontend/            # Existing frontend/application surface
-├── public/              # Live GitHub Pages atlas, 3D cube JS/CSS, disabled Pages API config
-├── workers/             # Continuous real-world data synchronization workers
-├── .github/workflows/   # CI and security scanning
-├── docker-compose.yml   # PostgreSQL/pgvector + Neo4j + API stack
-├── compose.public.yml   # Isolated loopback-bound public research-only service
-├── Dockerfile.public     # Unprivileged same-origin website + read-only research API
-├── deploy.sh            # Deployment helper
-├── requirements.txt     # Python runtime/test dependencies
-└── pytest.ini           # Pytest configuration
+├── api/                 Public research gateway and separate development APIs
+├── engines/             Evidence, scientific readers, interoperability and governance
+├── public/              Public atlas and interactive 3D Cube
+├── frontend/            Additional application surface
+├── deploy/              Offline wheel profiles and deployment assets
+├── scripts/             FieldLab CLI/GUI, offline packs, checks and operators
+├── extensions/, modes/  OHIF research extensions and modes
+├── offline/             Additional local research utilities
+├── migrations/          Versioned research database migrations
+├── workers/             Research source synchronization workers
+├── tests/               Unit, contract, synthetic and integration tests
+├── docs/                Intended use, architecture, source and operations records
+└── .github/workflows/   Build, audit, security and release workflows
 ```
 
-## Further reading
+## Documentation and release evidence
 
-- [All 50 historical branch comparisons and release-gate verification](docs/operations/branch-reconciliation-20261123.md) — no outstanding PRs; 33 ancestor refs and 17 squash/superseded histories; exact CI and offline artifact proof.
+- [Medical software inventory](docs/reference/open-source-medical-software.md) — integrations versus optional, cataloged, and not-installed projects.
+- [22-source research cross-check](docs/integrations/qrce-source-fabric-20261123.md) — source adapter contracts, identifiers, and failure behavior.
+- [Offline FieldLab and library execution](docs/integrations/fieldlab-offline-workstation-20261123.md) — supported formats, versions, setup and limits.
+- [Offline citation packs](docs/integrations/offline-citation-metadata-pack-20261123.md) — preparation, hashing, permitted fields, and staleness.
+- [Imaging research workflow](docs/integrations/imaging-research-workflow.md) — DICOMweb, OHIF provenance, MONAI review, annotation, and exports.
+- [Release verification](docs/operations/branch-reconciliation-20261123.md) — historical branch reconciliation and November 23, 2026 CI evidence. A green workflow is technical evidence, **not clinical validation**.
+- [Architecture and operations](docs/operations/tmrds-operations-runbook.md) — deployment, secrets, migrations, monitoring, and constraints.
 
-- [Intended use](docs/INTENDED_USE.md) — research-only scope and the Cures Act criteria.
-- [SaMD classification checklist](docs/SAMD_CLASSIFICATION_CHECKLIST.md) — per-feature classification.
-- [Interoperability compliance matrix](docs/INTEROPERABILITY_COMPLIANCE_MATRIX.md) — FHIR/US Core controls and limitations.
-- [Imaging research sandbox](docs/operations/imaging-research-sandbox.md) — local Orthanc/OHIF recipe and synthetic MR-to-FHIR tooling.
-- [Imaging research workflow](docs/integrations/imaging-research-workflow.md) — bounded DICOMweb reads, OHIF provenance panel, reviewed MONAI weight loading, human label submission; research only, no clinical approval.
-- [Research dossier](docs/operations/research-dossier.md) — dossier contract and remaining gates.
-- [GWAS Catalog v2 integration](docs/integrations/gwas-catalog-v2.md) — bounded real-source genetic association metadata, rate limits, identity preservation, and clinical limitations.
-- [Original open-source medical gateway integration (initial 41 projects)](docs/integrations/open-source-medical-gateway.md) — PubMed and AlphaFold DB metadata, integration status and licensing. The [current catalog](public/medical-projects.json) holds 122 entries.
-- [Governed evidence pathway and Rubik's Cube deployment](docs/integrations/governed-evidence-pathway.md) — same-origin Docker service, source-license/freshness checks, exact identifier joins, release audit, and independent-validation limits.
-- [Source-governance workflow](.github/workflows/source-governance.yml) — CI tests, public container smoke tests, and weekly upstream audits.
-- [Biomedical source gap review](docs/reference/biomedical-source-gap-review-2026-11-07.md) — status baseline for GWAS v2, DepMap/PRISM, LINCS, CELLxGENE, ClinPGx priorities.
-- [Verified open-source medical software catalog](docs/reference/open-source-medical-software.md) — 32 projects checked against primary sources.
-- [CI and release gates](docs/operations/ci-release-gates.md) — workflows, pinning, and release evidence.
-- [Operations runbook](docs/operations/tmrds-operations-runbook.md)
+---
 
-## Disclaimer
+### The guiding idea
 
-TMRDS is research software for biomedical evidence exploration and engineering development. It is not medical advice, a diagnosis, a prescription, or a substitute for qualified clinical judgment. No repository documentation should be interpreted as evidence that TMRDS is FDA-cleared, clinically validated, HIPAA-compliant, ONC-certified, TEFCA-connected, or authorized for a particular regulated use.
+**Make the world's available medical research easier to find, inspect, connect, and carry—without pretending that software can replace the judgment, accountability, or compassion of the people delivering care.**
 
-**Owner action still required:** branch protection is currently disabled on `main`. Configure required checks and pull-request protections in GitHub repository settings after the new workflow check names have appeared. Workflow YAML alone cannot enforce branch protection.
+*TMRDS is being built toward that goal in verifiable stages: source-backed evidence first, real local tools second, and clinical capabilities only when the necessary validation and governance exist.*
