@@ -1,0 +1,422 @@
+{
+  "schema_version": "1.0",
+  "reviewed_on": "2026-11-23",
+  "scope": "catalog_and_bounded_research_integration; no patient-data connections",
+  "research_advisory_only": true,
+  "clinical_promotion_allowed": false,
+  "all_platforms_installed": false,
+  "source_health_checked_per_request": false,
+  "license_approvals_completed": false,
+  "projects": [
+    {
+      "id": "pubmed",
+      "category": "literature",
+      "name": "PubMed / NCBI",
+      "source_url": "https://www.ncbi.nlm.nih.gov/home/develop/api/",
+      "interface": "NCBI E-utilities",
+      "integration_state": "active_backend_metadata",
+      "license_notes": "NCBI E-utilities metadata, 3 requests/second without API key; license depends on original article",
+      "verification": "official_api_checked"
+    },
+    {
+      "id": "alphafold_db",
+      "category": "molecular",
+      "name": "AlphaFold Protein Structure Database",
+      "source_url": "https://alphafold.ebi.ac.uk/",
+      "interface": "EMBL-EBI prediction metadata API",
+      "integration_state": "active_backend_metadata",
+      "license_notes": "CC BY 4.0 predictions; database is distinct from AlphaFold 3",
+      "verification": "official_api_checked"
+    },
+    {
+      "id": "alphafold3",
+      "category": "molecular",
+      "name": "AlphaFold 3",
+      "source_url": "https://github.com/google-deepmind/alphafold3",
+      "interface": "Local inference, optional weights",
+      "integration_state": "restricted_not_configured",
+      "license_notes": "Apache 2.0 code; weights and output restricted non-commercial; NOT bundled or executing",
+      "verification": "official_license_checked"
+    },
+    {
+      "id": "openemr",
+      "category": "ehr",
+      "name": "OpenEMR",
+      "source_url": "https://github.com/openemr/openemr",
+      "interface": "FHIR R4 and REST APIs",
+      "integration_state": "connector_contract_only",
+      "license_notes": "GPL 3.0; organization-level certification does not certify TMRDS",
+      "verification": "official_docs_checked"
+    },
+    {
+      "id": "openmrs",
+      "category": "ehr",
+      "name": "OpenMRS",
+      "source_url": "https://github.com/openmrs/openmrs-module-fhir2",
+      "interface": "FHIR2 module / REST",
+      "integration_state": "connector_contract_only",
+      "license_notes": "MPL 2.0 modules; no live EHR access",
+      "verification": "official_docs_checked"
+    },
+    {
+      "id": "bahmni",
+      "category": "ehr",
+      "name": "Bahmni",
+      "source_url": "https://github.com/Bahmni",
+      "interface": "OpenMRS, OpenELIS, Odoo",
+      "integration_state": "reference_only",
+      "license_notes": "Copyleft components; review each distribution and service",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "gnu_health",
+      "category": "ehr",
+      "name": "GNU Health",
+      "source_url": "https://www.gnuhealth.org/",
+      "interface": "Hospital modules",
+      "integration_state": "reference_only",
+      "license_notes": "GPL; not connected",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "worldvista",
+      "category": "ehr",
+      "name": "WorldVistA",
+      "source_url": "https://www.worldvista.org/",
+      "interface": "VistA legacy interfaces",
+      "integration_state": "reference_only",
+      "license_notes": "Legacy distribution; maintenance and current license unverified",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "medplum",
+      "category": "interoperability",
+      "name": "Medplum",
+      "source_url": "https://github.com/medplum/medplum",
+      "interface": "FHIR R4 / SMART",
+      "integration_state": "connector_contract_only",
+      "license_notes": "Apache 2.0 core; hosted deployment terms distinct",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "hapi_fhir",
+      "category": "interoperability",
+      "name": "HAPI FHIR",
+      "source_url": "https://github.com/hapifhir/hapi-fhir",
+      "interface": "FHIR R4 REST",
+      "integration_state": "synthetic_metadata_contract",
+      "license_notes": "Apache 2.0; no patient exchange enabled",
+      "verification": "official_docs_checked"
+    },
+    {
+      "id": "blaze",
+      "category": "interoperability",
+      "name": "Blaze FHIR Server",
+      "source_url": "https://github.com/samply/blaze",
+      "interface": "FHIR REST / CQL",
+      "integration_state": "reference_only",
+      "license_notes": "Confirm implementation/version and license before use",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "open_integration_engine",
+      "category": "interoperability",
+      "name": "Open Integration Engine",
+      "source_url": "https://github.com/OpenIntegrationEngine/engine",
+      "interface": "HL7 v2 routing / FHIR",
+      "integration_state": "reference_only",
+      "license_notes": "Community fork; no HL7 inbound listener deployed",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "bridgelink",
+      "category": "interoperability",
+      "name": "BridgeLink",
+      "source_url": "https://www.bridgelinksoftware.com/",
+      "interface": "HL7 integration",
+      "integration_state": "reference_only",
+      "license_notes": "Source availability and present terms require review",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "hl7v2_fhir",
+      "category": "interoperability",
+      "name": "LinuxForHealth HL7v2-FHIR Converter",
+      "source_url": "https://github.com/LinuxForHealth/hl7v2-fhir-converter",
+      "interface": "HL7v2 to FHIR R4",
+      "integration_state": "reference_only",
+      "license_notes": "Translation requires profile and code system validation",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "orthanc",
+      "category": "imaging",
+      "name": "Orthanc PACS",
+      "source_url": "https://orthanc.uclouvain.be/book/plugins/dicomweb.html",
+      "interface": "QIDO-RS / WADO-RS / STOW-RS",
+      "integration_state": "synthetic_dicomweb_contract",
+      "license_notes": "Server/plugin licenses vary; PACS not publicly connected",
+      "verification": "official_docs_checked"
+    },
+    {
+      "id": "ohif",
+      "category": "imaging",
+      "name": "OHIF Viewer",
+      "source_url": "https://github.com/OHIF/Viewers",
+      "interface": "DICOMweb viewer",
+      "integration_state": "existing_synthetic_research_workflow",
+      "license_notes": "MIT source; synthetic research viewer built in CI; no patient imaging",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "cornerstone3d",
+      "category": "imaging",
+      "name": "Cornerstone3D",
+      "source_url": "https://github.com/cornerstonejs/cornerstone3D",
+      "interface": "Browser DICOM rendering",
+      "integration_state": "existing_synthetic_research_workflow",
+      "license_notes": "MIT; browser rendering underlying viewer; clinical validation separate",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "dcm4chee",
+      "category": "imaging",
+      "name": "dcm4chee Archive",
+      "source_url": "https://github.com/dcm4che/dcm4chee-arc-light",
+      "interface": "DICOMweb / DIMSE",
+      "integration_state": "reference_only",
+      "license_notes": "Enterprise archive; hardening and licensing per release",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "dicoogle",
+      "category": "imaging",
+      "name": "Dicoogle",
+      "source_url": "https://github.com/dicoogle/dicoogle",
+      "interface": "Indexing PACS",
+      "integration_state": "reference_only",
+      "license_notes": "No local archive deployed",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "weasis",
+      "category": "imaging",
+      "name": "Weasis",
+      "source_url": "https://github.com/nroduit/Weasis",
+      "interface": "Desktop DICOM viewer",
+      "integration_state": "reference_only",
+      "license_notes": "Not bundled with web client",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "slicer",
+      "category": "imaging",
+      "name": "3D Slicer",
+      "source_url": "https://github.com/Slicer/Slicer",
+      "interface": "Desktop image analysis",
+      "integration_state": "reference_only",
+      "license_notes": "Research only; not certified for diagnosis",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "pydicom",
+      "category": "imaging",
+      "name": "pydicom",
+      "source_url": "https://github.com/pydicom/pydicom",
+      "interface": "Python DICOM IO",
+      "integration_state": "existing_synthetic_research_workflow",
+      "license_notes": "MIT code; DICOM records can contain PHI, not publicly transported",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "simpleitk",
+      "category": "imaging",
+      "name": "SimpleITK",
+      "source_url": "https://github.com/SimpleITK/SimpleITK",
+      "interface": "Imaging algorithms",
+      "integration_state": "reference_only",
+      "license_notes": "Apache 2.0; research application requires validation",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "monai",
+      "category": "imaging_ai",
+      "name": "MONAI",
+      "source_url": "https://github.com/Project-MONAI/MONAI",
+      "interface": "PyTorch imaging AI",
+      "integration_state": "existing_synthetic_research_workflow",
+      "license_notes": "Apache 2.0 code; model bundles each need license/checksum review",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "totalsegmentator",
+      "category": "imaging_ai",
+      "name": "TotalSegmentator",
+      "source_url": "https://github.com/wasserth/TotalSegmentator",
+      "interface": "CT/MR segmentation CLI",
+      "integration_state": "reference_only",
+      "license_notes": "Tasks/weights may carry separate commercial restrictions",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "nnunet",
+      "category": "imaging_ai",
+      "name": "nnU-Net",
+      "source_url": "https://github.com/MIC-DKFZ/nnUNet",
+      "interface": "Segmentation toolkit",
+      "integration_state": "reference_only",
+      "license_notes": "Requires benchmark and dataset license review",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "ctakes",
+      "category": "clinical_nlp",
+      "name": "Apache cTAKES",
+      "source_url": "https://github.com/apache/ctakes",
+      "interface": "Clinical NLP",
+      "integration_state": "reference_only",
+      "license_notes": "Never send unredacted notes to public research backend",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "medgemma",
+      "category": "clinical_nlp",
+      "name": "MedGemma",
+      "source_url": "https://developers.google.com/health-ai-developer-foundations/medgemma",
+      "interface": "Open-weight health model",
+      "integration_state": "restricted_not_configured",
+      "license_notes": "Weights/model access and usage terms are distinct from open-source code",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "biomistral",
+      "category": "clinical_nlp",
+      "name": "BioMistral",
+      "source_url": "https://huggingface.co/BioMistral",
+      "interface": "Biomedical language model",
+      "integration_state": "restricted_not_configured",
+      "license_notes": "Checkpoint and dataset terms not automatically approved",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "openelis",
+      "category": "laboratory",
+      "name": "OpenELIS Global",
+      "source_url": "https://github.com/DIGI-UW/OpenELIS-Global-2",
+      "interface": "LIS / FHIR R4",
+      "integration_state": "connector_contract_only",
+      "license_notes": "MPL 2.0 code; institution authorization required",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "senaite",
+      "category": "laboratory",
+      "name": "SENAITE",
+      "source_url": "https://github.com/senaite/senaite.core",
+      "interface": "LIMS",
+      "integration_state": "reference_only",
+      "license_notes": "LIMS specimen data are not public metadata",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "iskylims",
+      "category": "laboratory",
+      "name": "iSkyLIMS",
+      "source_url": "https://github.com/BU-ISCIII/iskylims",
+      "interface": "Genomics LIMS",
+      "integration_state": "reference_only",
+      "license_notes": "Specimen/sequence records restricted",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "cht",
+      "category": "mobile_offline",
+      "name": "Community Health Toolkit",
+      "source_url": "https://github.com/medic/cht-core",
+      "interface": "Offline-first community health",
+      "integration_state": "reference_only",
+      "license_notes": "Field clinical data/sync not connected",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "opensrp",
+      "category": "mobile_offline",
+      "name": "OpenSRP",
+      "source_url": "https://github.com/OpenSRP",
+      "interface": "Mobile health record sync",
+      "integration_state": "reference_only",
+      "license_notes": "Local deidentification and governance required",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "commcare",
+      "category": "mobile_offline",
+      "name": "CommCare",
+      "source_url": "https://github.com/dimagi/commcare-hq",
+      "interface": "Offline mobile forms",
+      "integration_state": "reference_only",
+      "license_notes": "Deployment and form licenses require review",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "nextflow",
+      "category": "genomics",
+      "name": "Nextflow / nf-core",
+      "source_url": "https://github.com/nf-core",
+      "interface": "Versioned workflow engines",
+      "integration_state": "reference_only",
+      "license_notes": "Container and reference database licenses distinct",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "gatk",
+      "category": "genomics",
+      "name": "GATK",
+      "source_url": "https://github.com/broadinstitute/gatk",
+      "interface": "Variant calling",
+      "integration_state": "reference_only",
+      "license_notes": "Validation against reference truth sets required",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "opencravat",
+      "category": "genomics",
+      "name": "OpenCRAVAT",
+      "source_url": "https://github.com/KarchinLab/open-cravat",
+      "interface": "Variant annotation plugins",
+      "integration_state": "reference_only",
+      "license_notes": "Annotator databases and plugins have independent licenses",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "cbioportal",
+      "category": "genomics",
+      "name": "cBioPortal",
+      "source_url": "https://github.com/cBioPortal/cbioportal",
+      "interface": "Cancer genomics portal",
+      "integration_state": "reference_only",
+      "license_notes": "Datasets and patient records require separate permissions",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "cqf_ruler",
+      "category": "decision_support",
+      "name": "CQF Ruler",
+      "source_url": "https://github.com/DBCG/cqf-ruler",
+      "interface": "CQL / CDS Hooks",
+      "integration_state": "reference_only",
+      "license_notes": "Do not enable patient-specific clinical decisions",
+      "verification": "cataloged_review_pending"
+    },
+    {
+      "id": "synthea",
+      "category": "synthetic_data",
+      "name": "Synthea",
+      "source_url": "https://github.com/synthetichealth/synthea",
+      "interface": "Synthetic FHIR fixtures",
+      "integration_state": "synthetic_contract_only",
+      "license_notes": "Apache 2.0 synthetic data; never represent as patient evidence",
+      "verification": "cataloged_review_pending"
+    }
+  ]
+}
