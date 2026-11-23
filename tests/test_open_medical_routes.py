@@ -129,7 +129,8 @@ def test_pubmed_citations_use_bounded_existing_original_source_pipeline(monkeypa
     assert data["status"] == "responding"
     assert len(data["records"]) == 1
     assert data["records"][0]["pmid"] == "38718835"
-    assert "abstract" not in json.dumps(data)
+    assert "abstract" not in data["records"][0]
+    assert data["abstract_redistribution_enabled"] is False
     assert data["clinical_promotion_allowed"] is False
     assert client.post("/api/v1/research/pubmed-citations", params={"query": "cancer"}).status_code == 405
 
