@@ -12,7 +12,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from engines.offline_specialist_swarm import capability_manifest, run_offline_case, validate_scenario
+from engines.offline_specialist_swarm import capability_manifest, run_offline_case, validate_scenario, search_local_public_evidence
+from engines.offline_evidence_pack import EvidencePackError
 
 ASSETS = Path(__file__).resolve().parents[1] / "offline" / "swarm"
 
@@ -25,7 +26,7 @@ class OfflineSwarmHandler(BaseHTTPRequestHandler):
         "/swarm.js", "/swarm.css", "/api/local/health",
         "/api/local/capabilities",
     })
-    ALLOWED_POST_PATHS = frozenset({"/api/local/run"})
+    ALLOWED_POST_PATHS = frozenset({"/api/local/run", "/api/local/evidence-search"})
     MAX_REQUEST_BYTES = 256
     server_version = "TMRDSOfflineSwarm/1"
     sys_version = ""
@@ -86,17 +87,23 @@ class OfflineSwarmHandler(BaseHTTPRequestHandler):
         if self.headers.get("Origin") not in (None, expected_origin):
             return self._reply(403, {"error": "cross_origin_disallowed"})
         if (self.headers.get("Content-Type") != "application/json" or
-                self.headers.get("X-TMRDS-Local-Only") != "synthetic-demo"):
+                self.headers.get("X-TMRDS-Local-Only") != ("public-citation-query" if urlsplit(self.path).path == "/api/local/evidence-search" else "synthetic-demo")):
             return self._reply(415, {"error": "json_local_demo_contract_required"})
         size = self.headers.get("Content-Length", "")
         if not size.isascii() or not size.isdecimal() or not 1 <= int(size) <= self.MAX_REQUEST_BYTES:
             return self._reply(413, {"error": "request_body_rejected"})
         try:
             data = json.loads(self.rfile.read(int(size)))
-            if not isinstance(data, dict) or set(data) != {"scenario"}:
+            if not isinstance(data, dict):
+                raise ValueError("request must be an object")
+            if urlsplit(self.path).path == "/api/local/evidence-search":
+                if set(data) != {"term"}:
+                    raise ValueError("only public citation query allowed")
+                return self._reply(200, search_local_public_evidence(data["term"]))
+            if set(data) != {"scenario"}:
                 raise ValueError("fixed scenario only")
             scenario = validate_scenario(data["scenario"])
-        except (ValueError, UnicodeError):
+        except (ValueError, UnicodeError, EvidencePackError):
             return self._reply(422, {"error": "only_built_in_synthetic_scenario_allowed"})
         return self._reply(200, run_offline_case(scenario))
 
