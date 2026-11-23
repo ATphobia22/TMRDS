@@ -373,6 +373,50 @@ async function loadCrossref(query, seq) {
   }
 }
 
+/* PubChem PUG REST is the original source for periodic element facts.
+ * Do not treat atomic reference fields as therapeutic screening outcomes.
+ */
+$("elementForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const symbol = $("elementSymbol").value.trim();
+  if (!/^[A-Z][a-z]?$/.test(symbol)) {
+    $("elementState").textContent = "Enter a capitalized element symbol such as Fe or H.";
+    return;
+  }
+  if (!(await backendConfiguration)) {
+    $("elementState").textContent = "The Python research gateway is not deployed on this static GitHub Pages site. See original PubChem data.";
+    return;
+  }
+  const root = $("elementRecords"), submit = $("elementSubmit");
+  submit.disabled = true;
+  root.replaceChildren(node("p", "empty", "Fetching original NCBI PubChem property table…"));
+  try {
+    const out = await getJson("/api/v1/research/periodic-element?symbol=" + encodeURIComponent(symbol), 17000);
+    const data = out.data;
+    if (!data || typeof data.status !== "string") throw new Error("Invalid original property schema");
+    root.replaceChildren();
+    if (data.status === "element_metadata" && data.element && data.element.symbol === symbol) {
+      const el = data.element;
+      const card = node("article", "result");
+      card.append(node("strong", "", textLimited(el.name, 64) + " · " + el.symbol + " · atomic number " + el.atomic_number),
+        node("p", "", "PubChem-reported atomic weight: " + textLimited(el.atomic_weight_source_text, 80) +
+          " · electron configuration: " + textLimited(el.electron_configuration_reported, 250)),
+        node("p", "", "Electronegativity (as reported): " + textLimited(el.electronegativity_source_text, 50) +
+          " · standard state: " + textLimited(el.standard_state_reported, 50)),
+        node("p", "", "Not a clinical, toxicology, formulation or efficacy determination. Recheck reference units/isotopes."));
+      root.append(card);
+    } else {
+      root.append(node("p", "empty", "Element not returned by source or unavailable; no values inferred."));
+    }
+    $("elementState").textContent = "Original PubChem source: " + data.status + " · " + out.retrievedAt;
+  } catch (_) {
+    root.replaceChildren(node("p", "empty", "NCBI PubChem periodic table unavailable; no values fabricated."));
+    $("elementState").textContent = "Source unavailable / invalid response";
+  } finally {
+    submit.disabled = false;
+  }
+});
+
 /* Official NIH PMC identity bridge: only the independently served backend can
  * run this proxy; GitHub Pages stays static and does not request private data.
  */
