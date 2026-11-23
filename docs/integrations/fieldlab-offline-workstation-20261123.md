@@ -2,7 +2,7 @@
 
 **Implemented scope:** a separate offline Python workstation and Windows 11 x64 wheel bundle for research and file inspection. **Not** a validated diagnostic device, medical practice system, automated treatment planner, hospital database, imaging interpretation model, or a substitute for clinician review.
 
-The user can run actual libraries locally, without the internet, using a terminal or desktop window. No browser, login, local HTTP server, Wi-Fi access, internet API or remote account is required by the FieldLab program itself.
+The user can run actual libraries locally, without the internet, using a terminal or desktop window. A new optional **private FieldLab → Quantum Rubik review-plan adapter** passes only the file type to the already-tested six-plane Grover simulator; it never transmits source files, patient measurements or identifiers. A queued review plane is **not verified phenotype, molecular target, or treatment evidence**. No browser, login, local HTTP server, Wi-Fi access, internet API or remote account is required by the FieldLab program itself.
 
 ## Installed packages and executed functions
 
@@ -23,7 +23,7 @@ Once the ZIP is on the laptop or a removable drive:
 
 ```powershell
 # After extraction; this installation uses NO package index/downloads.
-pwsh -NoProfile -File .\scripts\install_fieldlab_windows.ps1 -BundleDir .
+powershell.exe -NoProfile -File .\scripts\install_fieldlab_windows.ps1 -BundleDir .
 
 # The local GUI runs without an HTTP service.
 .\.fieldlab-venv\Scripts\python.exe .\scripts\fieldlab_desktop.py
@@ -45,6 +45,9 @@ Use Windows PowerShell 5.1 or PowerShell 7+ as installed; the installer itself i
 
 # NIfTI spatial metadata only.
 .\.fieldlab-venv\Scripts\python.exe .\scripts\fieldlab_cli.py inspect --private-local C:\my_local_data\brain.nii.gz
+
+# Offline Rubik review-plan simulation: local molecule output -> abstract evidence plane.
+.\.fieldlab-venv\Scripts\python.exe .\scripts\fieldlab_cli.py molecule --smiles "CCO" --cube-plan
 
 # Public chemistry reference; no binding or efficacy prediction.
 .\.fieldlab-venv\Scripts\python.exe .\scripts\fieldlab_cli.py molecule --smiles "CCO"
