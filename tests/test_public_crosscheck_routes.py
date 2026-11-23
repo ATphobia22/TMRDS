@@ -154,7 +154,7 @@ def test_public_routes_are_read_only_and_phrases_reject_pii():
     assert client.get("/api/v1/research/patent-landscape", params={"ingredient": "../user"}).status_code == 422
     assert client.get("/api/v1/research/cross-check", params={"query": "test@example.org"}).status_code == 422
     for route in app.routes:
-        if route.path.startswith("/api/v1/research/"):
+        if getattr(route, "path", "").startswith("/api/v1/research/"):
             assert getattr(route, "methods", set()) <= {"GET", "HEAD"}
 
 
