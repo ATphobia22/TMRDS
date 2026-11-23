@@ -52,11 +52,41 @@ jobs:
       - name: Locked dependencies
         run: python -m pip install -r requirements.lock
       - name: Test identifier, provenance, freshness and licensing boundaries
-        run: python -m pytest -q tests/test_governed_pathway.py
+        run: python -m pytest -q tests/test_governed_pathway.py tests/test_public_gateway.py
       - name: Public browser source security contract
         run: |
           python scripts/check_public_site.py
           node --check public/site.js
+
+  isolated-container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build public research-only Docker image
+        run: docker build --pull -f Dockerfile.public -t tmrds-public:ci .
+      - name: Verify same-origin website and licensed source inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup() { docker rm -f tmrds-public-smoke >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          docker run -d --name tmrds-public-smoke -p 127.0.0.1:18080:8000 tmrds-public:ci
+          ready=0
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18080/health/ready > /tmp/research-ready.json; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" != "1" ]; then docker logs --tail 120 tmrds-public-smoke; exit 1; fi
+          curl -fsS http://127.0.0.1:18080/backend-config.json | grep -F '"api_mode":"same-origin"'
+          curl -fsS http://127.0.0.1:18080/ | grep -F 'rubiksCube'
+          curl -fsS http://127.0.0.1:18080/api/v1/research/source-governance | grep -F '"clinical_promotion_allowed":false'
 
   live-source-receipt:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
