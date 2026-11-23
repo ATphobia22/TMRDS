@@ -41,7 +41,9 @@ jobs:
       - name: Check standalone browser script
         run: node --check offline/swarm/swarm.js
       - name: Run actual loopback HTTP and synthetic orchestration tests
-        run: python -m unittest discover -s tests -p 'test_offline*.py' -v
+        run: |
+          python -m unittest discover -s tests -p 'test_offline_specialist_swarm.py' -v
+          python -m unittest discover -s tests -p 'test_offline_swarm_http.py' -v
       - name: Confirm the HTML portals include no third-party runtime URLs
         run: |
           python - <<'PY'
