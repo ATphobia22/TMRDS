@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 
 from api.error_responses import RequestCorrelationMiddleware
 from api.open_medical_routes import router as open_medical_router
+from api.public_crosscheck_routes import router as public_crosscheck_router
 from api.governed_pathway_routes import router as pathway_router
 from api.ops import (
     SecurityHeadersMiddleware, configure_logging, limiter, setup_rate_limiting,
@@ -34,6 +35,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestCorrelationMiddleware)
 app.include_router(pathway_router)
 app.include_router(open_medical_router)
+app.include_router(public_crosscheck_router)
 
 
 @app.get("/health/live")

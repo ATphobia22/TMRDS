@@ -333,6 +333,190 @@ async function loadGovernedPathway(query, seq) {
 }
 
 
+/* Additional direct public records; no backend or clinical data needed. */
+function crossrefRecord(work) {
+  const doi = String(work && work.DOI || "").trim();
+  const validDoi = doi.startsWith("10.") && doi.includes("/") && doi.length <= 200 &&
+    !Array.from(doi).some((character) => character.charCodeAt(0) <= 32);
+  if (!validDoi) return null;
+  const parts = work.published && Array.isArray(work.published["date-parts"]) ?
+    work.published["date-parts"][0] : [];
+  return {
+    provider: "Crossref", identifier: "DOI:" + doi.toLowerCase(),
+    title: textLimited(Array.isArray(work.title) ? work.title[0] : work.title, 350),
+    date: Array.isArray(parts) && parts.length ? parts.slice(0, 3).join("-") : "Not supplied",
+    note: textLimited(Array.isArray(work["container-title"]) ? work["container-title"][0] : "", 100),
+    type: "Deposited DOI metadata; does not imply peer review, efficacy, or independent replication",
+    href: "https://doi.org/" + encodeURIComponent(doi)
+  };
+}
+async function loadCrossref(query, seq) {
+  setStatus("crossref", "wait", "Checking source…");
+  try {
+    const url = "https://api.crossref.org/works?rows=5&select=DOI,title,published,container-title&query.bibliographic=" +
+      encodeURIComponent(query);
+    const out = await getJson(url, 22000);
+    if (seq !== requestSequence) return;
+    const values = out.data && out.data.message && out.data.message.items;
+    if (!Array.isArray(values)) throw new Error("Unexpected Crossref schema");
+    const records = values.map(crossrefRecord).filter(Boolean);
+    $("crossrefCount").textContent = records.length + " DOI records";
+    setStatus("crossref", "ok", "Fetched " + out.retrievedAt);
+    await showRecords("crossrefResults", records, seq);
+    return out.retrievedAt;
+  } catch (error) {
+    if (seq !== requestSequence) return null;
+    setStatus("crossref", "bad", errorLabel(error));
+    $("crossrefCount").textContent = "unavailable";
+    clearResults("crossrefResults", "Crossref unavailable or blocked by CORS; use the official Crossref search.");
+    return null;
+  }
+}
+
+/* Each link is a human-initiated search in the named original service.
+ * They are not secretly routed through the TMRDS server.
+ */
+const researchPortals = [
+  {name:"PubMed", base:"https://pubmed.ncbi.nlm.nih.gov/", key:"term", why:"Original NLM biomedical citation records"},
+  {name:"Crossref", base:"https://search.crossref.org/", key:"q", why:"DOI-deposited publication metadata"},
+  {name:"ClinVar", base:"https://www.ncbi.nlm.nih.gov/clinvar/", key:"term", why:"Variant interpretations with review status"},
+  {name:"UniProtKB", base:"https://www.uniprot.org/uniprotkb", key:"query", why:"Protein identifiers, functions and references"},
+  {name:"RCSB PDB", base:"https://www.rcsb.org/", key:null, why:"Experimental three-dimensional structures"},
+  {name:"Open Targets", base:"https://platform.opentargets.org/", key:null, why:"Target-disease evidence by original source"},
+  {name:"ChEMBL", base:"https://www.ebi.ac.uk/chembl/", key:null, why:"Compound assays, mechanisms and annotations"},
+  {name:"PubChem", base:"https://pubchem.ncbi.nlm.nih.gov/", key:null, why:"Chemical identities and public assays"},
+  {name:"Reactome", base:"https://reactome.org/content/query", key:"q", why:"Curated biological reaction pathways"},
+  {name:"NLM MeSH", base:"https://meshb.nlm.nih.gov/", key:null, why:"Controlled indexing vocabulary"},
+  {name:"FDA Orange Book", base:"https://www.fda.gov/drugs/drug-approvals-and-databases/orange-book-data-files", key:null, why:"Drug approval, patent and exclusivity metadata"},
+  {name:"USPTO Patent Search", base:"https://www.uspto.gov/patents/search", key:null, why:"Patent claims and legal-status records"}
+];
+function updateResearchPortalLinks() {
+  const term = $("query").value.trim().slice(0, 100);
+  const root = $("portalList");
+  root.replaceChildren();
+  for (const portal of researchPortals) {
+    const card = node("article", "medical-entry");
+    card.append(node("span", "medical-type", portal.key ? "Original-source search link" : "Original-source research destination"),
+      node("strong", "", portal.name), node("p", "", portal.why));
+    const link = node("a", "", portal.key && term ? "Search this source for current topic" : "Open official source");
+    const destination = new URL(portal.base);
+    if (portal.key && term) destination.searchParams.set(portal.key, term);
+    link.href = destination.href; link.target = "_blank"; link.rel = "noopener noreferrer";
+    card.append(link); root.append(card);
+  }
+}
+$("query").addEventListener("change", updateResearchPortalLinks);
+$("query").addEventListener("input", updateResearchPortalLinks);
+updateResearchPortalLinks();
+
+/* Model-to-model data exchange is inspired by OpenMI but not certified as
+ * an OpenMI runtime. Do not claim clinical interoperability or QPU execution.
+ */
+async function loadBackendCrosscheck(query, seq) {
+  const root = $("crosscheckRecords");
+  if (!(await backendConfiguration) || seq !== requestSequence) {
+    $("crosscheckState").textContent = "No Python cross-check backend on static Pages";
+    root.replaceChildren(node("p", "empty", "Direct public source searches remain available above and below."));
+    return null;
+  }
+  $("crosscheckState").textContent = "Cross-checking twelve metadata providers…";
+  root.replaceChildren(node("p", "empty", "Checking original DOI / PMID / NCT identifiers…"));
+  try {
+    const response = await getJson("/api/v1/research/cross-check?limit=2&query=" + encodeURIComponent(query), 48000);
+    if (seq !== requestSequence) return null;
+    const data = response.data;
+    if (!data || !Array.isArray(data.groups) || !data.source_status ||
+        !data.openmi_inspired_exchange) throw new Error("Invalid evidence cross-check contract");
+    root.replaceChildren();
+    const multihits = data.groups.filter((g) => Array.isArray(g.sources) && g.sources.length > 1);
+    const chosen = multihits.length ? multihits.slice(0, 8) : data.groups.slice(0, 5);
+    for (const group of chosen) {
+      const article = node("article", "pathway-entry");
+      article.append(node("strong", "", group.sources.join(" · ")),
+        node("p", "", (group.exact_identifiers || []).join(" · ") || "Source-only record; no exact shared identifiers"),
+        node("p", "", group.interpretation === "cross_index_metadata_overlap_only" ?
+          "Same indexed source item in multiple catalogs; NOT independent experimental replication" :
+          "Single original-source record; corroboration not established"));
+      root.append(article);
+    }
+    if (!chosen.length) root.append(node("p", "empty", "No bounded records returned; missing sources and failures must be reviewed."));
+    const states = Object.values(data.source_status);
+    const responsive = states.filter((v) => v.state === "responding").length;
+    $("crosscheckState").textContent = responsive + "/12 source requests responded · " +
+      data.metadata_overlap_groups + " exact-ID overlap groups · " + response.retrievedAt;
+    $("crosscheckFootnote").textContent =
+      "Fingerprint " + textLimited(data.snapshot_sha256, 64) +
+      " applies to source counts/status, not original raw records. " +
+      "OpenMI-inspired exchange is NOT OGC-conformance-tested. Scientific replication, patent freedom to operate, clinical effect and cures NOT verified.";
+    return data.status;
+  } catch (_) {
+    if (seq === requestSequence) {
+      root.replaceChildren(node("p", "empty", "Bounded cross-check unavailable; this is not evidence of absence."));
+      $("crosscheckState").textContent = "Backend source cross-check unavailable";
+    }
+    return null;
+  }
+}
+
+/* Official FDA Orange Book can be queried directly from GitHub Pages.
+ * FDA-reported dates are NEVER automatically translated to rights or FTO.
+ */
+$("patentForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const ingredient = $("ingredient").value.trim().toUpperCase();
+  if (!/^[A-Z][A-Z0-9 -]{1,55}$/.test(ingredient)) {
+    $("patentState").textContent = "Enter one public drug ingredient without punctuation or personal information.";
+    return;
+  }
+  const root = $("patentRecords");
+  const button = $("patentSubmit");
+  button.disabled = true;
+  root.replaceChildren(node("p", "empty", "Requesting original FDA Orange Book records…"));
+  $("patentState").textContent = "FDA source query in progress…";
+  try {
+    const out = await getJson("https://api.fda.gov/drug/orangebook.json?search=" +
+      encodeURIComponent("products.active_ingredients.name:" + ingredient) + "&limit=3", 17000);
+    const records = out.data && out.data.results;
+    if (!Array.isArray(records)) throw new Error("FDA schema mismatch");
+    root.replaceChildren();
+    for (const record of records.slice(0, 3)) {
+      const products = Array.isArray(record.products) ? record.products.slice(0, 4) : [];
+      const names = products.map((p) => textLimited(p.brand_name, 80)).filter(Boolean).join(", ");
+      const article = node("article", "result");
+      article.append(node("strong", "", names || "FDA listed application"),
+        node("p", "identifier", "Application: " +
+          products.map((p) => textLimited(p.application_number, 15)).filter(Boolean).join(", ")));
+      const patents = Array.isArray(record.patents) ? record.patents.slice(0, 10) : [];
+      if (patents.length) {
+        for (const patent of patents) {
+          article.append(node("p", "", "FDA-listed patent " + textLimited(patent.patent_number, 20) +
+            " · reported expiration " + textLimited(patent.expiration_date, 15) +
+            " · legal validity and freedom to operate UNVERIFIED"));
+        }
+      } else {
+        article.append(node("p", "", "No patents listed on this result; this does NOT establish public-domain availability."));
+      }
+      const exclusivity = Array.isArray(record.exclusivity) ? record.exclusivity : [];
+      for (const row of exclusivity.slice(0, 6)) {
+        article.append(node("p", "", "Regulatory exclusivity: " +
+          textLimited(row.exclusivity_code, 30) + " · listed through " +
+          textLimited(row.exclusivity_expiration_date, 15)));
+      }
+      root.append(article);
+    }
+    if (!root.children.length) root.append(node("p", "empty", "FDA returned no bounded records."));
+    $("patentState").textContent = "Official FDA record lookup at " + out.retrievedAt +
+      " · database last updated: " + textLimited(out.data.meta && out.data.meta.last_updated, 30) +
+      " · patent status/claims and freedom to operate NOT independently verified.";
+  } catch (error) {
+    root.replaceChildren(node("p", "empty",
+      errorLabel(error) + ". No patent expiry or clearance conclusion may be made."));
+    $("patentState").textContent = "FDA source unavailable / no usable response; no legal claims verified";
+  } finally {
+    button.disabled = false;
+  }
+});
+
 /* Auditable project index is published as a static JSON asset on GitHub Pages.
  * Project discovery does not mean its software is installed or connected.
  */
@@ -494,24 +678,28 @@ $("structureForm").addEventListener("submit", async (event) => {
 FORM.addEventListener("submit", async (event) => {
   event.preventDefault();
   const query = $("query").value.trim();
-  if (query.length < 2 || query.length > 120) {
-    $("fetchMeta").textContent = "Enter a public research topic between 2 and 120 characters.";
+  const pieces = query.split("-");
+  const isSSN = pieces.length === 3 && pieces[0].length === 3 && pieces[1].length === 2 &&
+    pieces[2].length === 4 && pieces.every((part) => Array.from(part).every((c) => c >= "0" && c <= "9"));
+  if (query.length < 2 || query.length > 100 || query.includes("@") || isSSN) {
+    $("fetchMeta").textContent = "Enter a non-personal research topic between 2 and 100 characters.";
     return;
   }
   const seq = ++requestSequence;
   BUTTON.disabled = true;
   BUTTON.textContent = "Fetching…";
   startCubeSearch();
-  $("litCount").textContent = "—"; $("trialCount").textContent = "—";
+  $("litCount").textContent = "—"; $("trialCount").textContent = "—"; $("crossrefCount").textContent = "—";
   clearResults("literature", "Fetching source…");
   clearResults("trials", "Fetching source…");
-  $("fetchMeta").textContent = "Querying two public services independently. Failure of one does not suppress the other.";
+  clearResults("crossrefResults", "Fetching original DOI metadata…");
+  $("fetchMeta").textContent = "Querying three public services independently. Failure of one does not suppress the other.";
   try {
-    const results = await Promise.allSettled([loadLiterature(query, seq), loadTrials(query, seq), loadGovernedPathway(query, seq), loadBackendPubMed(query, seq)]);
+    const results = await Promise.allSettled([loadLiterature(query, seq), loadTrials(query, seq), loadCrossref(query, seq), loadGovernedPathway(query, seq), loadBackendPubMed(query, seq), loadBackendCrosscheck(query, seq)]);
     if (seq !== requestSequence) return;
-    const successes = results.slice(0, 2).filter((x) => x.status === "fulfilled" && x.value).length;
+    const successes = results.slice(0, 3).filter((x) => x.status === "fulfilled" && x.value).length;
     $("fetchMeta").textContent = "Search completed " + new Date().toISOString() +
-      " · " + successes + "/2 upstream services returned usable JSON. Source dates and fingerprint scope appear on records; access and evidentiary quality are not implied.";
+      " · " + successes + "/3 upstream services returned usable JSON. Source dates and fingerprint scope appear on records; access and evidentiary quality are not implied.";
   } finally {
     if (seq === requestSequence) {
       BUTTON.disabled = false; BUTTON.textContent = "Search sources";
