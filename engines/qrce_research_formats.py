@@ -35,6 +35,8 @@ _PERSON_TOKENS = frozenset({
     "patient", "patientid", "subject", "subjectid", "name", "fullname",
     "birthdate", "birth_date", "dob", "phone", "email", "address",
     "mrn", "ssn", "socialsecuritynumber", "person", "personid",
+    "medicalrecordnumber", "patientname", "firstname", "lastname", "identifier",
+    "patientidentifier", "given", "family", "telecom", "account", "memberid", "policyid",
 })
 _LOINC = re.compile(r"^[0-9]{1,8}-[0-9]$")
 _CODE = re.compile(r"^[A-Za-z0-9_.:/-]{1,80}$")
