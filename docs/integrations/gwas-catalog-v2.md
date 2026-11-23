@@ -20,6 +20,7 @@ Research-advisory association discovery only; not a clinical interpretation, cau
 - Distinct association IDs must survive a shared publication PMID. Record hash scope is normalized source record, not an upstream signed payload.
 - Cohort ancestry, genome assembly, confounding and clinical applicability are not supplied or inferred by the initial adapter.
 - Source lane is genetic_association; no automatic diagnosis, dosing, efficacy grade or clinical promotion.
+- A bounded GET /api/v1/research/gwas-associations endpoint exposes public trait metadata with sanitized per-source errors; the Quantum Cube registry maps the source to disease, target, and population research facets.
 - The GitHub Pages public site does not run this backend adapter or claim connectivity to it.
 
 ## Tests and operations
