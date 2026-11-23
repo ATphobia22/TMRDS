@@ -63,7 +63,7 @@ async def test_gwas_rejects_malformed_payload_and_does_not_fabricate_data(monkey
     for payload in ({}, {"_embedded": {"associations": [None]}},
                     {"_embedded": {"associations": [{**ASSOCIATION, "association_id": "../../bad"}]}},
                     {"_embedded": {"associations": [{**ASSOCIATION, "p_value": -3}]}},
-                    {"_embedded": {"associations": [{**ASSOCIATION, "p_value": float("nan")}]}},
+                    {"_embedded": {"associations": [{**ASSOCIATION, "p_value": "NaN"}]}},
                     {"_embedded": {"associations": "not-a-list"}}):
         monkeypatch.setattr("engines.gwas_catalog_v2_pipeline.httpx.AsyncClient",
             lambda **kwargs: original(transport=httpx.MockTransport(
