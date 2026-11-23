@@ -69,6 +69,45 @@ class SwarmHttpTests(unittest.TestCase):
         self.assertEqual(len(data["events"]), 8)
         self.assertEqual(len(data["receipt_sha256"]), 64)
 
+    def test_only_verified_public_metadata_pack_is_searchable_via_local_citation_post(self):
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from engines.offline_evidence_pack import build_pack, save_pack
+        from test_offline_evidence_pack import source
+        packet = build_pack(source(), query="CFTR", retrieved_at="2026-11-23T08:00:00+00:00")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "citations.json"
+            save_pack(path, packet)
+            with patch("engines.offline_specialist_swarm.LOCAL_EVIDENCE_PACK_PATH", path):
+                code, head, body = self.call(
+                    "POST", "/api/local/evidence-search", {"term": "CFTR"},
+                    {"Origin": f"http://127.0.0.1:{self.port}",
+                     "X-TMRDS-Local-Only": "public-citation-query"},
+                )
+                self.assertEqual(code, 200)
+                data = json.loads(body)
+                self.assertEqual(data["schema_version"], "1.0")
+                self.assertEqual(data["match_count"], 1)
+                self.assertFalse(data["search_executed_online"])
+                self.assertNotIn("patient_id", body.decode())
+                code, _, _ = self.call(
+                    "POST", "/api/local/evidence-search", {"term": "person@example.org"},
+                    {"X-TMRDS-Local-Only": "public-citation-query"},
+                )
+                self.assertEqual(code, 422)
+                code, _, _ = self.call(
+                    "POST", "/api/local/evidence-search", {"term": "CFTR"},
+                    {"X-TMRDS-Local-Only": "synthetic-demo"},
+                )
+                self.assertEqual(code, 415)
+        code, _, body = self.call(
+            "POST", "/api/local/evidence-search", {"term": "CFTR"},
+            {"X-TMRDS-Local-Only": "public-citation-query"},
+        )
+        self.assertEqual(code, 200)
+        self.assertEqual(json.loads(body)["status"], "offline_source_not_installed")
+
     def test_reject_cross_origin_patient_body_and_invalid_routes(self):
         cases = [
             ("POST", "/api/local/run", {"scenario": "synthetic_all"},

@@ -6,6 +6,8 @@ on:
     paths:
       - "offline/swarm/**"
       - "engines/offline_specialist_swarm.py"
+      - "engines/offline_evidence_pack.py"
+      - "scripts/offline_evidence_pack.py"
       - "scripts/run_offline_swarm.py"
       - "tests/test_offline*"
       - ".github/workflows/offline-swarm.yml"
@@ -14,6 +16,8 @@ on:
     paths:
       - "offline/swarm/**"
       - "engines/offline_specialist_swarm.py"
+      - "engines/offline_evidence_pack.py"
+      - "scripts/offline_evidence_pack.py"
       - "scripts/run_offline_swarm.py"
       - "tests/test_offline*"
       - ".github/workflows/offline-swarm.yml"
@@ -37,13 +41,14 @@ jobs:
         with:
           python-version: '3.11'
       - name: Verify local source compiles
-        run: python -m compileall -q engines/offline_specialist_swarm.py scripts/run_offline_swarm.py
+        run: python -m compileall -q engines/offline_specialist_swarm.py engines/offline_evidence_pack.py scripts/run_offline_swarm.py scripts/offline_evidence_pack.py
       - name: Check standalone browser script
         run: node --check offline/swarm/swarm.js
       - name: Run actual loopback HTTP and synthetic orchestration tests
         run: |
           python -m unittest discover -s tests -p 'test_offline_specialist_swarm.py' -v
           python -m unittest discover -s tests -p 'test_offline_swarm_http.py' -v
+          python -m unittest discover -s tests -p 'test_offline_evidence_pack.py' -v
       - name: Confirm the HTML portals include no third-party runtime URLs
         run: |
           python - <<'PY'

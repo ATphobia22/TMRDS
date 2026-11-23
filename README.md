@@ -14,10 +14,29 @@ The [audited `main` release](https://github.com/ATphobia22/TMRDS/commit/6d295e30
 |---|---|---|
 | Public biomedical evidence cross-check | [Connected research website](https://tmrds-public-evidence-api.onrender.com/); 22 bounded metadata sources and six-plane Grover *research-coverage* demonstration | Internet required; **never upload patient records**; not a validated diagnosis or treatment engine |
 | Windows 11 laptop without Internet | [FieldLab Win11 artifact workflow](https://github.com/ATphobia22/TMRDS/actions/runs/45173817549): hashed wheelhouse, actual pydicom / NiBabel / Biopython / RDKit readers, local Tkinter UI | **Python 3.11 x64 must be preinstalled**. Transfer/verify the ZIP before travel. No signed one-click native installer or validated imaging diagnosis |
-| Low-dependency local research demonstration | `python -m scripts.run_offline_swarm --port 8765`, then `http://127.0.0.1:8765/` | Nine-page stdlib fallback accepts **synthetic fixtures only**. Separate seven-page JSON-RPC research profile is described below; neither is a licensed hospital network |
+| Low-dependency local research demonstration | `python -m scripts.run_offline_swarm --port 8765`, then `http://127.0.0.1:8765/` | Nine-page stdlib fallback accepts **built-in synthetic fixtures plus optional, verified public citation metadata packs**; no patient-file uploads. Separate seven-page JSON-RPC research profile is described below; neither is a licensed hospital network |
 | Clinical patient care, MRI/CT interpretation, gene editing, drug binding, or actual hospital data | No production-validated capability claimed | Requires authorized local clinical infrastructure, appropriately licensed model/data, case-level validation and regulatory/privacy review |
 
 Latest audited cloud deployment is **Render `23aeca451d9cc5ffa867f63ee4b1b7b438eedd4e`**, which serves the research-only frontend/backend, while newer `main` commits add **separate offline profiles**. CI-green offline modules do not imply they have been installed in the cloud service or on a rural laptop.
+
+## New: working offline biomedical citation cache — connected preparation → disconnected search
+
+TMRDS now supports an **executable, offline-searchable public research metadata pack**, not merely a catalog entry. Prepare a bounded snapshot of actual PubMed/PMC/clinical-trial/other reviewed source citations on a connected preparation computer using the existing **22-source research cross-check API**. Transfer the pack to the field laptop, verify its complete SHA-256 and provider-rights receipt, and search citation titles, DOIs, PMIDs, PMCIDs and NCT references entirely offline in the local evidence specialist page or CLI.
+
+```sh
+# Connected trusted preparation computer (PUBLIC research terms only):
+python scripts/offline_evidence_pack.py prepare --query CFTR --out citations.json
+
+# After trusted transfer, on the OFFLINE research laptop:
+python scripts/offline_evidence_pack.py verify --path data/offline/citations.json
+python scripts/offline_evidence_pack.py search --path data/offline/citations.json --term CFTR
+python -m scripts.run_offline_swarm --port 8765
+# Open http://127.0.0.1:8765/evidence.html and search the local evidence snapshot.
+```
+
+The self-verifying pack is deliberately **metadata-only**: no full-text redistribution, patient records, source images, restricted credentials or clinical findings are included. Missing or corrupt packs return an explicit unavailable state. Cached results preserve source failures and a 90-day staleness warning; an offline search with no cached matches does **not** mean the research literature contains no evidence. Preparing the pack requires Internet, and **does not confer permission to redistribute licensed biomedical data**. The local CLI and module are included in the Windows FieldLab ZIP; the HTML swarm remains a separately supplied local source checkout.
+
+[Exact implementation, security boundaries, Windows packaging and tests](docs/integrations/offline-citation-metadata-pack-20261123.md).
 
 ## New: Sovereign rural laptop workstation and specialist HTML swarm
 
