@@ -12,7 +12,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any
 
-DOI = re.compile(r"^10\\.[0-9]{4,9}/[^\\s]{1,180}$", re.I)
+DOI = re.compile(r"^10\.[0-9]{4,9}/[^\s]{1,180}$", re.I)
 PMID = re.compile(r"^[0-9]{1,10}$")
 NCT = re.compile(r"^NCT[0-9]{8}$")
 PUBLIC_FIELDS = frozenset({
