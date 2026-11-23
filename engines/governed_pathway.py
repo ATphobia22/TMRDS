@@ -34,6 +34,16 @@ _SOURCE_LICENSES = {
     "uniprot": ("UniProtKB data CC BY 4.0; source annotations may require further rights review", "https://www.uniprot.org/help/license", True),
     "pubchem": ("NCBI PubChem data: individual depositors retain their own rights; metadata only", "https://pubchem.ncbi.nlm.nih.gov/docs/data-sources", True),
     "crossref": ("Crossref factual metadata generally CC0; article content/publisher rights separate", "https://www.crossref.org/documentation/retrieve-metadata/", True),
+    "openalex": ("OpenAlex scholarly metadata, open metadata with upstream work rights", "https://docs.openalex.org/", True),
+    "arxiv": ("arXiv bibliographic metadata and author-specific preprint licenses", "https://info.arxiv.org/help/api/", True),
+    "biorxiv": ("bioRxiv / medRxiv author preprints, record-specific licenses", "https://www.biorxiv.org/about-biorxiv", True),
+    "clinvar": ("NCBI ClinVar submitter assertions, clinical classification conflicts", "https://www.ncbi.nlm.nih.gov/clinvar/docs/", True),
+    "ensembl": ("Ensembl genome reference and predicted effect metadata, source terms apply", "https://rest.ensembl.org/", True),
+    "gnomad": ("gnomAD data release terms, variant-indexed population metadata only", "https://gnomad.broadinstitute.org/terms", True),
+    "gtex": ("GTEx release terms, aggregated tissue association metadata only", "https://gtexportal.org/home/about", True),
+    "string": ("STRING protein functional associations CC BY 4.0 with attribution", "https://string-db.org/cgi/access", True),
+    "mesh": ("NLM MeSH controlled terms, terminology metadata and NLM terms", "https://www.nlm.nih.gov/mesh/meshhome.html", True),
+    "ncats": ("NIH NCATS Translator Node Normalization/Name Resolution service metadata", "https://nodenormalization-sri.renci.org/docs", True),
 }
 _RESOLVE = """query TMRDSResolveDisease($query: String!) {
  search(queryString: $query, entityNames: ["disease"], page: {index: 0, size: 10}) {

@@ -59,16 +59,16 @@
         <p id="pathwayFootnote" class="method-note">No inferred efficacy, diagnostic status, cure claim or clinical recommendation. Platform associations may include third-party data with separate licenses.</p>
       </section>
       <section class="pathway-panel" id="crosscheck-panel" aria-labelledby="crosscheckTitle">
-        <div class="pathway-head"><div><span class="eyebrow">QUANTUM RUBIK'S EVIDENCE PLANES · HUMAN AUTHORITY FINAL</span><h3 id="crosscheckTitle">Cross-check original source identifiers</h3></div>
+        <div class="pathway-head"><div><span class="eyebrow">QUANTUM RUBIK'S EVIDENCE PLANES · HUMAN AUTHORITY FINAL</span><h3 id="crosscheckTitle">Cross-check 22 original biomedical sources</h3></div>
           <span id="crosscheckState" aria-live="polite">Independent backend not configured on static Pages</span></div>
-        <p>The separate research gateway can cross-check **12** bounded public metadata providers using exact DOI, PMID, and NCT identifiers. Repeated indexing of one paper is not independent confirmation. OpenMI-inspired model exchange transmits source counts, never patient records. The cube does not assert cure scores or quantum hardware execution.</p>
+        <p>The separate research gateway can cross-check 22 bounded public metadata providers using exact DOI, PMID, PMCID and NCT identifiers. Repeated indexing of one paper is not independent confirmation. OpenMI-inspired model exchange transmits source counts, never patient records. The cube does not assert cure scores or quantum hardware execution.</p>
         <div id="crosscheckRecords" class="pathway-records" aria-live="polite"><p class="empty">Submit a research topic to check available sources.</p></div>
         <p id="crosscheckFootnote" class="method-note">No backend = no cross-source results. Query the official databases directly using the research portal shortcuts below.</p>
       </section>
       <p class="method-note">Records are discovery results, not independently appraised evidence. Trial registration is not proof of efficacy; a literature match is not proof of peer review. The locally calculated SHA-256 fingerprint identifies normalized display fields only and does not certify authenticity or clinical validity.</p>
     </section>
     <section id="cube" class="cube-section" aria-labelledby="cube-title">
-      <div class="section-heading"><div><span class="eyebrow">02 / QUANTUM RESEARCH NAVIGATION CUBE</span><h2 id="cube-title">Six planes. One transparent research trail.</h2><p>The six faces organize questions; the site does not invent a composite cure score.</p></div></div>
+      <div class="section-heading"><div><span class="eyebrow">02 / QUANTUM RESEARCH NAVIGATION CUBE</span><h2 id="cube-title">Six planes. One transparent research trail.</h2><p>The six faces organize questions for searching 22 distinct research provider adapters; the animation does not execute quantum circuits or infer a cure.</p></div></div>
       <div class="facet-grid">
         <article class="facet"><span>01</span><h3>Disease &amp; phenotype</h3><p>Define the condition, inclusion criteria, and ontology identifiers.</p><a href="https://www.ebi.ac.uk/ols4/" target="_blank" rel="noopener noreferrer">Ontology Lookup Service ↗</a></article>
         <article class="facet"><span>02</span><h3>Target &amp; pathway</h3><p>Evaluate gene or protein associations; correlation is not causation.</p><a href="https://platform.opentargets.org/" target="_blank" rel="noopener noreferrer">Open Targets ↗</a></article>
@@ -119,6 +119,34 @@
           <div id="patentRecords" class="extension-results" aria-live="polite"><p class="empty">FDA metadata appears here only after an official API response.</p></div>
           <p class="method-note">Cross-check legal claims with <a href="https://www.uspto.gov/patents/maintain" target="_blank" rel="noopener noreferrer">USPTO maintenance and status</a>,
             <a href="https://www.fda.gov/drugs/drug-approvals-and-databases/orange-book-data-files" target="_blank" rel="noopener noreferrer">FDA Orange Book definitions</a>, and qualified patent counsel. Patent expiry, exclusivity, and freedom to operate are different questions.</p>
+        </section>
+        <section id="element-reference" class="research-extensions" aria-labelledby="elementTitle">
+          <h3 id="elementTitle">PubChem periodic-table reference</h3>
+          <p>Inspect one chemical element using original NCBI PubChem data: atomic number, element name, source-reported atomic weight, electron configuration, electronegativity and standard state. These are reference properties, not evidence about human exposure, chemical safety, drugs or treatment.</p>
+          <form id="elementForm" class="structure-form">
+            <label for="elementSymbol">Element symbol (capitalization matters)</label>
+            <div><input id="elementSymbol" name="symbol" type="text" minlength="1" maxlength="2" value="Fe" required autocapitalize="off" spellcheck="false"><button type="submit" id="elementSubmit">Lookup element</button></div>
+          </form>
+          <div id="elementState" aria-live="polite">Original-source lookup requires independently hosted backend.</div>
+          <div id="elementRecords" class="extension-results" aria-live="polite"><p class="empty">Lookup original PubChem atomic properties.</p></div>
+          <p class="method-note"><a href="https://pubchem.ncbi.nlm.nih.gov/periodic-table/" target="_blank" rel="noopener noreferrer">Open original PubChem periodic table</a></p>
+        </section>
+        <section id="pmc-bridge" class="research-extensions" aria-labelledby="pmcBridgeTitle">
+          <h3 id="pmcBridgeTitle">NIH PubMed Central identifier bridge</h3>
+          <p>Convert one original PMID, PMCID or DOI through the official NIH PMC ID Converter. A matching article identifier joins bibliographic records only; it is not independent replication, peer-review proof or a license to redistribute full text. This feature runs only on the separately hosted research backend.</p>
+          <form id="pmcForm" class="structure-form">
+            <label for="pmcIdentifier">Public PMID, PMCID or DOI</label>
+            <div><input id="pmcIdentifier" name="identifier" type="search" maxlength="195" value="PMC3531190" required spellcheck="false"><button type="submit" id="pmcSubmit">Verify identifiers</button></div>
+          </form>
+          <div id="pmcState" aria-live="polite">Backend unavailable on static GitHub Pages.</div>
+          <div id="pmcRecords" class="extension-results" aria-live="polite"><p class="empty">Submit a public identifier to query the independent backend.</p></div>
+          <p class="method-note"><a href="https://pmc.ncbi.nlm.nih.gov/tools/id-converter-api/" target="_blank" rel="noopener noreferrer">NIH original converter and source documentation</a></p>
+        </section>
+        <section id="format-safety" class="research-extensions" aria-labelledby="formatTitle">
+          <h3 id="formatTitle">Research format interoperability — local synthetic files only</h3>
+          <p>Local Python fixtures support CSV, TSV, selected FHIR Observation JSON, non-genotyped VCF, FASTA and FASTQ with bounded parsing, source-byte SHA-256 and no clinical interpretation. DICOM, BAM/CRAM, HL7v2, AnnData, mmCIF and spreadsheet files need separate validated readers and authorization. <strong>This public site cannot upload patient records or analyze identifiable laboratory results.</strong></p>
+          <p id="formatState" class="method-note">Installed readers and sample permissions are not verified by a catalog entry.</p>
+          <p class="method-note"><a href="https://github.com/ATphobia22/TMRDS/blob/main/engines/qrce_research_formats.py" target="_blank" rel="noopener noreferrer">Review local parser and format contracts</a></p>
         </section>
         <p class="method-note">AlphaFold 3 local inference remains unconfigured: code is Apache-2.0, while its weights and outputs have separate restrictions. This public site never downloads AF3 weights or submits molecular calculations.</p>
       </section>

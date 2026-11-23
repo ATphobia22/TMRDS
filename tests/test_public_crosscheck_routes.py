@@ -158,7 +158,7 @@ def test_public_routes_are_read_only_and_phrases_reject_pii():
             assert getattr(route, "methods", set()) <= {"GET", "HEAD"}
 
 
-def test_12_source_crosscheck_is_fully_wired_with_per_source_status(monkeypatch):
+def test_22_source_crosscheck_is_fully_wired_with_per_source_status(monkeypatch):
     queried = []
     async def mocked_guard(self, source, coro):
         coro.close()
@@ -171,10 +171,108 @@ def test_12_source_crosscheck_is_fully_wired_with_per_source_status(monkeypatch)
     response = client.get("/api/v1/research/cross-check", params={"query": "ALS", "limit": 1})
     assert response.status_code == 200
     data = response.json()
-    assert len(set(queried)) == 12
+    assert len(set(queried)) == 22
     assert data["status"] == "records_retrieved"
     assert data["group_count"] == 1
     assert data["source_status"]["pubmed"]["state"] == "source_unavailable"
     assert data["source_status"]["europe_pmc"]["state"] == "responding"
     assert data["source_licensing"]["crossref"]["bulk_redistribution_allowed"] is False
+    assert data["source_licensing"]["clinvar"]["metadata_display_allowed"] is True
+    assert data["source_licensing"]["biorxiv"]["bulk_redistribution_allowed"] is False
+    assert data["source_status"]["gnomad"]["state"] == "source_unavailable"
     assert data["human_authority_final"] is True
+
+
+
+def test_pmc_converter_reads_original_fixed_host_and_matches_source_id():
+    from api.public_crosscheck_routes import lookup_pmc_id_mapping
+    called = []
+    def respond(request: httpx.Request):
+        called.append(request.url)
+        assert request.url.host == "pmc.ncbi.nlm.nih.gov"
+        assert request.url.path == "/tools/idconv/api/v1/articles/"
+        assert request.url.params["ids"] == "PMC3531190"
+        assert request.url.params["tool"] == "TMRDS_QRCE"
+        return httpx.Response(200, json={"status": "ok", "records": [
+            {"pmcid": "PMC3531190", "pmid": "23193287", "doi": "10.1093/nar/gks1195"}
+        ]})
+    result = asyncio.run(lookup_pmc_id_mapping("PMC3531190", transport=httpx.MockTransport(respond)))
+    assert len(called) == 1
+    assert result["status"] == "mapped"
+    assert result["records"][0]["pmid"] == "23193287"
+    assert result["records"][0]["pmcid"] == "PMC3531190"
+    assert result["records"][0]["doi"] == "10.1093/nar/gks1195"
+    assert result["records"][0]["article_is_open_access"] == "UNVERIFIED"
+    assert result["cross_index_match_not_independent_replication"] is True
+    assert result["bulk_full_text_included"] is False
+
+
+def test_pmc_converter_rejects_wrong_source_identity_bad_input_and_non200():
+    from api.public_crosscheck_routes import lookup_pmc_id_mapping
+    fake = httpx.MockTransport(lambda _: httpx.Response(200, json={"status": "ok", "records": [
+        {"pmid": "9999", "pmcid": "PMC3531190", "doi": "10.1000/not-the-queried-paper"}
+    ]}))
+    result = asyncio.run(lookup_pmc_id_mapping("23193287", transport=fake))
+    assert result["records"] == []
+    assert result["status"] == "not_in_pmc_or_unlinked"
+    for value in ("https://example.org", "someone@example.org", "../etc/passwd", "MIMIC-123"):
+        try:
+            asyncio.run(lookup_pmc_id_mapping(value))
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("Untrusted PMC id accepted")
+    for response in (
+        httpx.Response(302, headers={"Location": "http://127.0.0.1/private"}),
+        httpx.Response(200, content=b"x" * 262145),
+        httpx.Response(200, content=b'{"records":"not a list"}'),
+    ):
+        output = asyncio.run(lookup_pmc_id_mapping(
+            "PMC3531190", transport=httpx.MockTransport(lambda _, r=response: r)))
+        assert output["status"] == "source_unavailable"
+        assert output["records"] == []
+
+
+def test_same_pmcid_is_bibliographic_overlap_but_gene_context_does_not_merge():
+    value = build_crosscheck("TP53", [
+        SourceResult("pubmed", True, count=1, envelopes=[
+            envelope("pubmed", "a", pmcid="PMC3531190", pmid="23193287")
+        ]),
+        SourceResult("europe_pmc", True, count=1, envelopes=[
+            envelope("europe_pmc", "b", pmcid="PMC3531190", doi="10.1093/nar/gks1195")
+        ]),
+        SourceResult("ensembl", True, count=1, envelopes=[
+            envelope("ensembl", "g", ensembl_id="ENSG00000141510", title="TP53 gene annotation")
+        ]),
+        SourceResult("gwas_catalog_v2", True, count=1, envelopes=[
+            envelope("gwas_catalog_v2", "v", ensembl_id="ENSG00000141510",
+                     title="One top association")
+        ]),
+    ], expected_sources=("pubmed", "europe_pmc", "ensembl", "gwas_catalog_v2"))
+    assert value["record_count"] == 4
+    assert value["group_count"] == 3
+    assert value["metadata_overlap_groups"] == 1
+    assert value["groups"][0]["exact_identifiers"] == [
+        "doi:10.1093/nar/gks1195", "pmcid:PMC3531190", "pmid:23193287"
+    ]
+    assert value["molecular_context_links"][0]["identifier"] == "ensembl:ENSG00000141510"
+    assert value["molecular_context_links"][0]["independent_replication_verified"] is False
+    assert value["molecular_context_links"][0]["causal_relation_verified"] is False
+
+
+def test_pmc_lookup_invalid_route_and_crosscheck_new_metadata_edges():
+    client = TestClient(app)
+    assert client.get("/api/v1/research/pmc-identifiers",
+                      params={"identifier": "http://127.0.0.1"}).status_code == 422
+    assert client.get("/api/v1/research/pmc-identifiers",
+                      params={"identifier": "not-article"}).status_code == 422
+    output = build_crosscheck("rs429358", [
+        SourceResult("gnomad", True, count=1, envelopes=[
+            envelope("gnomad", "g", rsids=["rs429358", "bad"])
+        ]),
+        SourceResult("gtex", True, count=1, envelopes=[
+            envelope("gtex", "t", snp_id="rs429358")
+        ]),
+    ])
+    assert output["group_count"] == 2
+    assert output["molecular_context_links"][0]["identifier"] == "dbsnp:rs429358"

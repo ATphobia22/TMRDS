@@ -373,11 +373,116 @@ async function loadCrossref(query, seq) {
   }
 }
 
+/* PubChem PUG REST is the original source for periodic element facts.
+ * Do not treat atomic reference fields as therapeutic screening outcomes.
+ */
+$("elementForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const symbol = $("elementSymbol").value.trim();
+  if (!/^[A-Z][a-z]?$/.test(symbol)) {
+    $("elementState").textContent = "Enter a capitalized element symbol such as Fe or H.";
+    return;
+  }
+  if (!(await backendConfiguration)) {
+    $("elementState").textContent = "The Python research gateway is not deployed on this static GitHub Pages site. See original PubChem data.";
+    return;
+  }
+  const root = $("elementRecords"), submit = $("elementSubmit");
+  submit.disabled = true;
+  root.replaceChildren(node("p", "empty", "Fetching original NCBI PubChem property table…"));
+  try {
+    const out = await getJson("/api/v1/research/periodic-element?symbol=" + encodeURIComponent(symbol), 17000);
+    const data = out.data;
+    if (!data || typeof data.status !== "string") throw new Error("Invalid original property schema");
+    root.replaceChildren();
+    if (data.status === "element_metadata" && data.element && data.element.symbol === symbol) {
+      const el = data.element;
+      const card = node("article", "result");
+      card.append(node("strong", "", textLimited(el.name, 64) + " · " + el.symbol + " · atomic number " + el.atomic_number),
+        node("p", "", "PubChem-reported atomic weight: " + textLimited(el.atomic_weight_source_text, 80) +
+          " · electron configuration: " + textLimited(el.electron_configuration_reported, 250)),
+        node("p", "", "Electronegativity (as reported): " + textLimited(el.electronegativity_source_text, 50) +
+          " · standard state: " + textLimited(el.standard_state_reported, 50)),
+        node("p", "", "Not a clinical, toxicology, formulation or efficacy determination. Recheck reference units/isotopes."));
+      root.append(card);
+    } else {
+      root.append(node("p", "empty", "Element not returned by source or unavailable; no values inferred."));
+    }
+    $("elementState").textContent = "Original PubChem source: " + data.status + " · " + out.retrievedAt;
+  } catch (_) {
+    root.replaceChildren(node("p", "empty", "NCBI PubChem periodic table unavailable; no values fabricated."));
+    $("elementState").textContent = "Source unavailable / invalid response";
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+/* Official NIH PMC identity bridge: only the independently served backend can
+ * run this proxy; GitHub Pages stays static and does not request private data.
+ */
+$("pmcForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const identifier = $("pmcIdentifier").value.trim();
+  const valid = identifier.startsWith("PMC") || identifier.startsWith("10.") ||
+    (identifier.length <= 10 && Array.from(identifier).every((ch) => ch >= "0" && ch <= "9"));
+  if (!valid || identifier.length > 195 || identifier.includes("@") || identifier.includes(" ")) {
+    $("pmcState").textContent = "Enter a single original PMID, PMCID or DOI, not a URL or personal identifier.";
+    return;
+  }
+  if (!(await backendConfiguration)) {
+    $("pmcState").textContent = "PMC converter requires separate same-origin Python backend; GitHub Pages cannot execute it.";
+    return;
+  }
+  const root = $("pmcRecords");
+  const submit = $("pmcSubmit");
+  submit.disabled = true;
+  root.replaceChildren(node("p", "empty", "Requesting original NIH identifier cross-reference…"));
+  try {
+    const out = await getJson("/api/v1/research/pmc-identifiers?identifier=" +
+      encodeURIComponent(identifier), 14000);
+    const data = out.data;
+    if (!data || !Array.isArray(data.records) || typeof data.status !== "string") throw new Error("Invalid schema");
+    root.replaceChildren();
+    for (const record of data.records.slice(0, 1)) {
+      const article = node("article", "result");
+      article.append(node("strong", "", "PMC " + textLimited(record.pmcid, 24)),
+        node("p", "", "PMID " + textLimited(record.pmid, 14) +
+          " · DOI " + textLimited(record.doi, 180)),
+        node("p", "", "Original-source bibliographic cross-reference only · no full-text license or clinical replication implied"));
+      if (/^PMC[0-9]{1,12}$/.test(record.pmcid || "")) {
+        const link = node("a", "", "Verify official PMC record");
+        link.href = "https://pmc.ncbi.nlm.nih.gov/articles/" + record.pmcid + "/";
+        link.target = "_blank"; link.rel = "noopener noreferrer";
+        article.append(link);
+      }
+      root.append(article);
+    }
+    if (!root.children.length) root.append(node("p", "empty", data.status === "source_unavailable" ?
+      "PMC identity service unavailable. This does not imply no article." :
+      "PMC returned no exact identifier mapping in this bounded query."));
+    $("pmcState").textContent = "NIH PMC: " + data.status + " · " + out.retrievedAt;
+  } catch (_) {
+    root.replaceChildren(node("p", "empty", "PMC identity service unavailable; do not infer linkage."));
+    $("pmcState").textContent = "Official identifier bridge unavailable";
+  } finally {
+    submit.disabled = false;
+  }
+});
+$("formatState").textContent = "Local synthetic-only parser: .csv, .tsv, .json, .vcf, .fa, .fasta, .fq, .fastq · optional readers listed in repository. Never enter patient files on this page.";
+
 /* Each link is a human-initiated search in the named original service.
  * They are not secretly routed through the TMRDS server.
  */
 const researchPortals = [
   {name:"PubMed", base:"https://pubmed.ncbi.nlm.nih.gov/", key:"term", why:"Original NLM biomedical citation records"},
+  {name:"PubMed Central", base:"https://pmc.ncbi.nlm.nih.gov/", key:null, why:"NIH article archive; per-article license controls reuse"},
+  {name:"bioRxiv", base:"https://www.biorxiv.org/", key:null, why:"Unreviewed biology preprints; check article version and publication"},
+  {name:"medRxiv", base:"https://www.medrxiv.org/", key:null, why:"Unreviewed medical preprints; not clinical advice"},
+  {name:"DOAJ", base:"https://doaj.org/", key:null, why:"Open-access journals and article-level licensing"},
+  {name:"NLM Dataset Catalog", base:"https://datasetcatalog.nlm.nih.gov/", key:null, why:"Find dataset descriptions and access eligibility"},
+  {name:"WHO ICTRP", base:"https://trialsearch.who.int/", key:null, why:"WHO trial portal; partner APIs require separate permissions"},
+  {name:"EU CTIS", base:"https://euclinicaltrials.eu/", key:null, why:"Public EU clinical trial information"},
+  {name:"ISRCTN", base:"https://www.isrctn.com/", key:null, why:"International prospective study registry"},
   {name:"Crossref", base:"https://search.crossref.org/", key:"q", why:"DOI-deposited publication metadata"},
   {name:"ClinVar", base:"https://www.ncbi.nlm.nih.gov/clinvar/", key:"term", why:"Variant interpretations with review status"},
   {name:"UniProtKB", base:"https://www.uniprot.org/uniprotkb", key:"query", why:"Protein identifiers, functions and references"},
@@ -415,11 +520,11 @@ updateResearchPortalLinks();
 async function loadBackendCrosscheck(query, seq) {
   const root = $("crosscheckRecords");
   if (!(await backendConfiguration) || seq !== requestSequence) {
-    $("crosscheckState").textContent = "No Python cross-check backend on static Pages";
+    $("crosscheckState").textContent = "No independently hosted Python cross-check backend on static Pages";
     root.replaceChildren(node("p", "empty", "Direct public source searches remain available above and below."));
     return null;
   }
-  $("crosscheckState").textContent = "Cross-checking twelve metadata providers…";
+  $("crosscheckState").textContent = "Cross-checking 22 metadata providers…";
   root.replaceChildren(node("p", "empty", "Checking original DOI / PMID / NCT identifiers…"));
   try {
     const response = await getJson("/api/v1/research/cross-check?limit=2&query=" + encodeURIComponent(query), 48000);
@@ -442,12 +547,12 @@ async function loadBackendCrosscheck(query, seq) {
     if (!chosen.length) root.append(node("p", "empty", "No bounded records returned; missing sources and failures must be reviewed."));
     const states = Object.values(data.source_status);
     const responsive = states.filter((v) => v.state === "responding").length;
-    $("crosscheckState").textContent = responsive + "/12 source requests responded · " +
+    $("crosscheckState").textContent = responsive + "/22 source requests responded · " +
       data.metadata_overlap_groups + " exact-ID overlap groups · " + response.retrievedAt;
     $("crosscheckFootnote").textContent =
       "Fingerprint " + textLimited(data.snapshot_sha256, 64) +
       " applies to source counts/status, not original raw records. " +
-      "OpenMI-inspired exchange is NOT OGC-conformance-tested. Scientific replication, patent freedom to operate, clinical effect and cures NOT verified.";
+      "OpenMI-inspired exchange is NOT OGC-conformance-tested. Shared gene/variant IDs are context only. Scientific replication, patent clearance, clinical effects and cures NOT verified.";
     return data.status;
   } catch (_) {
     if (seq === requestSequence) {

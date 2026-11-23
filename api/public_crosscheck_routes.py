@@ -18,6 +18,8 @@ from api.ops import limiter
 from engines.federated_evidence_search import COVERAGE, FederatedEvidenceSearch
 from engines.governed_pathway import evaluate_license
 from engines.qrce_public_crosscheck import build_crosscheck
+from engines.qrce_research_formats import format_capabilities
+from engines.pubchem_periodic_element import lookup_pubchem_element
 
 router = APIRouter(prefix="/api/v1/research", tags=["bounded-public-crosscheck"])
 _ORANGE_BOOK = "https://api.fda.gov/drug/orangebook.json"
@@ -37,6 +39,16 @@ _SOURCE_HANDLERS: dict[str, str] = {
     "pubchem": "_search_pubchem",
     "uniprot": "_search_uniprot",
     "crossref": "_search_crossref",
+    "openalex": "_search_openalex",
+    "arxiv": "_search_arxiv",
+    "biorxiv": "_search_biorxiv",
+    "clinvar": "_search_clinvar",
+    "ensembl": "_search_ensembl",
+    "gnomad": "_search_gnomad",
+    "gtex": "_search_gtex",
+    "string": "_search_string",
+    "mesh": "_search_mesh",
+    "ncats": "_search_ncats",
 }
 
 
@@ -263,5 +275,134 @@ async def public_patent_landscape(
 ):
     try:
         return await lookup_fda_patent_metadata(ingredient, limit=limit)
+    except ValueError as exc:
+        raise HTTPException(422, detail=str(exc)) from None
+
+
+# PMC's original identifier converter is a bounded bibliographic cross-reference:
+# identifier conversion, never PMC full-text redistribution.
+_PMC_ID_ENDPOINT = "https://pmc.ncbi.nlm.nih.gov/tools/idconv/api/v1/articles/"
+_PMID_ID = re.compile(r"^[0-9]{1,10}$")
+_PMCID_ID = re.compile(r"^PMC[0-9]{1,12}$", re.I)
+_DOI_ID = re.compile(r"^10\.[0-9]{4,9}/[^\s]{1,180}$", re.I)
+
+
+def _validate_bibliographic_id(identifier: str) -> tuple[str, str]:
+    ident = identifier.strip()
+    if _PMID_ID.fullmatch(ident):
+        return "pmid", ident
+    if _PMCID_ID.fullmatch(ident):
+        return "pmcid", ident.upper()
+    if _DOI_ID.fullmatch(ident) and len(ident) <= 195:
+        return "doi", ident.lower()
+    raise ValueError("Expected original PMID, PMCID or DOI; no patient data or external URL")
+
+
+async def lookup_pmc_id_mapping(
+    identifier: str,
+    *, transport: httpx.AsyncBaseTransport | None = None,
+) -> dict[str, Any]:
+    kind, ident = _validate_bibliographic_id(identifier)
+    stamp = datetime.now(timezone.utc).isoformat()
+    base = {
+        "source": "NLM PubMed Central ID Converter",
+        "source_endpoint": _PMC_ID_ENDPOINT,
+        "queried_identifier": ident, "namespace": kind,
+        "retrieved_at": stamp, "bulk_full_text_included": False,
+        "clinical_promotion_allowed": False,
+        "cross_index_match_not_independent_replication": True,
+        "license_review_required_for_full_text": True,
+    }
+    try:
+        async with httpx.AsyncClient(transport=transport, timeout=10, follow_redirects=False) as client:
+            async with client.stream(
+                "GET", _PMC_ID_ENDPOINT,
+                params={"ids": ident, "format": "json", "tool": "TMRDS_QRCE"},
+                headers={"Accept": "application/json"},
+            ) as response:
+                if response.status_code != 200:
+                    raise ValueError("NLM converter unavailable")
+                if int(response.headers.get("content-length") or 0) > 262_144:
+                    raise ValueError("NLM converter exceeded limit")
+                body = bytearray()
+                async for piece in response.aiter_bytes():
+                    body.extend(piece)
+                    if len(body) > 262_144:
+                        raise ValueError("NLM converter exceeded limit")
+                payload = json.loads(body)
+                if not isinstance(payload, dict) or not isinstance(payload.get("records"), list):
+                    raise ValueError("NLM ID response invalid")
+        matches = []
+        for row in payload["records"][:5]:
+            if not isinstance(row, dict):
+                continue
+            raw_pmid = str(row.get("pmid") or "")
+            raw_pmcid = str(row.get("pmcid") or "").upper()
+            raw_doi = str(row.get("doi") or "").lower()
+            pmid = raw_pmid if _PMID_ID.fullmatch(raw_pmid) else None
+            pmcid = raw_pmcid if _PMCID_ID.fullmatch(raw_pmcid) else None
+            doi = raw_doi if _DOI_ID.fullmatch(raw_doi) else None
+            # Source must affirm the original query ID, never accept a different article.
+            if {"pmid":pmid, "pmcid":pmcid, "doi":doi}[kind] != ident:
+                continue
+            if not pmcid:
+                continue
+            matches.append({
+                "pmid": pmid, "pmcid": pmcid, "doi": doi,
+                "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/" + pmcid + "/",
+                "mapping_evidence": "original_pmc_identifier_record",
+                "article_is_open_access": "UNVERIFIED",
+                "article_license": "RECORD_SPECIFIC",
+            })
+        return {
+            **base, "status": "mapped" if matches else "not_in_pmc_or_unlinked",
+            "records": matches[:1],
+            "warning": "A PMC ID link does not grant full-text redistribution or validate scientific findings.",
+        }
+    except (ValueError, httpx.HTTPError, json.JSONDecodeError, OverflowError):
+        return {
+            **base, "status": "source_unavailable", "records": [],
+            "warning": "PMC converter unavailable, invalid or exceeded limits; absence is not inferred.",
+        }
+
+
+@router.get("/pmc-identifiers")
+@limiter.limit("5/minute")
+async def public_pmc_identifiers(
+    request: Request,
+    identifier: str = Query(..., min_length=1, max_length=195),
+):
+    try:
+        return await lookup_pmc_id_mapping(identifier)
+    except ValueError as exc:
+        raise HTTPException(422, detail=str(exc)) from None
+
+
+@router.get("/file-format-capabilities")
+@limiter.limit("20/minute")
+async def public_format_capabilities(request: Request):
+    """Manifest only. No upload, samples, PHI, files or clinical interpretations."""
+    return {
+        "schema_version": "1.0",
+        "mode": "local_synthetic_only",
+        "public_patient_upload_enabled": False,
+        "patient_data_ingestion_enabled": False,
+        "installed_external_reader_claim": False,
+        "supported_local": [x for x in format_capabilities()
+                            if x["state"] == "local_synthetic_text_reader"],
+        "external_optional": [x for x in format_capabilities()
+                              if x["state"] == "external_reader_required"],
+        "clinical_promotion_allowed": False,
+    }
+
+
+@router.get("/periodic-element")
+@limiter.limit("10/minute")
+async def public_periodic_element(
+    request: Request,
+    symbol: str = Query(..., min_length=1, max_length=2),
+):
+    try:
+        return await lookup_pubchem_element(symbol)
     except ValueError as exc:
         raise HTTPException(422, detail=str(exc)) from None

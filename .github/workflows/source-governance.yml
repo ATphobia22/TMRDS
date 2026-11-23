@@ -9,6 +9,11 @@ on:
       - "api/public_crosscheck_routes.py"
       - "engines/qrce_public_crosscheck.py"
       - "tests/test_public_crosscheck_routes.py"
+      - "engines/qrce_research_formats.py"
+      - "engines/pubchem_periodic_element.py"
+      - "tests/test_qrce_pubchem_element.py"
+      - "scripts/inspect_synthetic_research_fixture.py"
+      - "tests/test_qrce_research_formats.py"
       - "public/medical-projects.json"
       - "tests/test_open_medical_routes.py"
       - "api/main.py"
@@ -25,6 +30,11 @@ on:
       - "api/public_crosscheck_routes.py"
       - "engines/qrce_public_crosscheck.py"
       - "tests/test_public_crosscheck_routes.py"
+      - "engines/qrce_research_formats.py"
+      - "engines/pubchem_periodic_element.py"
+      - "tests/test_qrce_pubchem_element.py"
+      - "scripts/inspect_synthetic_research_fixture.py"
+      - "tests/test_qrce_research_formats.py"
       - "api/governed_pathway_routes.py"
       - "api/main.py"
       - "engines/governed_pathway.py"
@@ -61,7 +71,7 @@ jobs:
       - name: Locked dependencies
         run: python -m pip install -r requirements.lock
       - name: Test identifier, provenance, freshness and licensing boundaries
-        run: python -m pytest -q tests/test_governed_pathway.py tests/test_public_gateway.py tests/test_open_medical_routes.py tests/test_public_crosscheck_routes.py
+        run: python -m pytest -q tests/test_governed_pathway.py tests/test_public_gateway.py tests/test_open_medical_routes.py tests/test_public_crosscheck_routes.py tests/test_qrce_research_formats.py tests/test_qrce_pubchem_element.py
       - name: Public browser source security contract
         run: |
           python scripts/check_public_site.py

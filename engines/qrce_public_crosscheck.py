@@ -15,9 +15,15 @@ from typing import Any
 DOI = re.compile(r"^10\.[0-9]{4,9}/[^\s]{1,180}$", re.I)
 PMID = re.compile(r"^[0-9]{1,10}$")
 NCT = re.compile(r"^NCT[0-9]{8}$")
+PMCID = re.compile(r"^PMC[0-9]{1,12}$", re.I)
+ENSG = re.compile(r"^ENSG[0-9]{11}$")
+CHEMBL = re.compile(r"^CHEMBL[0-9]{1,12}$")
+RSID = re.compile(r"^rs[0-9]{1,12}$", re.I)
 PUBLIC_FIELDS = frozenset({
     "stable_id", "source", "source_name", "evidence_class", "title",
-    "published", "doi", "pmid", "nct_id", "journal", "source_url",
+    "published", "doi", "pmid", "pmcid", "nct_id", "journal", "source_url",
+    "ensembl_id", "chembl_id", "snp_id", "rsids", "variation_id", "cid", "uniprot_id",
+    "classification", "review_status", "assembly", "most_severe_consequence",
     "record_hash", "record_hash_scope", "retrieved_at", "source_release",
     "source_release_date", "publication_integrity", "warnings",
 })
@@ -43,6 +49,9 @@ def _keyset(record: dict[str, Any]) -> set[str]:
     pmid = str(record.get("pmid") or "").strip()
     if PMID.fullmatch(pmid):
         keys.add("pmid:" + pmid)
+    pmcid = str(record.get("pmcid") or "").strip().upper()
+    if PMCID.fullmatch(pmcid):
+        keys.add("pmcid:" + pmcid)
     nct = str(record.get("nct_id") or "").strip().upper()
     if NCT.fullmatch(nct):
         keys.add("nct:" + nct)
@@ -64,11 +73,63 @@ def _safe_metadata(envelope: dict[str, Any], source: str) -> dict[str, Any] | No
     record["doi"] = _normalize_doi(record.get("doi"))
     record["pmid"] = str(record.get("pmid") or "") if PMID.fullmatch(str(record.get("pmid") or "")) else None
     record["nct_id"] = str(record.get("nct_id") or "") if NCT.fullmatch(str(record.get("nct_id") or "")) else None
+    record["pmcid"] = str(record.get("pmcid") or "").upper() if PMCID.fullmatch(str(record.get("pmcid") or "")) else None
+    record["ensembl_id"] = str(record.get("ensembl_id") or "") if ENSG.fullmatch(str(record.get("ensembl_id") or "")) else None
+    record["chembl_id"] = str(record.get("chembl_id") or "") if CHEMBL.fullmatch(str(record.get("chembl_id") or "")) else None
+    record["snp_id"] = str(record.get("snp_id") or "") if RSID.fullmatch(str(record.get("snp_id") or "")) else None
+    record["uniprot_id"] = str(record.get("uniprot_id") or "")[:12] if isinstance(record.get("uniprot_id"), str) else None
+    record["rsids"] = [str(v) for v in (record.get("rsids") or [])[:12] if isinstance(v, str) and RSID.fullmatch(v)] if isinstance(record.get("rsids"), list) else []
+    for name in ("classification", "review_status", "assembly", "most_severe_consequence"):
+        record[name] = str(record[name])[:120] if isinstance(record.get(name), str) else None
+    for name in ("variation_id", "cid"):
+        value = record.get(name)
+        record[name] = value if type(value) is int and 0 < value < 10**12 else None
     record["warnings"] = [str(x)[:180] for x in (record.get("warnings") or [])[:4]
                           if isinstance(x, str)]
     # Retain only reviewed, non-executable publication integrity metadata.
     record["publication_integrity"] = "review_required" if record.get("publication_integrity") else None
     return record
+
+
+def _context_keys(record: dict[str, Any]) -> set[str]:
+    """Context relationship != identity. Never merge distinct experiments on a gene."""
+    keys = set()
+    if record.get("ensembl_id") and ENSG.fullmatch(record["ensembl_id"]):
+        keys.add("ensembl:" + record["ensembl_id"])
+    if record.get("chembl_id") and CHEMBL.fullmatch(record["chembl_id"]):
+        keys.add("chembl:" + record["chembl_id"])
+    if record.get("snp_id") and RSID.fullmatch(record["snp_id"]):
+        keys.add("dbsnp:" + record["snp_id"].lower())
+    for rsid in record.get("rsids") or []:
+        if RSID.fullmatch(rsid):
+            keys.add("dbsnp:" + rsid.lower())
+    if record.get("variation_id") is not None:
+        keys.add("clinvar_variation:" + str(record["variation_id"]))
+    if record.get("cid") is not None:
+        keys.add("pubchem_cid:" + str(record["cid"]))
+    return keys
+
+
+def _context_graph(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    # A shared target can mean different experiments or species; this only
+    # exposes navigational context, never evidence aggregation or confirmation.
+    by_key: dict[str, list[dict[str, str]]] = defaultdict(list)
+    for entry in entries:
+        for key in _context_keys(entry):
+            by_key[key].append({"source": entry["source"],
+                                "record_id": entry["stable_id"][:160]})
+    edges = []
+    for identifier, rows in by_key.items():
+        if len(set(r["source"] for r in rows)) < 2:
+            continue
+        edges.append({
+            "identifier": identifier,
+            "records": rows[:20],
+            "relationship": "same_source_reported_context_identifier",
+            "independent_replication_verified": False,
+            "causal_relation_verified": False,
+        })
+    return sorted(edges, key=lambda item: item["identifier"])[:40]
 
 
 def build_crosscheck(
@@ -78,7 +139,7 @@ def build_crosscheck(
     searched_at: str | None = None,
     expected_sources: tuple[str, ...] = (),
 ) -> dict[str, Any]:
-    """Union exact DOI/PMID/NCT matches, preserve per-source outages and disagreement.
+    """Union exact DOI/PMID/PMCID/NCT matches, preserve per-source outages and disagreement.
 
     No fuzzy title/entity joins. No study efficacy synthesis. Nonclinical output.
     """
@@ -168,6 +229,7 @@ def build_crosscheck(
         "record_count": len(entries), "group_count": len(groups),
         "metadata_overlap_groups": snapshot["metadata_overlap_groups"],
         "groups": groups, "source_status": source_status,
+        "molecular_context_links": _context_graph(entries),
         "snapshot_sha256": digest, "sha256_scope": "normalized_counts_and_source_status_not_raw_upstream_payload",
         "openmi_inspired_exchange": {
             "specification": "OGC OpenMI 2.0, concepts only",
@@ -184,7 +246,8 @@ def build_crosscheck(
         "limitations": [
             "Metadata overlap is the same record indexed by multiple systems, not independent replication.",
             "Provider failures do not imply absence of scientific findings.",
-            "No fuzzy title matching; cross-references require identical source identifiers.",
+            "No fuzzy title matching; bibliographic identity requires source-supplied DOI, PMID, PMCID or NCT.",
+            "Molecular context links are navigational only and NEVER merge distinct studies or assess causality.",
             "Patents, regulatory exclusivity and clinical evidence are separate assessment planes.",
             "OpenMI-inspired exchange envelope is NOT a compliant OpenMI runtime component.",
         ],
