@@ -36,3 +36,31 @@
 .pathway-entry p{font-size:12px;color:var(--muted);margin:6px 0}
 .pathway-entry a{font-weight:700;font-size:12px;overflow-wrap:anywhere}
 @media(max-width:860px){.hero{grid-template-columns:1fr;gap:0;min-height:0}.cube-showcase{min-height:245px}.facet-grid,.registry-grid{grid-template-columns:repeat(2,1fr)}.results-grid{grid-template-columns:1fr}.top-nav{gap:11px}}@media(max-width:580px){.wrap{padding:0 16px}.mast-inner{align-items:start;flex-direction:column;padding-top:16px;padding-bottom:16px;gap:12px}.hero{padding:36px 0 42px}.hero h1{font-size:42px}.search-panel{padding:20px 15px}.section-heading{flex-direction:column;gap:8px}.search-control{flex-direction:column}.search-control button{min-height:52px}.source-statuses,.facet-grid,.registry-grid{grid-template-columns:1fr}.cube-scene{transform:scale(.83);height:204px}.footer .wrap{display:grid}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.rubiks-cube,.rubiks-cube.is-searching{animation:none;transform:rotateX(-23deg) rotateY(-35deg)}.cubie{transition:none}}
+
+/* Curated open-source software catalog and read-only biomedical metadata panels */
+.medical-section{scroll-margin-top:25px;margin:16px 0 76px}
+.medical-toolbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:17px 0;color:var(--muted);font-size:13px}
+.medical-toolbar label{font-weight:700;color:var(--text)}
+.medical-toolbar select{background:#0e3046;color:var(--text);border:1px solid #7097a6;border-radius:8px;padding:9px 13px;font:inherit}
+.medical-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:13px;margin-bottom:18px}
+.medical-entry{border:1px solid var(--line);border-radius:11px;background:var(--panel);padding:17px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.medical-entry strong{font-size:15px;line-height:1.4}
+.medical-entry .medical-type{font:700 10px/1.5 ui-monospace,SFMono-Regular,monospace;color:var(--accent);text-transform:uppercase;letter-spacing:.03em}
+.medical-entry .medical-state{font-size:12px;color:#c2d7e3}
+.medical-entry p{margin:4px 0;font-size:12px;line-height:1.5;color:var(--muted)}
+.medical-entry a{margin-top:auto;font-size:12px;overflow-wrap:anywhere}
+.research-extensions{border-top:1px solid var(--line);padding-top:23px;margin-top:24px}
+.research-extensions h3{margin:0 0 15px;font-size:23px}
+.extension-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.extension-card{padding:20px;border-radius:12px;background:var(--panel);border:1px solid var(--line);min-width:0}
+.extension-card h4{font-size:17px;margin:0 0 8px}
+.extension-card p{color:var(--muted);font-size:12px}
+.extension-card>div[id$="State"]{color:var(--accent2);font-size:12px;margin:8px 0}
+.extension-results{padding:6px 0 14px;max-height:420px;overflow-y:auto}
+.extension-results .result{padding:10px 0}
+.structure-form label{display:block;margin-bottom:6px;font-size:12px;font-weight:600}
+.structure-form>div{display:flex;gap:8px}
+.structure-form input{width:110px;min-width:0;background:#09283c;color:var(--text);padding:9px;border-radius:7px;border:1px solid var(--line);font:inherit}
+.structure-form button{background:var(--accent);color:#063447;border:0;border-radius:7px;padding:9px 12px;font-weight:700;cursor:pointer}
+.structure-form button:disabled{opacity:.5}
+@media(max-width:720px){.extension-grid{grid-template-columns:1fr}.structure-form>div{flex-wrap:wrap}}
