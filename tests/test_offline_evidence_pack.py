@@ -105,5 +105,27 @@ class OfflineEvidencePackTests(unittest.TestCase):
             build_pack(source(), query="CFTR", retrieved_at="not-a-date")
 
 
+    def test_installed_pack_is_usable_by_offline_specialist_cube_without_network(self):
+        from unittest.mock import patch
+        from engines.offline_specialist_swarm import run_offline_case
+        pack = build_pack(source(), query="CFTR", retrieved_at="2026-11-23T08:00:00+00:00")
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "citations.json"
+            save_pack(path, pack)
+            with patch("engines.offline_specialist_swarm.LOCAL_EVIDENCE_PACK_PATH", path):
+                result = run_offline_case("synthetic_all")
+            evidence = result["nodes"]["evidence"]
+            self.assertEqual(evidence["status"], "offline_metadata_pack_verified")
+            self.assertEqual(evidence["indexed_publications"], 1)
+            self.assertEqual(evidence["pack_sha256"], pack["pack_sha256"])
+            self.assertFalse(evidence["clinical_guidance_inferred"])
+            self.assertFalse(result["network_access_used"])
+            self.assertEqual(result["input_class"], "built_in_synthetic_fixture_plus_verified_public_citation_metadata")
+            self.assertEqual(
+                next(event for event in result["events"] if event["node"] == "evidence")["data_class"],
+                "public_citation_metadata",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
