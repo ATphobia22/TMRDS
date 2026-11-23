@@ -64,6 +64,7 @@ class OfflineEvidencePackTests(unittest.TestCase):
             self.assertFalse(found["search_executed_online"])
             self.assertTrue(found["coverage_partial"])
             self.assertEqual(search_pack(restored, "nonexistent", as_of="2026-12-01")["match_count"], 0)
+            self.assertEqual(search_pack(restored, "10.1000/example", as_of="2026-12-01")["match_count"], 1)
             with self.assertRaises(EvidencePackError):
                 save_pack(path, a)
 
