@@ -7,10 +7,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 from typing import Any
+
+from engines.offline_evidence_pack import EvidencePackError, load_pack
 
 from engines.cube_grover_research import simulate_grover_research_plan
 from engines.qrce_research_formats import inspect_synthetic_fixture
+
+LOCAL_EVIDENCE_PACK_PATH = Path(__file__).resolve().parents[1] / "data" / "offline" / "citations.json"
 
 SCENARIOS = ("synthetic_all", "synthetic_lab", "synthetic_genomics")
 NODES = (
@@ -112,6 +117,35 @@ def _quantum_node(scenario: str) -> dict[str, Any]:
     }
 
 
+def _offline_evidence_node() -> dict[str, Any]:
+    """Only surface a verified LOCAL public-citation snapshot, never raw input."""
+    if not LOCAL_EVIDENCE_PACK_PATH.exists():
+        return {
+            "status": "offline_snapshot_not_bundled", "indexed_publications": 0,
+            "literature_inferred": False,
+            "source": "No independently licensed PubMed/PMC snapshot installed",
+        }
+    try:
+        pack = load_pack(LOCAL_EVIDENCE_PACK_PATH)
+    except (EvidencePackError, OSError, ValueError):
+        return {
+            "status": "offline_snapshot_unverified", "indexed_publications": 0,
+            "literature_inferred": False, "clinical_guidance_inferred": False,
+            "warning": "Local metadata pack failed rights or integrity review; contents not used",
+        }
+    return {
+        "status": "offline_metadata_pack_verified",
+        "indexed_publications": pack["record_count"],
+        "sources": dict(pack["source_status"]),
+        "retrieved_at": pack["retrieved_at"],
+        "pack_sha256": pack["pack_sha256"],
+        "source_freshness_currently_verified": False,
+        "metadata_only": True, "full_text_redistribution": False,
+        "clinical_guidance_inferred": False,
+        "research_use_requires_human_review": True,
+    }
+
+
 def _execute_node(node: str, scenario: str) -> dict[str, Any]:
     if node == "labs":
         return _laboratory_node(scenario)
@@ -127,11 +161,7 @@ def _execute_node(node: str, scenario: str) -> dict[str, Any]:
             "patient_images_examined": False, "image_interpretation": False,
         }
     if node == "evidence":
-        return {
-            "status": "offline_snapshot_not_bundled", "indexed_publications": 0,
-            "literature_inferred": False,
-            "source": "No independently licensed PubMed/PMC snapshot installed",
-        }
+        return _offline_evidence_node()
     if node == "drug_discovery":
         return {
             "status": "not_executed", "external_tools": ["RDKit", "OpenMM", "DeepChem"],
@@ -162,17 +192,25 @@ def run_offline_case(scenario: str) -> dict[str, Any]:
         events.append({
             "schema_version": "1.0", "event_id": f"synthetic-{i:03d}",
             "channel": "tmrds.offline.node.v1", "node": name,
-            "data_class": "synthetic_nonidentifying", "status": result["status"],
+            "data_class": ("public_citation_metadata" if name == "evidence" and
+                           result["status"] == "offline_metadata_pack_verified" else
+                           "synthetic_nonidentifying"), "status": result["status"],
             "result_sha256": _digest(result), "clinical_promotion_allowed": False,
         })
     receipt = {
         "schema_version": "1.0", "scenario": scenario,
         "nodes": results, "events": events,
-        "offline": True, "input_class": "built_in_synthetic_fixture_only",
+        "offline": True, "input_class": (
+            "built_in_synthetic_fixture_plus_verified_public_citation_metadata"
+            if results["evidence"]["status"] == "offline_metadata_pack_verified" else
+            "built_in_synthetic_fixture_only"),
         "patient_data_accepted": False, "network_access_used": False,
         "clinical_inference_performed": False, "treatment_recommended": False,
         "human_authority_final": True,
     }
     receipt["receipt_sha256"] = _digest(receipt)
-    receipt["receipt_scope"] = "canonical_synthetic_results_and_events_no_patient_data"
+    receipt["receipt_scope"] = (
+        "canonical_synthetic_results_and_verified_public_citation_metadata_no_patient_data"
+        if results["evidence"]["status"] == "offline_metadata_pack_verified" else
+        "canonical_synthetic_results_and_events_no_patient_data")
     return receipt
