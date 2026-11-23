@@ -21,7 +21,7 @@ See [Windows offline setup and clinical limits](docs/operations/portable-offline
 
 ## New: local offline specialist HTML swarm (synthetic pilot)
 
-TMRDS now includes an **executable, air-gapped, nine-page specialist HTML workstation** alongside the connected public research service. It uses a Python standard-library coordinator bound to **127.0.0.1 only**, actual existing synthetic laboratory/VCF parsers, the six-qubit Grover research simulation, an in-memory specialist event contract, and a deterministic SHA-256 research receipt. Imaging, pharmaceutical simulations, WikiMed ZIM archives and EHR integrations report their uninstalled/unavailable state rather than fabricate analyses.
+In addition to the existing **scientific offline workstation** (`scripts/qrce_swarm_local.py`, `scripts/qrce_offline_workstation.py`, and the Windows Python wheelhouse containing real pinned pydicom, Biopython, RDKit, and pypdf readers), TMRDS now includes a **zero-third-party-package, low-resource fallback**: an executable, air-gapped, nine-page specialist HTML workstation alongside the connected public research service. It uses a Python standard-library coordinator bound to **127.0.0.1 only**, actual existing synthetic laboratory/VCF parsers, the six-qubit Grover research simulation, an in-memory specialist event contract, and a deterministic SHA-256 research receipt. Imaging, pharmaceutical simulations, WikiMed ZIM archives and EHR integrations report their uninstalled/unavailable state rather than fabricate analyses.
 
 Start from a reviewed local source checkout with Python 3.11+:
 
