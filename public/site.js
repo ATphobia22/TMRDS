@@ -273,6 +273,8 @@ const backendConfiguration = (async () => {
   } catch (_error) {
     backendEnabled = false;
   }
+  const liveWorkspaceLink = $("connectedWorkspaceLink");
+  if (liveWorkspaceLink) liveWorkspaceLink.hidden = backendEnabled;
   $("backendState").textContent = backendEnabled ?
     "Same-origin research API configured · connectivity pending" :
     "Backend not deployed on this site · two public live sources remain available";
