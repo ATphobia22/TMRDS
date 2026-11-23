@@ -107,7 +107,5 @@ def test_no_input_personal_data_in_json_namespaced_keys():
         blob = json.dumps({"measurements": [
             {"code": "718-7", "value": 7, "unit": "g/dL", key: "SENSITIVE"}
         ]})
-        if key == "medicalRecordNumber":  # not an exact listed alias yet; test must reject too
-            continue
         with pytest.raises(SyntheticFormatError):
             inspect(".json", blob)
