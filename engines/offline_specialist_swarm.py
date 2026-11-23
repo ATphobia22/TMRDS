@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from engines.offline_evidence_pack import EvidencePackError, load_pack
+from engines.offline_evidence_pack import EvidencePackError, load_pack, search_pack, _query
 
 from engines.cube_grover_research import simulate_grover_research_plan
 from engines.qrce_research_formats import inspect_synthetic_fixture
@@ -59,11 +59,13 @@ def capability_manifest() -> dict[str, Any]:
             "six_qubit_grover_research_coverage_simulation",
             "deterministic_local_evidence_receipt",
             "multi_node_local_read_only_workflow",
+            "optional_verified_public_citation_metadata_search",
         ],
         "optional_integrations": {
             "orthanc": "separate_synthetic_sandbox_not_bundled",
             "monai": "optional_weights_license_and_human_review_required",
             "kiwix": "external_zim_archive_not_bundled",
+            "local_public_citation_pack": "available_only_if_hash_and_rights_verified",
             "alphafold3": "restricted_weights_not_bundled",
             "openelis": "institutional_connector_not_configured",
             "pydicom": "optional_imaging_dependency_not_in_core",
@@ -144,6 +146,28 @@ def _offline_evidence_node() -> dict[str, Any]:
         "clinical_guidance_inferred": False,
         "research_use_requires_human_review": True,
     }
+
+
+def search_local_public_evidence(term: str) -> dict[str, Any]:
+    """Search only installed, integrity-verified, citation-only metadata; no HTTP."""
+    _query(term)
+    if not LOCAL_EVIDENCE_PACK_PATH.exists():
+        return {
+            "schema_version": "1.0", "status": "offline_source_not_installed",
+            "matches": [], "match_count": 0, "search_executed_online": False,
+            "clinical_interpretation": None, "patient_data_used": False,
+            "warning": "No local public citation metadata pack installed; no evidence conclusion possible",
+        }
+    try:
+        pack = load_pack(LOCAL_EVIDENCE_PACK_PATH)
+    except (EvidencePackError, ValueError, OSError):
+        return {
+            "schema_version": "1.0", "status": "offline_source_unverified",
+            "matches": [], "match_count": 0, "search_executed_online": False,
+            "clinical_interpretation": None, "patient_data_used": False,
+            "warning": "Pack integrity, source rights or schema failed validation",
+        }
+    return {"schema_version": "1.0", **search_pack(pack, term)}
 
 
 def _execute_node(node: str, scenario: str) -> dict[str, Any]:
