@@ -1314,7 +1314,7 @@
       "interface": "QEC minimum-weight perfect-matching decoder",
       "integration_state": "optional_not_installed",
       "license_notes": "Apache-2.0 code per GitHub repository metadata; error correction only, not disease matching",
-      "verification": "repository_metadata_checked_2026_11_23",
+      "verification": "official_license_checked",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1326,7 +1326,7 @@
       "interface": "Clifford/stabilizer error-correction simulator",
       "integration_state": "optional_not_installed",
       "license_notes": "Apache-2.0 code per repository metadata; not chemistry or clinical software",
-      "verification": "repository_metadata_checked_2026_11_23",
+      "verification": "official_license_checked",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1338,7 +1338,7 @@
       "interface": "Molecular machine learning research workflows",
       "integration_state": "optional_not_installed",
       "license_notes": "MIT code per repository metadata; trained models and datasets each require independent license and validity review",
-      "verification": "repository_metadata_checked_2026_11_23",
+      "verification": "official_license_checked",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1350,7 +1350,7 @@
       "interface": "Protein-ligand structure and affinity research model",
       "integration_state": "optional_not_installed",
       "license_notes": "MIT repository per GitHub; weights, data, inference costs and task-specific validation reviewed separately",
-      "verification": "repository_metadata_checked_2026_11_23",
+      "verification": "official_license_checked",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1362,7 +1362,7 @@
       "interface": "Biomedical entity recognition and linking",
       "integration_state": "optional_not_installed",
       "license_notes": "Apache-2.0 repository; models/terminology licenses separately reviewed; no de-identification guarantee",
-      "verification": "repository_metadata_checked_2026_11_23",
+      "verification": "official_license_checked",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1374,7 +1374,7 @@
       "interface": "Clinical section, context and negation patterns",
       "integration_state": "optional_not_installed",
       "license_notes": "MIT repository; clinical text can contain PHI; never use in the anonymous public API",
-      "verification": "repository_metadata_checked_2026_11_23",
+      "verification": "official_license_checked",
       "clinical_access_enabled": false,
       "public_api_connected": false
     },
@@ -1386,7 +1386,7 @@
       "interface": "PII detection and de-identification aid",
       "integration_state": "optional_not_installed",
       "license_notes": "Check exact release/license/model terms; detection has false negatives and does not by itself establish HIPAA compliance",
-      "verification": "repository_metadata_checked_2026_11_23",
+      "verification": "cataloged_review_pending",
       "clinical_access_enabled": false,
       "public_api_connected": false
     }
