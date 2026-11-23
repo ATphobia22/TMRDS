@@ -1,0 +1,70 @@
+name: QRCE Offline Workstation Real Integrations
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  local-policy-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest==9.2.0
+      - run: python -m pytest -q tests/test_offline_workstation_adapters.py tests/test_offline_wheelhouse.py tests/test_qrce_swarm_local.py
+      - run: python scripts/qrce_offline_workstation.py doctor
+  windows-binary-packaging:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    needs: [local-policy-contract]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+          architecture: "x64"
+      - name: Download vetted pinned CPU-wheel profile on build runner
+        run: python scripts/qrce_wheelhouse.py prepare wheelhouse
+      - name: Independently verify every downloaded wheel checksum
+        run: python scripts/qrce_wheelhouse.py verify wheelhouse
+      - name: Install actual libraries using OFFLINE no-index mode
+        shell: pwsh
+        run: |
+          python -m pip install --isolated --no-index --find-links wheelhouse -r deploy/offline/requirements.txt
+          python -m pip check
+          python -m pip install pytest==9.2.0
+      - name: Exercise real pydicom MR pixel data, Biopython FASTQ, RDKit SDF and pypdf
+        run: python -m pytest -q tests/test_offline_workstation_adapters.py tests/test_offline_wheelhouse.py tests/test_qrce_swarm_local.py
+      - name: Verify actual installed versions
+        run: python scripts/qrce_offline_workstation.py doctor
+      - name: Assemble portable Python 3.11 wheelhouse (NOT a standalone .exe)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force offline-release/engines,offline-release/scripts,offline-release/deploy/offline | Out-Null
+          Copy-Item engines/__init__.py offline-release/engines/__init__.py
+          Copy-Item engines/offline_workstation_adapters.py offline-release/engines/
+          Copy-Item engines/cube_grover_research.py offline-release/engines/
+          Copy-Item engines/qrce_research_formats.py offline-release/engines/
+          Copy-Item scripts/qrce_offline_workstation.py offline-release/scripts/
+          Copy-Item scripts/qrce_wheelhouse.py offline-release/scripts/
+          Copy-Item scripts/qrce_swarm_local.py offline-release/scripts/
+          Copy-Item deploy/offline/swarm offline-release/deploy/offline/swarm -Recurse
+          Copy-Item deploy/offline/requirements.txt offline-release/deploy/offline/
+          Copy-Item docs/operations/portable-offline-workstation.md offline-release/README.md
+          Copy-Item wheelhouse offline-release/wheelhouse -Recurse
+      - name: Publish tested Windows Python wheelhouse artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v4
+        with:
+          name: tmrds-offline-python311-win-x64-research-preview
+          path: offline-release/
+          retention-days: 7
+          if-no-files-found: error

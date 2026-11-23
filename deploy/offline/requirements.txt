@@ -1,0 +1,8 @@
+# Reproducible, isolated offline workstation extras for Python 3.11 x64.
+# Download only on a controlled build runner; install from the sealed wheelhouse
+# using --no-index after verifying every wheel SHA-256. Core public API omits these.
+pydicom==3.0.2
+biopython==1.88
+rdkit==2026.9.2
+pypdf==7.1.0
+numpy==2.4.6
