@@ -2,6 +2,23 @@
 
 > **Research software — not a medical device.** TMRDS helps doctors and researchers find and cross-check public biomedical evidence faster. It does not diagnose, prescribe, treat, or replace clinical judgment. It is not FDA-cleared, clinically validated, HIPAA-compliant, ONC-certified, or connected to any live hospital system.
 
+## Verified main release and branch reconciliation — 2026-11-23
+
+The [audited `main` release](https://github.com/ATphobia22/TMRDS/commit/6d295e307b137e7c019b88bdfe0d54f487d3604f) at commit `6d295e307b137e7c019b88bdfe0d54f487d3604f` passed **all ten associated GitHub workflows**, including the Windows 11 x64 real scientific-reader installation, offline wheelhouse ZIP upload, public Pages, security, provenance, CodeQL, and synthetic imaging tests. This confirms the CI environment, not a clinical trial or a clean-device field performance evaluation.
+
+**Pull requests:** no open PRs. **Branches:** all **50** non-main refs were compared against that baseline: **33 strictly behind** (nothing to merge) and **17 historically diverged** from previously squash-merged features or superseded dependency updates. Replaying old branch histories would risk overwriting tested software. [Full branch-by-branch reconciliation and evidence](docs/operations/branch-reconciliation-20261123.md).
+
+### Choose the actual execution environment
+
+| Use case | Verified software | Essential boundary |
+|---|---|---|
+| Public biomedical evidence cross-check | [Connected research website](https://tmrds-public-evidence-api.onrender.com/); 22 bounded metadata sources and six-plane Grover *research-coverage* demonstration | Internet required; **never upload patient records**; not a validated diagnosis or treatment engine |
+| Windows 11 laptop without Internet | [FieldLab Win11 artifact workflow](https://github.com/ATphobia22/TMRDS/actions/runs/45173817549): hashed wheelhouse, actual pydicom / NiBabel / Biopython / RDKit readers, local Tkinter UI | **Python 3.11 x64 must be preinstalled**. Transfer/verify the ZIP before travel. No signed one-click native installer or validated imaging diagnosis |
+| Low-dependency local research demonstration | `python -m scripts.run_offline_swarm --port 8765`, then `http://127.0.0.1:8765/` | Nine-page stdlib fallback accepts **synthetic fixtures only**. Separate seven-page JSON-RPC research profile is described below; neither is a licensed hospital network |
+| Clinical patient care, MRI/CT interpretation, gene editing, drug binding, or actual hospital data | No production-validated capability claimed | Requires authorized local clinical infrastructure, appropriately licensed model/data, case-level validation and regulatory/privacy review |
+
+Latest audited cloud deployment is **Render `23aeca451d9cc5ffa867f63ee4b1b7b438eedd4e`**, which serves the research-only frontend/backend, while newer `main` commits add **separate offline profiles**. CI-green offline modules do not imply they have been installed in the cloud service or on a rural laptop.
+
 ## New: Sovereign rural laptop workstation and specialist HTML swarm
 
 **A real, separate offline execution profile** has been added alongside the existing public research site. The Windows x64 CI profile **installs and executes** pinned open-source medical/scientific readers, rather than merely cataloguing them:
@@ -103,7 +120,7 @@ pediatric extension markers), US patent claims, regulatory exclusivity,
 jurisdiction and current USPTO status require **separate legal review**.
 Nothing here identifies a drug as an established new indication or cure.
 
-The public catalog now lists **115 research databases, tools and scientific projects**, clearly distinguishing existing adapters from software not installed, catalog references and approval-gated resources. The **local-only synthetic research fixture inspector** handles CSV/TSV, selected FHIR JSON, sample-free VCF, FASTA and FASTQ within strict bounds; it never grants patient-level clinical ingestion.
+The public catalog now lists **122 research databases, tools and scientific projects**, clearly distinguishing existing adapters from software not installed, catalog references and approval-gated resources. The **local-only synthetic research fixture inspector** handles CSV/TSV, selected FHIR JSON, sample-free VCF, FASTA and FASTQ within strict bounds; it never grants patient-level clinical ingestion.
 
 `GET /api/v1/research/pmc-identifiers` maps official NIH PMC identifiers; `GET /api/v1/research/periodic-element?symbol=Fe` returns original PubChem periodic-table metadata. `GET /api/v1/research/file-format-capabilities` reports honest local-only parser support. These routes are present in the separately deployable research-only Python gateway.
 
@@ -193,7 +210,7 @@ Public sources are queried by isolated adapters, normalized into a common eviden
 
 **November 23, 2026 — [PR #72](https://github.com/ATphobia22/TMRDS/pull/72), merged to main.** Replaced the original static cube art with a working, accessible 3D Rubik's Cube (26 visible cubies, quarter-turn moves, continuous/search animation, manual control and reduced-motion support). Introduced **`api/public_gateway.py`** and **`Dockerfile.public`**: a separate, nonclinical read-only API that serves the same site and permits only eight policy-registered, bounded metadata adapters from the larger federation. Added a source-governance registry, explicit retrieval freshness vs. upstream version states, a 90-day license-review checkpoint, scheduled official-source receipts and exact-ID Open Targets disease → target → compound links. A single FDA-anchored cystic fibrosis (`MONDO_0009061`) → CFTR (`ENSG00000001626`) → ivacaftor (`CHEMBL2010601`) reference case passed the live technical check, but **independent clinical validation remains outstanding**. All seven PR workflows and the corresponding merged-`main` workflows completed successfully; the public Pages deployment was also browser-tested. The Python service is **deployable but not yet publicly hosted**.
 
-**November 23, 2026 — GWAS Catalog v2.** Added an original-source GWAS Catalog REST API v2 genetic-association metadata adapter to the federated search. The adapter uses one bounded source page, preserves association IDs, study accession, ontology traits and p-values, and explicitly refuses causal or clinical interpretation. Source rights and study population applicability need independent review. The public GitHub Pages site remains a separate, limited two-source browser experience; it does not execute the Python backend.
+**November 23, 2026 — GWAS Catalog v2.** Added an original-source GWAS Catalog REST API v2 genetic-association metadata adapter to the federated search. The adapter uses one bounded source page, preserves association IDs, study accession, ontology traits and p-values, and explicitly refuses causal or clinical interpretation. Source rights and study population applicability need independent review. The public GitHub Pages site remains a separate static browser experience with direct Europe PMC, ClinicalTrials.gov and Crossref lookups; it does not execute the Python backend.
 
 **November 2026** — gnomAD and GTEx adapters wired into federated search (population frequencies, tissue eQTLs; 25 live sources); Ensembl VEP variant-consequence annotation (HGVS and region queries, same Ensembl source); HAPI FHIR public test-server probe with a documented synthetic-only opt-in, guards intact; degraded-open API-key posture restored per the standing directive; synthetic FHIR R4 research workbench (lab trends, imaging metadata, terminology; synthetic data only); local Orthanc/OHIF imaging research sandbox; research evidence dossiers with retraction flags; a 30-surface research-plugin capability registry with a read-only RCSB PDB metadata route; source telemetry; opt-in IBM Quantum adapter with a bounded reconciliation worker and job ledger.
 
@@ -324,6 +341,8 @@ TMRDS/
 
 ## Further reading
 
+- [All 50 historical branch comparisons and release-gate verification](docs/operations/branch-reconciliation-20261123.md) — no outstanding PRs; 33 ancestor refs and 17 squash/superseded histories; exact CI and offline artifact proof.
+
 - [Intended use](docs/INTENDED_USE.md) — research-only scope and the Cures Act criteria.
 - [SaMD classification checklist](docs/SAMD_CLASSIFICATION_CHECKLIST.md) — per-feature classification.
 - [Interoperability compliance matrix](docs/INTEROPERABILITY_COMPLIANCE_MATRIX.md) — FHIR/US Core controls and limitations.
@@ -331,7 +350,7 @@ TMRDS/
 - [Imaging research workflow](docs/integrations/imaging-research-workflow.md) — bounded DICOMweb reads, OHIF provenance panel, reviewed MONAI weight loading, human label submission; research only, no clinical approval.
 - [Research dossier](docs/operations/research-dossier.md) — dossier contract and remaining gates.
 - [GWAS Catalog v2 integration](docs/integrations/gwas-catalog-v2.md) — bounded real-source genetic association metadata, rate limits, identity preservation, and clinical limitations.
-- [Open-source medical gateway and 41-project catalog](docs/integrations/open-source-medical-gateway.md) — PubMed and AlphaFold DB metadata, integration status, source rights, and clinical-system isolation.
+- [Original open-source medical gateway integration (initial 41 projects)](docs/integrations/open-source-medical-gateway.md) — PubMed and AlphaFold DB metadata, integration status and licensing. The [current catalog](public/medical-projects.json) holds 122 entries.
 - [Governed evidence pathway and Rubik's Cube deployment](docs/integrations/governed-evidence-pathway.md) — same-origin Docker service, source-license/freshness checks, exact identifier joins, release audit, and independent-validation limits.
 - [Source-governance workflow](.github/workflows/source-governance.yml) — CI tests, public container smoke tests, and weekly upstream audits.
 - [Biomedical source gap review](docs/reference/biomedical-source-gap-review-2026-11-07.md) — status baseline for GWAS v2, DepMap/PRISM, LINCS, CELLxGENE, ClinPGx priorities.
