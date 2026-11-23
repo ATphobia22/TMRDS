@@ -36,6 +36,7 @@ from engines.dailymed_pipeline import DailyMedPipeline
 from engines.ensembl_pipeline import EnsemblPipeline
 from engines.europe_pmc_pipeline import EuropePMCPipeline
 from engines.gnomad_pipeline import GnomADPipeline
+from engines.gwas_catalog_v2_pipeline import GWASCatalogV2Pipeline
 from engines.gtex_pipeline import GTExPipeline
 from engines.mesh_pipeline import MeshPipeline
 from engines.monarch_pipeline import MonarchPipeline
@@ -79,6 +80,7 @@ COVERAGE = {
     "monarch": "Monarch v3: phenotype/disease knowledge graph; integrated-KG license mixed — redistribution unverified.",
     "mesh": "MeSH (NLM): controlled vocabulary lookup; terminology bridge, not an evidence corpus.",
     "gnomad": "gnomAD v4 (gnomad_r4, GRCh38): reference-population allele frequencies; variant-addressed — a gene symbol returns nothing; frequencies are population summaries, not clinical evidence.",
+    "gwas_catalog_v2": "NHGRI–EBI GWAS Catalog v2: curated top variant–trait associations only (no full summary statistics); trait-addressed, first page only; association is not causality or clinical treatment evidence.",
     "gtex": "GTEx Portal v2: single-tissue eQTL associations (gtex_v10 default); population-level observational statistics, not causal or clinical interpretations.",
     "lens_patents": "Lens Patents: requires an API token; unavailable without credentials. Not legal advice.",
     "ibm_quantum": "IBM Quantum: requires API key + instance CRN; unavailable without credentials.",
@@ -98,7 +100,9 @@ def _record_hash(payload: Any) -> str:
 
 
 def _make_envelope(source: str, source_name: str, record: dict[str, Any], evidence_class: str) -> dict[str, Any]:
-    stable_seed = record.get("doi") or record.get("pmid") or record.get("nct_id") or record.get("arxiv_id") or record.get("source_url") or record.get("title")
+    # One GWAS study PMID can describe thousands of distinct variant associations.
+    # Association identity is the trusted numeric ID in the source URL, never the PMID.
+    stable_seed = (record.get("source_url") if evidence_class == "genetic_association" else None) or record.get("doi") or record.get("pmid") or record.get("nct_id") or record.get("arxiv_id") or record.get("source_url") or record.get("title")
     return {
         "stable_id": f"{source}:{_record_hash(stable_seed)[:16]}",
         "source": source,
@@ -164,6 +168,7 @@ class FederatedEvidenceSearch:
         self.mesh = MeshPipeline()
         self.uniprot = UniProtPipeline()
         self.gnomad = GnomADPipeline()
+        self.gwas_catalog_v2 = GWASCatalogV2Pipeline()
         self.gtex = GTExPipeline()
 
     async def _guard(self, source: str, coro) -> SourceResult:
@@ -202,6 +207,7 @@ class FederatedEvidenceSearch:
             self._guard("mesh", self._search_mesh(query, per_source)),
             self._guard("uniprot", self._search_uniprot(query, per_source)),
             self._guard("gnomad", self._search_gnomad(query, per_source)),
+            self._guard("gwas_catalog_v2", self._search_gwas_catalog_v2(query, per_source)),
             self._guard("gtex", self._search_gtex(query, per_source)),
         )
         envelopes: list[dict[str, Any]] = []
@@ -530,6 +536,26 @@ class FederatedEvidenceSearch:
             env["warnings"].append(
                 "Reference-population allele frequencies — not clinical evidence; "
                 "ancestry and coverage limitations apply."
+            )
+            out.append(env)
+        return out
+
+    async def _search_gwas_catalog_v2(self, query: str, n: int) -> list[dict[str, Any]]:
+        """Original-source, variant-trait associations only; never a causal conclusion."""
+        records = await self.gwas_catalog_v2.search_trait(query, n)
+        out = []
+        for record in records:
+            env = _make_envelope("gwas_catalog_v2", "GWAS Catalog v2", record, "genetic_association")
+            for field in ("association_id", "study_accession", "p_value",
+                          "pvalue_mantissa", "pvalue_exponent", "effect_description",
+                          "snp_effect_alleles", "efo_traits", "reported_traits",
+                          "clinical_interpretation", "causality_established",
+                          "study_cohort_review", "effect_size_heterogeneity_review"):
+                env[field] = record.get(field)
+            env["warnings"].append(
+                "GWAS trait association is not proof of causality, pathogenicity, "
+                "treatment efficacy, or clinical relevance; review study cohorts, "
+                "ancestry and effect uncertainty."
             )
             out.append(env)
         return out
