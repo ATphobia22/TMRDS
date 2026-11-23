@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "engines/fieldlab_local.py"
+      - "engines/fieldlab_cube_bridge.py"
       - "scripts/fieldlab_*.py"
       - "scripts/install_fieldlab_windows.ps1"
       - "Dockerfile.fieldlab"
@@ -51,15 +52,17 @@ jobs:
       - name: Run actual DICOM, NIfTI, molecule and sequence library tests
         run: |
           python -m pip install pytest==9.2.0
-          python -m pytest -q tests/test_fieldlab_local.py tests/test_fieldlab_wheelhouse.py
+          python -m pytest -q tests/test_fieldlab_local.py tests/test_fieldlab_wheelhouse.py tests/test_fieldlab_cube_bridge.py
           python scripts/fieldlab_cli.py status
           python scripts/fieldlab_cli.py molecule --smiles CCO
+          python scripts/fieldlab_cli.py molecule --smiles CCO --cube-plan
       - name: Build local-only research container
         run: docker build -f Dockerfile.fieldlab -t tmrds-fieldlab:ci .
       - name: Verify FieldLab container with physical egress disabled
         run: |
           docker run --rm --network none --read-only --security-opt=no-new-privileges --cap-drop ALL tmrds-fieldlab:ci status
           docker run --rm --network none --read-only --security-opt=no-new-privileges --cap-drop ALL tmrds-fieldlab:ci molecule --smiles CCO
+          docker run --rm --network none --read-only --security-opt=no-new-privileges --cap-drop ALL tmrds-fieldlab:ci molecule --smiles CCO --cube-plan
 
   windows-fieldlab:
     name: Win11 x64 real parsers and offline ZIP installer
@@ -92,8 +95,9 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path fieldlab-release/engines,fieldlab-release/scripts,fieldlab-release/deploy/fieldlab | Out-Null
-          Copy-Item engines/fieldlab_local.py fieldlab-release/engines/
+          Copy-Item engines/fieldlab_local.py,engines/fieldlab_cube_bridge.py,engines/cube_grover_research.py fieldlab-release/engines/
           Copy-Item scripts/fieldlab_cli.py,scripts/fieldlab_desktop.py,scripts/fieldlab_wheelhouse.py,scripts/install_fieldlab_windows.ps1 fieldlab-release/scripts/
+          python -m py_compile scripts/fieldlab_cli.py scripts/fieldlab_desktop.py engines/fieldlab_cube_bridge.py
           Copy-Item deploy/fieldlab/requirements.txt fieldlab-release/deploy/fieldlab/
           Copy-Item docs/integrations/fieldlab-offline-workstation-20261123.md fieldlab-release/FIELDLAB-README.md
       - name: Prove installer uses downloaded wheels with no package-index access
