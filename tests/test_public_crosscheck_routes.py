@@ -158,7 +158,7 @@ def test_public_routes_are_read_only_and_phrases_reject_pii():
             assert getattr(route, "methods", set()) <= {"GET", "HEAD"}
 
 
-def test_12_source_crosscheck_is_fully_wired_with_per_source_status(monkeypatch):
+def test_22_source_crosscheck_is_fully_wired_with_per_source_status(monkeypatch):
     queried = []
     async def mocked_guard(self, source, coro):
         coro.close()
@@ -171,10 +171,13 @@ def test_12_source_crosscheck_is_fully_wired_with_per_source_status(monkeypatch)
     response = client.get("/api/v1/research/cross-check", params={"query": "ALS", "limit": 1})
     assert response.status_code == 200
     data = response.json()
-    assert len(set(queried)) == 12
+    assert len(set(queried)) == 22
     assert data["status"] == "records_retrieved"
     assert data["group_count"] == 1
     assert data["source_status"]["pubmed"]["state"] == "source_unavailable"
     assert data["source_status"]["europe_pmc"]["state"] == "responding"
     assert data["source_licensing"]["crossref"]["bulk_redistribution_allowed"] is False
+    assert data["source_licensing"]["clinvar"]["metadata_display_allowed"] is True
+    assert data["source_licensing"]["biorxiv"]["bulk_redistribution_allowed"] is False
+    assert data["source_status"]["gnomad"]["state"] == "source_unavailable"
     assert data["human_authority_final"] is True
