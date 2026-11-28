@@ -6,6 +6,7 @@ import os
 from functools import lru_cache
 
 from fastapi import Header, HTTPException
+from jwt.exceptions import PyJWTError
 
 from engines.service_identity import ServiceTokenValidator
 
@@ -15,15 +16,17 @@ def _validator() -> ServiceTokenValidator | None:
     jwks_text = os.getenv("TMRDS_SERVICE_JWKS_JSON", "").strip()
     issuer = os.getenv("TMRDS_SERVICE_ISSUER", "").strip()
     audience = os.getenv("TMRDS_SERVICE_AUDIENCE", "").strip()
-    if not jwks_text or not issuer or not audience:
+    if not any((jwks_text, issuer, audience)):
         return None
+    if not all((jwks_text, issuer, audience)):
+        raise RuntimeError("service authentication configuration is incomplete")
     try:
         document = json.loads(jwks_text)
         keys = document.get("keys", document) if isinstance(document, dict) else document
-        if not isinstance(keys, list):
+        if not isinstance(keys, list) or not keys or not all(isinstance(key, dict) for key in keys):
             raise ValueError("JWKS must contain a keys array")
         return ServiceTokenValidator.from_jwks(keys, issuer=issuer, audience=audience)
-    except (ValueError, TypeError, json.JSONDecodeError) as exc:
+    except (ValueError, TypeError, KeyError, PyJWTError) as exc:
         raise RuntimeError("TMRDS_SERVICE_JWKS_JSON is invalid") from exc
 
 
@@ -36,13 +39,17 @@ async def require_service_identity(
     required = production or configured_required
     if not required:
         return None
-    if not authorization or not authorization.startswith("Bearer "):
+    scheme, _, token = (authorization or "").partition(" ")
+    if scheme.casefold() != "bearer" or not token.strip():
         raise HTTPException(status_code=401, detail="service bearer token required")
-    validator = _validator()
+    try:
+        validator = _validator()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail="service authentication is unavailable") from exc
     if validator is None:
         raise HTTPException(status_code=503, detail="service authentication is not configured")
     try:
-        claims = validator.validate(authorization[7:].strip(), required_scopes={"evidence.write"})
+        claims = validator.validate(token.strip(), required_scopes={"evidence.write"})
     except ValueError as exc:
         raise HTTPException(status_code=401, detail="invalid service identity") from exc
     return {"sub": claims.subject, "scopes": sorted(claims.scopes), "kid": claims.key_id}
