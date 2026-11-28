@@ -103,6 +103,15 @@ def _codeable_concept(value: Any, field_name: str) -> Dict[str, Any]:
     }
 
 
+def _restore_codeable_concept(value: Mapping[str, Any]) -> Dict[str, Any]:
+    restored: Dict[str, Any] = {}
+    if value.get("coding"):
+        restored["coding"] = copy.deepcopy(value["coding"])
+    if value.get("text") is not None:
+        restored["text"] = value["text"]
+    return restored
+
+
 def _patient_reference(resource: Mapping[str, Any]) -> tuple[str, str]:
     subject = resource.get("subject")
     reference = subject.get("reference") if isinstance(subject, dict) else None
@@ -332,15 +341,17 @@ class OMOPCDMBridge:
             resource_type = resource["resourceType"]
             resource_id = resource["id"]
             if resource_type == "Patient":
-                gender = resource.get("gender", "unknown")
-                if gender not in GENDER_CONCEPT_IDS:
+                gender = resource.get("gender")
+                if "gender" in resource and (
+                    not isinstance(gender, str) or gender not in GENDER_CONCEPT_IDS
+                ):
                     raise ValueError(f"Patient/{resource_id} has an unsupported FHIR gender")
                 birth_date = resource.get("birthDate")
                 birth_day = _fhir_date(birth_date, "Patient.birthDate") if birth_date else None
                 person_key = identity_map[resource_id]
                 pending_rows["PERSON"].append({
                     "person_id": person_key,
-                    "gender_concept_id": GENDER_CONCEPT_IDS[gender],
+                    "gender_concept_id": GENDER_CONCEPT_IDS.get(gender, 0),
                     "year_of_birth": int(birth_day[:4]) if birth_day else None,
                     "birth_datetime": birth_day,
                     "race_concept_id": 0,
@@ -530,16 +541,14 @@ class OMOPCDMBridge:
             resource_type = metadata["resource_type"]
             resource: Dict[str, Any] = {"resourceType": resource_type, "id": metadata["resource_id"]}
             if resource_type == "Patient":
-                resource["gender"] = metadata["gender"]
+                if metadata["gender"] is not None:
+                    resource["gender"] = metadata["gender"]
                 if metadata["birth_date"]:
                     resource["birthDate"] = row["birth_datetime"]
             elif resource_type == "Condition":
                 resource.update({
                     "subject": {"reference": metadata["subject_reference"]},
-                    "code": {
-                        "coding": copy.deepcopy(metadata["code"]["coding"]),
-                        "text": metadata["code"]["text"],
-                    },
+                    "code": _restore_codeable_concept(metadata["code"]),
                     "onsetDateTime": row["condition_start_date"],
                 })
                 if metadata["clinical_status"] is not None:
@@ -552,10 +561,7 @@ class OMOPCDMBridge:
                 resource.update({
                     "status": metadata["status"],
                     "subject": {"reference": metadata["subject_reference"]},
-                    "code": {
-                        "coding": copy.deepcopy(metadata["code"]["coding"]),
-                        "text": metadata["code"]["text"],
-                    },
+                    "code": _restore_codeable_concept(metadata["code"]),
                     "effectiveDateTime": row["measurement_date"],
                     "valueQuantity": quantity,
                 })
@@ -564,10 +570,7 @@ class OMOPCDMBridge:
                     "status": metadata["status"],
                     "subject": {"reference": metadata["subject_reference"]},
                     "authoredOn": row["drug_exposure_start_date"],
-                    "medicationCodeableConcept": {
-                        "coding": copy.deepcopy(metadata["medication"]["coding"]),
-                        "text": metadata["medication"]["text"],
-                    },
+                    "medicationCodeableConcept": _restore_codeable_concept(metadata["medication"]),
                 })
                 if metadata["intent"] is not None:
                     resource["intent"] = metadata["intent"]
