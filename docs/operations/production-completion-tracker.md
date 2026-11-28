@@ -103,3 +103,26 @@ Configure main branch ruleset in GitHub settings. The current connector cannot r
 3. Continue endpoint-by-endpoint runtime authorization tests after the declared-route inventory is corrected; specifically verify `evidence.read` cannot mutate and `evidence.write` remains required for protected mutations.
 4. Audit synthetic imaging, public-record preview, evidence ingestion and synchronization endpoints without changing intended public research routes.
 5. Continue synthetic FHIR/OMOP/DICOM contracts, migration/restore tests, offline installation and signed artifact verification. Keep clinical and release approvals distinct.
+
+
+## Latest engineering run — 2026-11-28 16:47 UTC
+
+- PR #87 route-inventory correction exposed an additional security gap after the first scanner fix. The prior flat scan had silently omitted nested FastAPI routes; once the public `iter_route_contexts()` iterator was used, the CI route audit identified five POST endpoints without a declared auth dependency:
+  - `POST /api/v1/cube/structure/predict`
+  - `POST /api/v1/cube/quantum/vqe`
+  - `POST /api/v1/governance/ai/validate`
+  - `POST /api/v1/evidence/semantic-search`
+  - `POST /api/v1/interoperability/fhir/validate`
+- These are research read/compute/validation operations, not evidence writes. To avoid treating POST as permission to accept arbitrary unauthenticated input, the PR now declares `require_service_read_identity` on all five. The FHIR validator can accept resource-shaped payloads, so the route is not left publicly callable merely because it validates rather than persists data.
+- Test-first commit `19622a967fe3cd8608621a27304b83d338c559af` asserts all five endpoints are declared `evidence.read` routes. Implementation commits: `914da138a9baf4c7c89bdf674c6cb2a90034649a`, `79e1c719dfe4f3da6c0eda1a5692e4c4fd097645`, `2e92b35e33f4030bc7dca5a330e8f07105757e7f`, `df4571ac0d5cda6026f89a2f08b57fd99c946516`.
+- PR #87 current head is `df4571ac0d5cda6026f89a2f08b57fd99c946516`. Six workflows were observed for this exact head: TMRDS CI in progress; Security/Interoperability queued; CodeQL pending; Supply Chain Security pending; QRCE Offline Workstation Real Integrations queued; Synthetic Imaging Tools queued. No result is yet green or failed on this head.
+- The route inventory is static declared-dependency evidence only. Runtime service authentication remains conditional on production mode or `TMRDS_SERVICE_AUTH_REQUIRED=true`; validate the actual JWT scope behavior in the follow-on runtime tests.
+- PR #87 still has no submitted review. PR #86 tracker PR still has no submitted review. No merge was attempted.
+
+## Next bounded actions
+
+1. Recheck all six workflows on exact PR #87 head `df4571ac0d5cda6026f89a2f08b57fd99c946516`.
+2. Inspect route-audit artifact and confirm route count plus no unguarded writes; run full unit suite after audit stage passes.
+3. Add/verify runtime negative tests for `evidence.read` vs `evidence.write` on the five routes; ensure no patient payload is sent to external providers.
+4. Obtain independent review and owner-confirmed branch protection before any merge.
+5. Continue synthetic FHIR/OMOP/DICOM and migration/restore validation, then offline distribution and signed-artifact tests.
