@@ -59,8 +59,17 @@ def _bundle() -> dict:
         "resourceType": "MedicationRequest",
         "id": "synthetic-medication-1",
         "status": "active",
+        "intent": "order",
         "subject": {"reference": "Patient/synthetic-patient-1"},
         "authoredOn": "2025-01-04",
+        "dispenseRequest": {
+            "quantity": {
+                "value": 30,
+                "unit": "tablet",
+                "system": "http://unitsofmeasure.org",
+                "code": "1",
+            }
+        },
         "medicationCodeableConcept": {
             "coding": [{
                 "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
@@ -110,6 +119,7 @@ def test_supported_synthetic_bundle_maps_to_omop_and_roundtrips() -> None:
     assert tables["MEASUREMENT"][0]["value_as_number"] == 13.2
     assert tables["MEASUREMENT"][0]["unit_source_value"] == "g/dL"
     assert tables["DRUG_EXPOSURE"][0]["drug_exposure_start_date"] == "2025-01-04"
+    assert tables["DRUG_EXPOSURE"][0]["quantity"] == 30
     assert tables["DRUG_EXPOSURE"][0]["drug_source_value"] == (
         "http://www.nlm.nih.gov/research/umls/rxnorm|1049502"
     )
@@ -226,6 +236,33 @@ def test_declared_but_unimplemented_resource_types_are_not_fabricated() -> None:
 def test_invalid_bundle_is_rejected() -> None:
     with pytest.raises(ValueError, match="FHIR Bundle"):
         OMOPCDMBridge().from_fhir_bundle({"resourceType": "Patient", "id": "p1"})
+
+
+def test_optional_patient_gender_and_code_text_are_not_fabricated_as_nulls() -> None:
+    bundle = {
+        "resourceType": "Bundle",
+        "type": "collection",
+        "entry": [
+            {"resource": {"resourceType": "Patient", "id": "synthetic-patient-no-gender"}},
+            {"resource": {
+                "resourceType": "Observation",
+                "id": "synthetic-observation-no-text",
+                "status": "final",
+                "subject": {"reference": "Patient/synthetic-patient-no-gender"},
+                "code": {"coding": [{"system": "http://loinc.org", "code": "718-7"}]},
+                "effectiveDateTime": "2025-01-03",
+                "valueQuantity": {"value": 13.2, "unit": "g/dL"},
+            }},
+        ],
+    }
+
+    exported = OMOPCDMBridge().from_fhir_bundle(bundle, person_id=7)
+    assert exported["mapped_resources"] == 2
+    bridge = OMOPCDMBridge()
+    bridge.from_fhir_bundle(bundle, person_id=7)
+    resources = [entry["resource"] for entry in bridge.to_fhir_bundle()["entry"]]
+    assert "gender" not in resources[0]
+    assert "text" not in resources[1]["code"]
 
 
 def test_import_failure_does_not_partially_mutate_bridge_state() -> None:
