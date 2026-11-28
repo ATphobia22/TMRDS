@@ -21,6 +21,10 @@ CURRENT_SCHEMA_VERSION = 2
 _RESERVED_FIELDS = frozenset({"schema_version", "ts", "previous_hash", "content_hash"})
 
 
+def _reject_json_constant(value: str) -> None:
+    raise ValueError(f"non-finite JSON constant is not permitted: {value}")
+
+
 class LedgerIntegrityError(ValueError):
     """Raised when an existing ledger cannot be verified without ambiguity."""
 
@@ -109,8 +113,8 @@ class EvidenceLedger:
                 if not line.strip():
                     raise LedgerIntegrityError(f"ledger contains an empty line at {line_number}")
                 try:
-                    entry = json.loads(line)
-                except json.JSONDecodeError as exc:
+                    entry = json.loads(line, parse_constant=_reject_json_constant)
+                except (json.JSONDecodeError, ValueError) as exc:
                     raise LedgerIntegrityError(f"ledger JSON is invalid at line {line_number}") from exc
                 if not isinstance(entry, dict):
                     raise LedgerIntegrityError(f"ledger entry is not an object at line {line_number}")
@@ -139,7 +143,12 @@ class EvidenceLedger:
                         raise LedgerIntegrityError(
                             f"previous_hash mismatch at line {line_number}"
                         )
-                    expected_hash = self.content_hash(unhashed)
+                    try:
+                        expected_hash = self.content_hash(unhashed)
+                    except ValueError as exc:
+                        raise LedgerIntegrityError(
+                            f"ledger entry is not canonical JSON at line {line_number}"
+                        ) from exc
                     chain_count += 1
                 else:
                     raise LedgerIntegrityError(
