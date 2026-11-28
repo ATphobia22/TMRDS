@@ -126,3 +126,26 @@ Configure main branch ruleset in GitHub settings. The current connector cannot r
 3. Add/verify runtime negative tests for `evidence.read` vs `evidence.write` on the five routes; ensure no patient payload is sent to external providers.
 4. Obtain independent review and owner-confirmed branch protection before any merge.
 5. Continue synthetic FHIR/OMOP/DICOM and migration/restore validation, then offline distribution and signed-artifact tests.
+
+
+## Latest engineering run — 2026-11-28 16:48 UTC
+
+- PR #87 exact head `df4571ac0d5cda6026f89a2f08b57fd99c946516` now has these confirmed workflow results:
+  - TMRDS CI: **success**. Route audit: 72 routes, zero duplicate method/path pairs, zero POST/PUT/PATCH/DELETE routes without a recognized declared auth dependency. Python compile, Docker Compose config, Docker image build, container liveness, focused IBM quantum tests, and full non-integration tests passed.
+  - Full non-integration suite: **593 passed, 28 skipped, 16 deselected, 58 subtests passed, 1 warning**.
+  - Security and Interoperability: **success**.
+  - CodeQL: **success** for Python and GitHub Actions.
+  - Supply Chain Security: **success** for dependency-change review and locked dependency audit.
+  - Synthetic Imaging Tools: MONAI metrics, public documents, and synthetic imaging jobs succeeded; OHIF research build was still running at this snapshot.
+  - QRCE Offline Workstation Real Integrations: local-policy contract succeeded; Windows binary packaging was still queued at this snapshot.
+- PR #87 body updated with exact-head validation and remaining workflow states. PR #87 still has no submitted review; do not merge while OHIF/Windows jobs remain unfinished or independent review/branch-protection requirements are unconfirmed.
+- PR #86 tracker updated to record the lazy-router inventory failure, the five additional unguarded POST routes, their read-scope hardening, and the current CI evidence. Its updated documentation commit is `5b1e405776c76a2775c1f9e5d9cbc33f10b5df0d`; PR checks for this latest tracker commit must be rechecked separately.
+- No main-branch merge occurred. Main remains `47739aa5f66c78b5f8a857aa365bebcf6c29bcad`. No branch protection write/read capability is exposed by the connected GitHub toolset; issue #28 remains the owner action.
+
+## Next bounded actions
+
+1. Recheck the OHIF research build and Windows binary packaging workflows for exact PR #87 head `df4571ac0d5cda6026f89a2f08b57fd99c946516`.
+2. If both pass, request independent review and confirm branch protection/approval gates before merge.
+3. Recheck the latest PR #86 tracker commit workflows and obtain review.
+4. Continue runtime scope denial tests and audit any further endpoints revealed by route inventory; preserve public GET research routes intentionally.
+5. Move to synthetic FHIR/OMOP/DICOM conformance and database migration/restore testing only after this security PR is resolved.
