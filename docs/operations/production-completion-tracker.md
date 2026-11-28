@@ -185,3 +185,21 @@ Configure main branch ruleset in GitHub settings. The current connector cannot r
 3. Obtain independent PR review and have the repository owner enable/verify required main branch protections before merging either PR.
 4. After the authorization PR is reviewed and safely integrated, move to synthetic FHIR/OMOP/DICOM conformance and disposable PostgreSQL/Neo4j migration/restore tests. Do not describe these as certification.
 5. Continue clean-host offline installation and signed artifact verification; no distribution publication without explicit authorization.
+
+
+## Latest engineering run — 2026-11-28 17:55 UTC
+
+- PR #87 current head `775a34ba03659500fb2f9b14bfadf104fa5fb5e1`: all six required workflows passed (TMRDS CI, Security and Interoperability, CodeQL, Supply Chain Security, QRCE Offline Workstation Real Integrations, Synthetic Imaging Tools). The originally requested `f9386dc78c14af6d324b141d07a21978deb134c2` also has all six passing. Additional current-head checks passed, including Windows packaging, dependency audit, route/security analysis, synthetic imaging, MONAI metrics, and OHIF research build.
+- PR #87 remains open; no independent review is recorded. Main metadata reports `protected=false`. Branch-protection GET returns HTTP 403 to the connected integration, and no branch-protection/ruleset write action is exposed. Issue #28 remains an administrator action. A status comment was added to PR #87 and issue #28; no self-approval, protection bypass, or merge was attempted.
+- PR #88 opened: [deterministic local two-qubit statevector VQE](https://github.com/ATphobia22/TMRDS/pull/88), branch `feat/local-vqe-statevector-20261128`. Adds a NumPy CPU statevector simulation for the synthetic Hamiltonian `H = -Z0 Z1 - X0 X1`, bounded deterministic grid VQE, exact 4x4 eigenspectrum comparison, normalized statevector receipt, canonical SHA-256 digest, tests, offline CLI runner, and documentation. This is a mathematical software benchmark only; no molecular/clinical input, PHI, external service, paid compute, IBM/Braket hardware, or quantum-advantage claim is involved.
+- PR #88 head `8cc953b559a669d6a914ad85d443ac7ff504656c`: CI was still queued/in progress at the time of this update; do not mark the new simulator as CI-verified until all six workflows finish on this exact head. No local repository test run is claimed.
+- Distribution evidence on PR #87 current head: Windows Python 3.11 offline wheelhouse job passed. Artifact `tmrds-offline-python311-win-x64-research-preview`, ID `15273694304`, 50,419,049 bytes, expires 2026-12-05. The workflow explicitly describes this as a portable Python wheelhouse, **not** a standalone executable. It checksum-verifies wheels, installs in offline no-index mode, and exercises real pydicom MR pixel data, Biopython FASTQ, RDKit SDF, and pypdf.
+- Interoperability status remains research-only: FHIR validation is synthetic-only and caller tags are not independent de-identification proof; OMOP/DICOM still require end-to-end conformance and round-trip evidence. Clinical deployment, live EHR write-back, signed public release, and regulatory claims remain blocked.
+
+## Next bounded actions
+
+1. Recheck PR #88's six workflows on exact head `8cc953b559a669d6a914ad85d443ac7ff504656c`; inspect test/build failures and repair with regression tests.
+2. Obtain independent maintainer reviews for PRs #86, #87, and #88; an authorized repository administrator must enable and demonstrate main branch protection under issue #28.
+3. Integrate the local simulator into a governed QRCE research interface only after the PR is reviewed and merged; keep it separated from biomedical result generation.
+4. Continue synthetic FHIR/OMOP/DICOM round-trip testing and disposable-database migration/restore validation; record each exact fixture/version and outcome.
+5. Verify Linux/macOS/Windows clean-host installation, artifact checksums, SBOM/provenance, signing and signature verification. The existing Windows artifact is a wheelhouse preview, not a signed standalone release.
