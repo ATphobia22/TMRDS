@@ -11,6 +11,14 @@ from typing import Any
 
 from fastapi.routing import APIRoute
 
+try:
+    # FastAPI >= 0.137 keeps include_router() trees lazy. The public iterator
+    # resolves effective paths and merged dependencies without relying on
+    # FastAPI's private _IncludedRouter implementation.
+    from fastapi.routing import iter_route_contexts
+except ImportError:  # pragma: no cover - compatibility with older FastAPI
+    iter_route_contexts = None  # type: ignore[assignment]
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
@@ -18,10 +26,15 @@ from api.main import app  # noqa: E402
 
 AUTH_DEPENDENCY_NAMES = {
     "require_service_identity",
+    "require_service_read_identity",
     "require_user",
     "require_authenticated_user",
     "require_admin",
     "require_privileged_user",
+}
+SERVICE_AUTH_SCOPE_DEPENDENCIES = {
+    "require_service_read_identity": "read",
+    "require_service_identity": "write",
 }
 WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
@@ -42,12 +55,24 @@ def build_inventory() -> dict[str, Any]:
     duplicates: list[dict[str, str]] = []
     unguarded_writes: list[dict[str, str]] = []
 
-    for route in app.routes:
-        if not isinstance(route, APIRoute):
-            continue
+    if iter_route_contexts is None:
+        route_contexts = (route for route in app.routes if isinstance(route, APIRoute))
+    else:
+        route_contexts = (
+            context
+            for context in iter_route_contexts(app.routes)
+            if isinstance(getattr(context, "original_route", None), APIRoute)
+        )
+
+    for route in route_contexts:
         endpoint = route.endpoint
         dependencies = sorted(_dependency_names(route.dependant))
         auth_guards = sorted(set(dependencies) & AUTH_DEPENDENCY_NAMES)
+        service_auth_scopes = sorted({
+            scope
+            for dependency_name, scope in SERVICE_AUTH_SCOPE_DEPENDENCIES.items()
+            if dependency_name in dependencies
+        })
         auth_class = "declared-auth-dependency" if auth_guards else "no-declared-route-auth-dependency"
         source_file = inspect.getsourcefile(endpoint) or ""
         source_line = inspect.getsourcelines(endpoint)[1] if source_file else None
@@ -67,6 +92,7 @@ def build_inventory() -> dict[str, Any]:
                 "source_line": source_line,
                 "dependencies": dependencies,
                 "auth_guards": auth_guards,
+                "service_auth_scopes": service_auth_scopes,
                 "auth_classification": auth_class,
             })
             if method in WRITE_METHODS and not auth_guards:
@@ -81,8 +107,10 @@ def build_inventory() -> dict[str, Any]:
         "duplicate_method_paths": duplicates,
         "write_routes_without_declared_auth_dependency": unguarded_writes,
         "interpretation": (
-            "Static inventory of declared FastAPI dependencies only. It does not prove authorization correctness, "
-            "database permissions, reverse-proxy policy, or runtime configuration."
+            "Static inventory of declared FastAPI dependencies only. Service scopes identify declared "
+            "read/write dependency names; they do not prove token claims or runtime enforcement. "
+            "This inventory does not prove authorization correctness, database permissions, "
+            "reverse-proxy policy, or runtime configuration."
         ),
     }
 

@@ -16,8 +16,10 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field
+
+from api.security_dependencies import require_service_read_identity
 
 router = APIRouter(tags=["TMRDS Quantum Rubik's Cube"])
 
@@ -88,7 +90,11 @@ def health(
 # Structure facet — live AlphaFold DB
 # ---------------------------------------------------------------------------
 
-@router.post("/structure/predict", summary="Structure facet — live AlphaFold DB")
+@router.post(
+    "/structure/predict",
+    summary="Structure facet — live AlphaFold DB",
+    dependencies=[Depends(require_service_read_identity)],
+)
 def predict_structure(req: StructureRequest):
     """Fetch real AlphaFold DB metadata. Unknown IDs and network failures
     return explicit unavailable states with null metrics — never fabricated."""
@@ -143,7 +149,11 @@ def list_backends(ibm_api_version: Optional[str] = Header(None, alias="IBM-API-V
     }
 
 
-@router.post("/quantum/vqe", summary="Quantum VQE — honest execution states")
+@router.post(
+    "/quantum/vqe",
+    summary="Quantum VQE — honest execution states",
+    dependencies=[Depends(require_service_read_identity)],
+)
 def quantum_vqe(req: QuantumVQE_Request):
     """VQE with honest execution labeling.
 

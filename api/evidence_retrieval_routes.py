@@ -3,10 +3,11 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from api.error_responses import safe_upstream_error
+from api.security_dependencies import require_service_read_identity
 from engines.evidence_graph_repository import EvidenceGraphRepository
 
 router = APIRouter(prefix="/api/v1/evidence", tags=["evidence-retrieval"])
@@ -18,7 +19,7 @@ class SemanticSearchRequest(BaseModel):
     limit: Annotated[int, Field(ge=1, le=100)] = 20
 
 
-@router.post("/semantic-search")
+@router.post("/semantic-search", dependencies=[Depends(require_service_read_identity)])
 async def semantic_search(request: SemanticSearchRequest) -> dict[str, object]:
     try:
         results = await repository.semantic_search(request.embedding, request.limit)

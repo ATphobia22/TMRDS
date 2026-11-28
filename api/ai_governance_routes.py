@@ -1,8 +1,9 @@
 """Research-only AI governance API for TMRDS."""
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from api.security_dependencies import require_service_read_identity
 from engines.ai_governance import EvidenceEnvelope, GovernanceStatus, validate_generation_for_research
 
 router = APIRouter(prefix="/api/v1/governance/ai", tags=["ai-governance"])
@@ -20,7 +21,7 @@ async def ai_governance_status() -> dict[str, object]:
     }
 
 
-@router.post("/validate")
+@router.post("/validate", dependencies=[Depends(require_service_read_identity)])
 async def validate_ai_generation(envelope: EvidenceEnvelope) -> dict[str, object]:
     try:
         decision = validate_generation_for_research(envelope)
