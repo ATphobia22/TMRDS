@@ -18,17 +18,16 @@ _SIMULATOR_VERSION = "tmrds-statevector-v1"
 
 
 def _statevector(theta: float) -> np.ndarray:
-    """Prepare RY(theta) on q0 followed by CNOT(q0 -> q1), little-endian q1."""
+    """Prepare RY(theta) on q0 followed by CNOT(q0 -> q1)."""
     cosine = math.cos(theta / 2.0)
     sine = math.sin(theta / 2.0)
     # Computational basis order: |00>, |01>, |10>, |11>.
-    # CNOT swaps the |10> and |11> amplitudes.
+    # CNOT maps the |10> amplitude to |11>.
     return np.asarray([cosine, 0.0, 0.0, sine], dtype=np.complex128)
 
 
 def _hamiltonian() -> np.ndarray:
     """Return H = -Z0 Z1 - X0 X1 in computational basis order."""
-    identity = np.eye(2, dtype=np.float64)
     x = np.asarray([[0.0, 1.0], [1.0, 0.0]], dtype=np.float64)
     z = np.asarray([[1.0, 0.0], [0.0, -1.0]], dtype=np.float64)
     return -(np.kron(z, z) + np.kron(x, x))
@@ -54,13 +53,10 @@ def run_bell_hamiltonian_vqe(*, grid_points: int = 721) -> dict[str, Any]:
     hamiltonian = _hamiltonian()
     angles = np.linspace(0.0, 2.0 * math.pi, grid_points, dtype=np.float64)
     energies = np.empty(grid_points, dtype=np.float64)
-    best_state: np.ndarray | None = None
 
     for index, angle in enumerate(angles):
         state = _statevector(float(angle))
         energies[index] = float(np.real(np.vdot(state, hamiltonian @ state)))
-        if best_state is None or energies[index] < energies[int(np.argmin(energies[: index + 1]))]:
-            best_state = state
 
     best_index = int(np.argmin(energies))
     theta = float(angles[best_index])
