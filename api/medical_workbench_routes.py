@@ -12,7 +12,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
-from api.security_dependencies import require_service_identity
+from api.security_dependencies import require_service_identity, require_service_read_identity
 from engines.biomedical_provider_registry import list_providers
 from engines.medical_research_workbench import (
     synthetic_imaging_index, synthetic_lab_trends,
@@ -119,7 +119,7 @@ async def synthetic_imaging_review(request: SyntheticImagingRequest) -> dict[str
 
 @router.get(
     "/synthetic/fhir/{resource_type}/{synthetic_id}",
-    dependencies=[Depends(require_service_identity)],
+    dependencies=[Depends(require_service_read_identity)],
 )
 async def synthetic_fhir_resource(resource_type: str, synthetic_id: str) -> dict[str, object]:
     """HTTPS test-fixture retrieval. Never returns raw upstream medical records."""
