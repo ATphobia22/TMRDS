@@ -53,9 +53,9 @@ configure_logging()
 setup_metrics(app)
 setup_rate_limiting(app)
 app.add_middleware(SecurityHeadersMiddleware)
-# The API is deliberately public when the key file is unset. A configured
-# but invalid key file degrades LOUD OPEN (CRITICAL log + "degraded-open"
-# posture) and never denies traffic — see api/api_key_auth.py.
+# The public research API is open only when no key file is configured.
+# Invalid configured credentials install an empty key set (fail closed);
+# only the path-free posture diagnostic remains reachable for recovery.
 _posture = check_startup_posture()
 if _posture["keys"] is not None:
     app.add_middleware(ApiKeyGateMiddleware, keys=_posture["keys"])
@@ -98,11 +98,10 @@ async def liveness() -> dict[str, str]:
 
 @app.get("/health/ready")
 async def readiness() -> dict[str, str]:
-    """Readiness requires the PostgreSQL evidence schema.
-
-    Auth posture never blocks readiness: a misconfigured key file degrades
-    to loud open and is reported at GET /api/v1/ops/posture instead.
-    """
+    """Readiness requires valid configured authentication and evidence schema."""
+    posture = getattr(app.state, "ops_posture", {})
+    if posture.get("auth") == "degraded-closed":
+        raise HTTPException(status_code=503, detail="API-key authentication configuration is invalid")
     try:
         pool = await evidence_repository._pool()
         async with pool.acquire() as conn:
