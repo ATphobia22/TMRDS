@@ -44,7 +44,7 @@ OMOP_TO_FHIR.update({
 })
 
 SUPPORTED_FHIR_TYPES = frozenset({
-    "Patient", "Condition", "Observation", "MedicationRequest",
+    "Patient", "Condition", "Observation", "MedicationStatement",
 })
 FHIR_ID_PATTERN = re.compile(r"[A-Za-z0-9.-]{1,64}\Z")
 PATIENT_REFERENCE_PATTERN = re.compile(r"Patient/([A-Za-z0-9.-]{1,64})\Z")
@@ -378,9 +378,7 @@ class OMOPCDMBridge:
                 onset = resource.get("onsetDateTime")
                 if onset is None and isinstance(resource.get("onsetPeriod"), dict):
                     onset = resource["onsetPeriod"].get("start")
-                if onset is None:
-                    onset = resource.get("recordedDate")
-                start_date = _fhir_date(onset, "Condition onset/recorded date")
+                start_date = _fhir_date(onset, "Condition onset date")
                 code = _codeable_concept(resource.get("code"), "Condition.code")
                 row_id = next_row_id("CONDITION_OCCURRENCE")
                 pending_rows["CONDITION_OCCURRENCE"].append({
@@ -455,7 +453,7 @@ class OMOPCDMBridge:
                 mapped += 1
                 continue
 
-            if resource_type == "MedicationRequest":
+            if resource_type == "MedicationStatement":
                 status = resource.get("status")
                 if status not in {"active", "completed"}:
                     skipped.append({
@@ -464,23 +462,17 @@ class OMOPCDMBridge:
                         "reason": "non_active_status",
                     })
                     continue
-                start_date = _fhir_date(resource.get("authoredOn"), "MedicationRequest.authoredOn")
+                effective = resource.get("effectiveDateTime")
+                effective_field = "effectiveDateTime"
+                effective_period = resource.get("effectivePeriod")
+                if effective is None and isinstance(effective_period, dict):
+                    effective = effective_period.get("start")
+                    effective_field = "effectivePeriod"
+                start_date = _fhir_date(effective, "MedicationStatement effective date")
                 medication = _codeable_concept(
                     resource.get("medicationCodeableConcept"),
-                    "MedicationRequest.medicationCodeableConcept",
+                    "MedicationStatement.medicationCodeableConcept",
                 )
-                quantity = None
-                dispense = resource.get("dispenseRequest")
-                quantity_payload = dispense.get("quantity") if isinstance(dispense, dict) else None
-                if isinstance(quantity_payload, dict) and quantity_payload.get("value") is not None:
-                    raw_quantity = quantity_payload["value"]
-                    if (
-                        isinstance(raw_quantity, bool)
-                        or not isinstance(raw_quantity, (int, float))
-                        or not math.isfinite(float(raw_quantity))
-                    ):
-                        raise ValueError("MedicationRequest quantity must be finite and numeric")
-                    quantity = raw_quantity
                 row_id = next_row_id("DRUG_EXPOSURE")
                 pending_rows["DRUG_EXPOSURE"].append({
                     "drug_exposure_id": row_id,
@@ -489,7 +481,7 @@ class OMOPCDMBridge:
                     "drug_exposure_start_date": start_date,
                     "drug_type_concept_id": ALGORITHM_TYPE_CONCEPT_ID,
                     "drug_source_value": medication["source_value"],
-                    "quantity": quantity,
+                    "quantity": None,
                 })
                 pending_index.append({
                     "resource_type": resource_type,
@@ -501,8 +493,9 @@ class OMOPCDMBridge:
                     "subject_reference": subject_reference,
                     "medication": medication,
                     "status": status,
-                    "intent": resource.get("intent"),
-                    "dispense_request": copy.deepcopy(resource.get("dispenseRequest")),
+                    "effective_field": effective_field,
+                    "effective_period": copy.deepcopy(effective_period),
+                    "dosage": copy.deepcopy(resource.get("dosage")),
                 })
                 mapped += 1
 
@@ -565,21 +558,20 @@ class OMOPCDMBridge:
                     "effectiveDateTime": row["measurement_date"],
                     "valueQuantity": quantity,
                 })
-            elif resource_type == "MedicationRequest":
+            elif resource_type == "MedicationStatement":
                 resource.update({
                     "status": metadata["status"],
                     "subject": {"reference": metadata["subject_reference"]},
-                    "authoredOn": row["drug_exposure_start_date"],
                     "medicationCodeableConcept": _restore_codeable_concept(metadata["medication"]),
                 })
-                if metadata["intent"] is not None:
-                    resource["intent"] = metadata["intent"]
-                if metadata["dispense_request"] is not None:
-                    dispense_request = copy.deepcopy(metadata["dispense_request"])
-                    quantity_payload = dispense_request.get("quantity")
-                    if isinstance(quantity_payload, dict) and row["quantity"] is not None:
-                        quantity_payload["value"] = row["quantity"]
-                    resource["dispenseRequest"] = dispense_request
+                if metadata["effective_field"] == "effectiveDateTime":
+                    resource["effectiveDateTime"] = row["drug_exposure_start_date"]
+                else:
+                    effective_period = copy.deepcopy(metadata["effective_period"] or {})
+                    effective_period["start"] = row["drug_exposure_start_date"]
+                    resource["effectivePeriod"] = effective_period
+                if metadata["dosage"] is not None:
+                    resource["dosage"] = copy.deepcopy(metadata["dosage"])
             resources.append(resource)
 
         return {
