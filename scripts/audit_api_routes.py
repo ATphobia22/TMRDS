@@ -11,6 +11,14 @@ from typing import Any
 
 from fastapi.routing import APIRoute
 
+try:
+    # FastAPI >= 0.137 keeps include_router() trees lazy. The public iterator
+    # resolves effective paths and merged dependencies without relying on
+    # FastAPI's private _IncludedRouter implementation.
+    from fastapi.routing import iter_route_contexts
+except ImportError:  # pragma: no cover - compatibility with older FastAPI
+    iter_route_contexts = None  # type: ignore[assignment]
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
@@ -47,9 +55,16 @@ def build_inventory() -> dict[str, Any]:
     duplicates: list[dict[str, str]] = []
     unguarded_writes: list[dict[str, str]] = []
 
-    for route in app.routes:
-        if not isinstance(route, APIRoute):
-            continue
+    if iter_route_contexts is None:
+        route_contexts = (route for route in app.routes if isinstance(route, APIRoute))
+    else:
+        route_contexts = (
+            context
+            for context in iter_route_contexts(app.routes)
+            if isinstance(getattr(context, "original_route", None), APIRoute)
+        )
+
+    for route in route_contexts:
         endpoint = route.endpoint
         dependencies = sorted(_dependency_names(route.dependant))
         auth_guards = sorted(set(dependencies) & AUTH_DEPENDENCY_NAMES)
