@@ -46,8 +46,8 @@ OMOP_TO_FHIR.update({
 SUPPORTED_FHIR_TYPES = frozenset({
     "Patient", "Condition", "Observation", "MedicationRequest",
 })
-FHIR_ID_PATTERN = re.compile(r"[A-Za-z0-9.-]{1,64}\\Z")
-PATIENT_REFERENCE_PATTERN = re.compile(r"Patient/([A-Za-z0-9.-]{1,64})\\Z")
+FHIR_ID_PATTERN = re.compile(r"[A-Za-z0-9.-]{1,64}\Z")
+PATIENT_REFERENCE_PATTERN = re.compile(r"Patient/([A-Za-z0-9.-]{1,64})\Z")
 GENDER_CONCEPT_IDS = {
     "male": 8507,
     "female": 8532,
@@ -491,6 +491,7 @@ class OMOPCDMBridge:
                     "medication": medication,
                     "status": status,
                     "intent": resource.get("intent"),
+                    "dispense_request": copy.deepcopy(resource.get("dispenseRequest")),
                 })
                 mapped += 1
 
@@ -570,6 +571,12 @@ class OMOPCDMBridge:
                 })
                 if metadata["intent"] is not None:
                     resource["intent"] = metadata["intent"]
+                if metadata["dispense_request"] is not None:
+                    dispense_request = copy.deepcopy(metadata["dispense_request"])
+                    quantity_payload = dispense_request.get("quantity")
+                    if isinstance(quantity_payload, dict) and row["quantity"] is not None:
+                        quantity_payload["value"] = row["quantity"]
+                    resource["dispenseRequest"] = dispense_request
             resources.append(resource)
 
         return {
