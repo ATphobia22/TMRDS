@@ -56,20 +56,11 @@ def _bundle() -> dict:
         },
     }
     medication = {
-        "resourceType": "MedicationRequest",
+        "resourceType": "MedicationStatement",
         "id": "synthetic-medication-1",
         "status": "active",
-        "intent": "order",
         "subject": {"reference": "Patient/synthetic-patient-1"},
-        "authoredOn": "2025-01-04",
-        "dispenseRequest": {
-            "quantity": {
-                "value": 30,
-                "unit": "tablet",
-                "system": "http://unitsofmeasure.org",
-                "code": "1",
-            }
-        },
+        "effectiveDateTime": "2025-01-04",
         "medicationCodeableConcept": {
             "coding": [{
                 "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
@@ -119,7 +110,7 @@ def test_supported_synthetic_bundle_maps_to_omop_and_roundtrips() -> None:
     assert tables["MEASUREMENT"][0]["value_as_number"] == 13.2
     assert tables["MEASUREMENT"][0]["unit_source_value"] == "g/dL"
     assert tables["DRUG_EXPOSURE"][0]["drug_exposure_start_date"] == "2025-01-04"
-    assert tables["DRUG_EXPOSURE"][0]["quantity"] == 30
+    assert tables["DRUG_EXPOSURE"][0]["quantity"] is None
     assert tables["DRUG_EXPOSURE"][0]["drug_source_value"] == (
         "http://www.nlm.nih.gov/research/umls/rxnorm|1049502"
     )
@@ -236,6 +227,39 @@ def test_declared_but_unimplemented_resource_types_are_not_fabricated() -> None:
 def test_invalid_bundle_is_rejected() -> None:
     with pytest.raises(ValueError, match="FHIR Bundle"):
         OMOPCDMBridge().from_fhir_bundle({"resourceType": "Patient", "id": "p1"})
+
+
+def test_medication_request_is_not_misrepresented_as_actual_drug_exposure() -> None:
+    bundle = _bundle()
+    bundle["entry"][3]["resource"] = {
+        "resourceType": "MedicationRequest",
+        "id": "synthetic-medication-order-1",
+        "status": "active",
+        "subject": {"reference": "Patient/synthetic-patient-1"},
+        "authoredOn": "2025-01-04",
+        "medicationCodeableConcept": {"text": "Synthetic medication order"},
+    }
+
+    bridge = OMOPCDMBridge()
+    result = bridge.from_fhir_bundle(bundle, person_id=41)
+
+    assert result["mapped_resources"] == 3
+    assert result["skipped_resources"] == [{
+        "resource_type": "MedicationRequest",
+        "resource_id": "synthetic-medication-order-1",
+        "reason": "unsupported_mapping",
+    }]
+    assert "DRUG_EXPOSURE" not in bridge.export_tables()
+
+
+def test_recorded_date_is_not_misrepresented_as_condition_onset() -> None:
+    bundle = _bundle()
+    condition = bundle["entry"][1]["resource"]
+    condition.pop("onsetDateTime")
+    condition["recordedDate"] = "2025-01-02"
+
+    with pytest.raises(ValueError, match="Condition onset date"):
+        OMOPCDMBridge().from_fhir_bundle(bundle, person_id=41)
 
 
 def test_optional_patient_gender_and_code_text_are_not_fabricated_as_nulls() -> None:
