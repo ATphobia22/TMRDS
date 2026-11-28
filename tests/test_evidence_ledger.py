@@ -144,3 +144,15 @@ def test_qrce_orchestrator_appends_safe_metadata_without_patient_context(tmp_pat
     assert problem not in serialized
     assert result["packet_hash"] not in serialized
     assert ledger.verify()["valid"] is True
+
+
+def test_verify_rejects_non_finite_json_constants(tmp_path) -> None:
+    path = tmp_path / "ledger.jsonl"
+    path.write_text(
+        '{"schema_version":2,"previous_hash":"' + "0" * 64
+        + '","payload":{"value":NaN},"content_hash":"' + "0" * 64 + '"}\\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(LedgerIntegrityError, match="JSON is invalid"):
+        EvidenceLedger(str(path)).verify()
