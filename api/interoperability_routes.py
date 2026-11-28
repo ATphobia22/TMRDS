@@ -4,9 +4,10 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from api.security_dependencies import require_service_read_identity
 from engines.fhir_interoperability import FHIRInteroperabilityConfig, FHIRResourceValidator
 
 router = APIRouter(tags=["interoperability"])
@@ -52,7 +53,10 @@ async def interoperability_status() -> dict[str, object]:
     }
 
 
-@router.post("/api/v1/interoperability/fhir/validate")
+@router.post(
+    "/api/v1/interoperability/fhir/validate",
+    dependencies=[Depends(require_service_read_identity)],
+)
 async def validate_fhir_resource(request: FHIRValidationRequest) -> dict[str, object]:
     config = fhir_config()
     if request.required_profile:
