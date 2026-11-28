@@ -284,6 +284,8 @@ def _load_private_key(path: Path, package_root: Path) -> Ed25519PrivateKey:
         raise DistributionError("private signing key must remain outside the package directory")
     try:
         key = serialization.load_pem_private_key(_read_key(key_path, private=True), password=None)
+    except DistributionError:
+        raise
     except (TypeError, ValueError):
         raise DistributionError("private key must be an unencrypted PEM Ed25519 key") from None
     if not isinstance(key, Ed25519PrivateKey):
@@ -294,6 +296,8 @@ def _load_private_key(path: Path, package_root: Path) -> Ed25519PrivateKey:
 def _load_public_key(path: Path) -> Ed25519PublicKey:
     try:
         key = serialization.load_pem_public_key(_read_key(path, private=False))
+    except DistributionError:
+        raise
     except (TypeError, ValueError):
         raise DistributionError("public key must be a valid PEM Ed25519 key") from None
     if not isinstance(key, Ed25519PublicKey):
