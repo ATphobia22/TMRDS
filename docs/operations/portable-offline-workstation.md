@@ -1,6 +1,6 @@
 # TMRDS portable offline workstation — actual optional biomedical readers
 
-**Status:** Windows/Python 3.11 x64 **technical research preview**, NOT a ready-to-use clinical diagnostic product, FDA-cleared device, or complete standalone Windows installer. No current release demonstrates accurate automated MRI/CT interpretation, drug efficacy, gene-editing recommendations, or differential diagnosis.
+**Status:** Windows/Python 3.11 x64 **technical research preview**, with an unsigned CI artifact and operator-managed Ed25519 package-signing support. It is NOT a ready-to-use clinical diagnostic product, FDA-cleared device, or complete standalone Windows installer. No current release demonstrates accurate automated MRI/CT interpretation, drug efficacy, gene-editing recommendations, or differential diagnosis.
 
 ## Locally executed open-source components
 
@@ -43,6 +43,23 @@ py -3.11 -m venv .venv
 The HTML pages run locally and invoke narrowly allowlisted JSON-RPC 2.0 operations to test **built-in synthetic** lab/MR fixtures, RDKit descriptors and six-qubit mathematics. The swarm has no patient-file upload path or external-network transport and does not depend on internet access. The separate CLI can inspect individually authorized local files. View the [swarm architecture and JSON-RPC contract](../architecture/offline-html-swarm.md).
 
 The existing public https://tmrds-public-evidence-api.onrender.com/ is an anonymous **public-source research** service. Never send patient records or laboratory files to that website.
+
+## Distribution integrity and operator signing
+
+The wheelhouse SHA-256 manifest protects against accidental file changes but is **not a publisher signature**. CI now creates `DISTRIBUTION-MANIFEST.json` over every file in the assembled Windows package and verifies that inventory. The CI artifact remains **unsigned**: no private signing key is stored in GitHub, no signature is created by CI, and no public release is published by this workflow.
+
+A release operator may sign the completed package on a separately controlled machine with an existing Ed25519 PEM private key. Do not put the private key in the repository, CI, package directory, or a patient-data workflow. On POSIX, the signing utility requires owner-only `0600` permissions; on Windows, the operator must enforce an equivalent restrictive NTFS ACL.
+
+```powershell
+# Run from a trusted Python environment with cryptography installed.
+py -3.11 scripts/distribution_signing.py sign .\offline-release --private-key C:\secure\keys\tmrds-release-ed25519.pem
+# Record the returned public_key_sha256 fingerprint in a trusted channel.
+
+# On the receiving workstation, verify BEFORE installing package wheels.
+py -3.11 scripts/distribution_signing.py verify .\offline-release --public-key .\trusted-tmrds-release.pem --expected-public-key-sha256 <64-character-out-of-band-fingerprint>
+```
+
+The verifier requires a trusted Python environment that already has `cryptography` installed from a separately trusted source; do not bootstrap trust by installing an unverified wheel from the package being checked. The expected public-key fingerprint must be obtained independently of the package. The signature authenticates package bytes against that key; it does not establish dependency-license review, clinical validation, efficacy, or regulatory status. If the package changes after manifest creation, rebuild the manifest and sign again.
 
 ## Offline medical knowledge and deployment boundaries
 
