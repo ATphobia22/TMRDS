@@ -43,7 +43,7 @@ jobs:
           python -m pip check
           python -m pip install pytest==9.2.0
       - name: Exercise real pydicom MR pixel data, Biopython FASTQ, RDKit SDF and pypdf
-        run: python -m pytest -q tests/test_offline_workstation_adapters.py tests/test_offline_wheelhouse.py tests/test_qrce_swarm_local.py
+        run: python -m pytest -q tests/test_offline_workstation_adapters.py tests/test_offline_wheelhouse.py tests/test_qrce_swarm_local.py tests/test_distribution_signing.py
       - name: Verify minimal no-dependency fallback workstation as an independent profile
         shell: pwsh
         run: |
@@ -62,6 +62,7 @@ jobs:
           Copy-Item engines/offline_specialist_swarm.py offline-release/engines/
           Copy-Item scripts/qrce_offline_workstation.py offline-release/scripts/
           Copy-Item scripts/qrce_wheelhouse.py offline-release/scripts/
+          Copy-Item scripts/distribution_signing.py offline-release/scripts/
           Copy-Item scripts/qrce_swarm_local.py offline-release/scripts/
           Copy-Item scripts/run_offline_swarm.py offline-release/scripts/
           New-Item -ItemType Directory -Force offline-release/offline | Out-Null
@@ -71,6 +72,11 @@ jobs:
           Copy-Item deploy/offline/requirements.txt offline-release/deploy/offline/
           Copy-Item docs/operations/portable-offline-workstation.md offline-release/README.md
           Copy-Item wheelhouse offline-release/wheelhouse -Recurse
+      - name: Create and verify deterministic full-package inventory (unsigned until operator signing)
+        shell: pwsh
+        run: |
+          python scripts/distribution_signing.py manifest offline-release --package-name TMRDS-QRCE-Offline-Workstation --version research-preview --target win-x64 --source-commit $env:GITHUB_SHA
+          python scripts/distribution_signing.py verify-manifest offline-release
       - name: Publish tested Windows Python wheelhouse artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v4
         with:

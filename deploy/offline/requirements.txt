@@ -6,3 +6,5 @@ biopython==1.88
 rdkit==2026.9.2
 pypdf==7.1.0
 numpy==2.4.6
+# Verify operator-signed full-package Ed25519 manifests offline.
+cryptography==50.0.2

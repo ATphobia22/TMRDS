@@ -10,6 +10,7 @@
 | Pull-request dependency review | `.github/workflows/supply-chain.yml` | Fail a PR when dependency review identifies high/critical severity changes | Full transitive runtime behavior |
 | CodeQL Python and GitHub Actions analysis | `.github/workflows/codeql.yml` | Static analysis for supported application and workflow security patterns | Runtime exploitability or regulatory compliance |
 | Local release verification and runtime SBOM | `.github/workflows/release.yml` | Re-run gates, build a local image, emit a CycloneDX runtime SBOM and upload test evidence | Published image, deployment, signature/attestation, or production readiness |
+| Offline distribution inventory and signing contract | `.github/workflows/qrce-offline-workstation.yml`, `scripts/distribution_signing.py` | Inventory every Windows preview package file; verify SHA-256 inventory; support operator-managed Ed25519 signing and pinned-key verification | CI artifact is unsigned; no publisher key, signature, public release, license review, or clinical validation is produced by CI |
 
 All workflows use read-only repository permissions by default. `scripts/check_workflow_security.py` fails when a third-party action is not pinned to a full commit SHA or a workflow lacks top-level permissions. The CodeQL job adds only the permissions required to publish code-scanning results. No workflow should use production credentials, run production migrations, submit IBM Quantum jobs, or provision cloud resources.
 
@@ -46,6 +47,7 @@ Do not configure required-check names until the first runs have completed and th
 - [ ] Required integrations were tested in a non-production environment with synthetic data.
 - [ ] Migration status, backup and restore evidence reviewed by the database owner.
 - [ ] Production configuration and secrets reviewed independently.
+- [ ] Full distribution package inventory verified; operator signature checked against an independently pinned public-key fingerprint.
 - [ ] Remaining risks and unsupported features disclosed in release notes.
 
 Green CI is necessary but not sufficient for a production release. It does not establish clinical validity, HIPAA compliance, FDA clearance, external service entitlement, or deployment readiness.
