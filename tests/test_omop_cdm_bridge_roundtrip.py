@@ -32,7 +32,7 @@ def _bundle() -> dict:
             }],
             "text": "Type 2 diabetes mellitus",
         },
-        "onsetDateTime": "2025-01-02",
+        "onsetDateTime": "2025-01-02T08:00:00Z",
     }
     observation = {
         "resourceType": "Observation",
@@ -47,7 +47,7 @@ def _bundle() -> dict:
             }],
             "text": "Hemoglobin",
         },
-        "effectiveDateTime": "2025-01-03",
+        "effectiveDateTime": "2025-01-03T08:30:00-05:00",
         "valueQuantity": {
             "value": 13.2,
             "unit": "g/dL",
@@ -60,7 +60,7 @@ def _bundle() -> dict:
         "id": "synthetic-medication-1",
         "status": "active",
         "subject": {"reference": "Patient/synthetic-patient-1"},
-        "effectiveDateTime": "2025-01-04",
+        "effectivePeriod": {"start": "2025-01-04T10:00:00Z", "end": "2025-01-10"},
         "medicationCodeableConcept": {
             "coding": [{
                 "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
