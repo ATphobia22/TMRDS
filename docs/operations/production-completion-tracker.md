@@ -167,3 +167,21 @@ Configure main branch ruleset in GitHub settings. The current connector cannot r
 3. Confirm FHIR synthetic marker tests pass and keep the response wording explicit that a marker is an unverified attestation, not de-identification.
 4. Obtain independent review and owner-confirmed branch protection before merging either open PR.
 5. After this security gate, continue synthetic FHIR/OMOP/DICOM contract and migration/restore tests, then clean-host offline install and signed-artifact verification.
+
+
+## Latest engineering run — 2026-11-28 17:43 UTC
+
+- Repository `main` remains at `47739aa5f66c78b5f8a857aa365bebcf6c29bcad`. The open PRs are #86 (this tracker) and #87 (service read/write scope hardening). No main-branch write or merge occurred.
+- PR #87 exact head `f9386dc78c14af6d324b141d07a21978deb134c2` completed all six required project workflows successfully: TMRDS CI, Security and Interoperability, CodeQL, Supply Chain Security, Synthetic Imaging Tools, and QRCE Offline Workstation Real Integrations. The six corresponding run IDs were `46167297614`, `46167297649`, `46167297611`, `46167297635`, `46167297669`, and `46167297622`. This validates that exact head only.
+- Added route-level authorization integration tests on PR #87 in commit `775a34ba03659500fb2f9b14bfadf104fa5fb5e1` (`tests/test_service_auth_route_scopes.py`). The four cases exercise actual FastAPI requests using ephemeral RSA/JWKS credentials and synthetic fixtures: `evidence.read` `evidence.write` token separation on FHIR validation and synthetic lab transformation. The test commit's six workflows were in progress at the last check; no result for this new head is claimed yet.
+- PR #86 exact head `b914074e06889fae1ba7b7f58faf3a061ee05d8f` had all six project workflows complete successfully (run IDs `46167356556`, `46167356534`, `46167356543`, `46167356586`, `46167356479`, and `46167356463`). This is evidence for the prior tracker head; this append-only update will trigger a fresh PR #86 validation cycle.
+- PR #87 and PR #86 review endpoints both returned no submitted reviews. GitHub reports `main.protected=false` and required status checks disabled on the branch object. A direct branch-protection API request is forbidden to the connected integration (HTTP 403), so ruleset details cannot be independently read through this connection. Issue #28 remains an owner/admin action; no merge was attempted.
+- No patient data, paid services, remote quantum hardware jobs, live EHR writes, credential changes, or public release publication were used.
+
+## Next bounded actions
+
+1. Recheck all six workflows on PR #87 exact head `775a34ba03659500fb2f9b14bfadf104fa5fb5e1`; inspect and repair any route-level JWT scope test failure before requesting review.
+2. Recheck PR #86 after this tracker append; retain the exact tracker commit and all six workflow results.
+3. Obtain independent PR review and have the repository owner enable/verify required main branch protections before merging either PR.
+4. After the authorization PR is reviewed and safely integrated, move to synthetic FHIR/OMOP/DICOM conformance and disposable PostgreSQL/Neo4j migration/restore tests. Do not describe these as certification.
+5. Continue clean-host offline installation and signed artifact verification; no distribution publication without explicit authorization.
