@@ -45,3 +45,41 @@ def test_missing_configuration_returns_503():
     with pytest.raises(HTTPException) as exc:
         asyncio.run(auth.require_service_identity("Bearer a.b.c"))
     assert exc.value.status_code == 503
+
+
+@pytest.mark.parametrize(
+    ("dependency_name", "expected_scope"),
+    [
+        ("require_service_read_identity", {"evidence.read"}),
+        ("require_service_identity", {"evidence.write"}),
+    ],
+)
+def test_service_dependencies_request_least_privilege_scope(monkeypatch, dependency_name, expected_scope):
+    from types import SimpleNamespace
+
+    captured = {}
+
+    class Validator:
+        def validate(self, token, required_scopes):
+            captured["token"] = token
+            captured["scopes"] = required_scopes
+            return SimpleNamespace(subject="service-test", scopes=frozenset(required_scopes), key_id="test-kid")
+
+    monkeypatch.setattr(auth, "_validator", lambda: Validator())
+    dependency = getattr(auth, dependency_name)
+    claims = asyncio.run(dependency("Bearer test.token.value"))
+    assert captured["token"] == "test.token.value"
+    assert captured["scopes"] == expected_scope
+    assert claims["sub"] == "service-test"
+
+
+def test_read_scope_denial_returns_401(monkeypatch):
+    class Validator:
+        def validate(self, token, required_scopes):
+            assert required_scopes == {"evidence.read"}
+            raise ValueError("missing required scope")
+
+    monkeypatch.setattr(auth, "_validator", lambda: Validator())
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(auth.require_service_read_identity("Bearer test.token.value"))
+    assert exc.value.status_code == 401
