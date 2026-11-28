@@ -13,7 +13,7 @@ from engines.fhir_interoperability import FHIRInteroperabilityConfig, FHIRResour
 
 router = APIRouter(tags=["interoperability"])
 
-_SYNTHETIC_ID = re.compile(r"synthetic-[A-Za-z0-9.-]{1,64}\\Z")
+_SYNTHETIC_ID = re.compile(r"synthetic-[A-Za-z0-9.-]{1,64}\Z")
 _SYNTHETIC_META = {
     "tag": [{"system": "urn:tmrds:data-classification", "code": "synthetic"}],
 }
