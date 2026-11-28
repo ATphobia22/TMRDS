@@ -1,7 +1,8 @@
-"""Standards metadata and non-PHI FHIR validation endpoints."""
+"""Standards metadata and synthetic-attested FHIR validation endpoints."""
 from __future__ import annotations
 
 import os
+import re
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,6 +12,11 @@ from api.security_dependencies import require_service_read_identity
 from engines.fhir_interoperability import FHIRInteroperabilityConfig, FHIRResourceValidator
 
 router = APIRouter(tags=["interoperability"])
+
+_SYNTHETIC_ID = re.compile(r"synthetic-[A-Za-z0-9.-]{1,64}\\Z")
+_SYNTHETIC_META = {
+    "tag": [{"system": "urn:tmrds:data-classification", "code": "synthetic"}],
+}
 
 
 class FHIRValidationRequest(BaseModel):
@@ -24,6 +30,26 @@ def fhir_config() -> FHIRInteroperabilityConfig:
         us_core_version=os.getenv("TMRDS_US_CORE_VERSION", "9.0.0"),
         terminology_version=os.getenv("TMRDS_TERMINOLOGY_VERSION", "unspecified"),
     )
+
+
+def _require_synthetic_classification(resource: dict[str, Any]) -> None:
+    """Require a bounded synthetic fixture ID and exact synthetic meta tag.
+
+    The tag is a caller attestation, not proof of de-identification. This
+    endpoint performs structural validation only, does not persist resources,
+    and must not be used to submit real patient records.
+    """
+    resource_id = resource.get("id")
+    if not isinstance(resource_id, str) or not _SYNTHETIC_ID.fullmatch(resource_id):
+        raise HTTPException(
+            status_code=422,
+            detail="FHIR validation requires a synthetic fixture id",
+        )
+    if resource.get("meta") != _SYNTHETIC_META:
+        raise HTTPException(
+            status_code=422,
+            detail="explicit synthetic classification is required; the tag is an unverified caller attestation",
+        )
 
 
 @router.get("/.well-known/smart-configuration")
@@ -58,6 +84,8 @@ async def interoperability_status() -> dict[str, object]:
     dependencies=[Depends(require_service_read_identity)],
 )
 async def validate_fhir_resource(request: FHIRValidationRequest) -> dict[str, object]:
+    """Validate a synthetic-attested FHIR R4 structure without persistence or network I/O."""
+    _require_synthetic_classification(request.resource)
     config = fhir_config()
     if request.required_profile:
         resource_type = request.resource.get("resourceType")
@@ -69,4 +97,13 @@ async def validate_fhir_resource(request: FHIRValidationRequest) -> dict[str, ob
         )
     validator = FHIRResourceValidator(config)
     errors = validator.validate(request.resource)
-    return {"valid": not errors, "errors": errors, "fhir_version": config.fhir_version, "us_core_version": config.us_core_version}
+    return {
+        "valid": not errors,
+        "errors": errors,
+        "fhir_version": config.fhir_version,
+        "us_core_version": config.us_core_version,
+        "data_classification": "synthetic-attested",
+        "classification_is_unverified_attestation": True,
+        "persistence_enabled": False,
+        "external_transmission": False,
+    }
