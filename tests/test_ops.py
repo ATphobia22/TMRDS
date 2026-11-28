@@ -139,7 +139,7 @@ def test_api_key_gate_allows_valid_key_and_denies_without_leak(tmp_path: Path) -
 def test_startup_posture_open_by_default_and_fail_closed_on_invalid_config(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """An explicitly configured invalid key file degrades to loud open, never denies traffic."""
+    """An explicitly configured invalid key file fails closed; unset remains public."""
     monkeypatch.delenv("TMRDS_API_KEYS_FILE", raising=False)
     posture = check_startup_posture()
     assert posture["auth"] == "open"
