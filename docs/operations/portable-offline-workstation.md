@@ -48,7 +48,7 @@ The existing public https://tmrds-public-evidence-api.onrender.com/ is an anonym
 
 The wheelhouse SHA-256 manifest protects against accidental file changes but is **not a publisher signature**. CI now creates `DISTRIBUTION-MANIFEST.json` over every file in the assembled Windows package and verifies that inventory. The CI artifact remains **unsigned**: no private signing key is stored in GitHub, no signature is created by CI, and no public release is published by this workflow.
 
-A release operator may sign the completed package on a separately controlled machine with an existing Ed25519 PEM private key. Do not put the private key in the repository, CI, package directory, or a patient-data workflow. On POSIX, the signing utility requires owner-only `0600` permissions; on Windows, the operator must enforce an equivalent restrictive NTFS ACL.
+A release operator may sign the completed package on a separately controlled machine with an existing unencrypted Ed25519 PEM private key. Do not put the private key in the repository, CI, package directory, or a patient-data workflow. On POSIX, the signing utility requires owner-only `0600` permissions; on Windows, the operator must enforce an equivalent restrictive NTFS ACL.
 
 ```powershell
 # Run from a trusted Python environment with cryptography installed.
