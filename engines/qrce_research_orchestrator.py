@@ -1,10 +1,9 @@
 """
 QRCE Research Orchestrator for TMRDS.
 
-Wires UniversalClinicalIngest + PubMed + KRAGEN (+ optional Neo4j) +
-QuantumResearchSandboxFixed into a single advisory pipeline so clinicians and
-patients can start from personal labs/genome/scans + verifiable literature
-immediately — not in days or weeks.
+Wires local intake, public literature, KRAGEN, and an append-only local evidence
+ledger into a research-only workflow. Patient context remains in the returned
+local result and is not copied into the generic provenance ledger.
 
 CRITICAL: All outputs are RESEARCH-ADVISORY ONLY. Not a diagnosis, prescription,
 or substitute for licensed clinical judgment. Human authority remains final.
@@ -23,16 +22,15 @@ from .doctor_dignity_ethics import DoctorDignityEthics
 
 class QRCEResearchOrchestrator:
     """
-    End-to-end advisory search for treatment starting points.
+    End-to-end research workflow.
 
     Flow:
-      1. Ingest labs / imaging / genomic / sequencing / notes
-      2. Ethics scan on free text
-      3. PubMed treatment literature
-      4. KRAGEN multi-layer graph expansion
-      5. Optional VQE / molecular ranking hooks
-      6. EvidenceLedger append
-      7. Ranked starting-point summary for clinician review
+      1. Normalize caller-supplied local research inputs
+      2. Apply the local ethics scan to optional free text
+      3. Retrieve public literature metadata
+      4. Expand the research graph
+      5. Produce an advisory summary for human review
+      6. Append non-patient-specific execution metadata to the local ledger
     """
 
     def __init__(
@@ -84,7 +82,7 @@ class QRCEResearchOrchestrator:
 
         packet = self.ingest.build_patient_packet(patient_ref, channels)
 
-        # Literature — verifiable journals
+        # Literature — public metadata retrieval; no claim of clinical validation.
         lit = self.pubmed.search_treatments(
             disease_or_problem,
             gene=focus_gene,
@@ -165,17 +163,21 @@ class QRCEResearchOrchestrator:
             "status": "ORCHESTRATION_COMPLETE",
         }
 
-        self.ledger.append(
-            record_type="qrce_research_search",
-            payload={
-                "patient_ref": patient_ref,
-                "problem": disease_or_problem,
-                "packet_hash": packet.get("content_hash"),
+        # Patient identifiers, free-text problem descriptions, packet hashes,
+        # genomic values and clinical notes are intentionally excluded. This
+        # ledger records operational counts only and is not a clinical record.
+        self.ledger.append({
+            "record_type": "qrce_research_search",
+            "source": "QRCEResearchOrchestrator",
+            "execution_state": "ORCHESTRATION_COMPLETE",
+            "research_advisory_only": True,
+            "human_review_required": True,
+            "payload": {
+                "input_channel_count": len(channels),
+                "literature_record_count": len(lit.get("articles", [])),
                 "pmid_count": len(lit.get("pmids", [])),
             },
-            source="QRCEResearchOrchestrator",
-            verification_status="MACHINE_CHECKED",
-        )
+        })
         return result
 
     def status(self) -> Dict[str, Any]:
