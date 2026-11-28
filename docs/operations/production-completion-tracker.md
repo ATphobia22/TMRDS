@@ -38,17 +38,25 @@
 | Signed distribution | Release verification workflow exists; signed published packages not verified | Build reproducibly, generate SBOM/provenance, sign and verify artifacts before publication |
 | Durable completion reporting | This tracker | Update only with exact SHA, PR, workflow/test evidence, artifacts and blockers |
 
+
+## Latest engineering run — 2026-11-28
+
+- PR #86 tracker branch commit `533bb958dc28c0221a16c18b1bdec8100691be65`: six PR-triggered workflows were fetched and all six completed successfully (TMRDS CI, security/interoperability, CodeQL, supply-chain security, offline workstation integrations, and synthetic imaging). The review API returned no submitted reviews. PR #86 remains open; do not merge until review/protection requirements are established.
+- PR #87: [least-privilege service read scope](https://github.com/ATphobia22/TMRDS/pull/87), branch `security/service-read-scope-20261128`, head `e2f9b48f5869e12fe0c33764f09d45e079a5e690`. It separates read (`evidence.read`) and write (`evidence.write`) service dependencies and applies read scope to the protected synthetic FHIR GET route. Regression tests were added for requested scopes and missing-read-scope denial.
+- PR #87 CI was observed queued for all six workflows at this snapshot; combined commit status returned no status entries. No local test execution is claimed. PR #87 review API returned no reviews and the PR was not mergeable at creation.
+- Main remains at `47739aa5f66c78b5f8a857aa365bebcf6c29bcad`; no main merge occurred in this run.
+
 ## Required owner action — issue #28
 
 Configure main branch ruleset in GitHub settings. The current connector cannot read or write this administrative setting. Require pull requests, the exact stable CI/security/supply-chain/CodeQL checks, appropriate independent reviews, review of the latest push, resolved conversations, and block force-push/deletion. Verify a failing check actually prevents merge. Keep issue #28 open until this is demonstrated.
 
 ## Next bounded tasks
 
-1. Recheck all post-merge workflows on the exact main SHA `47739aa5f66c78b5f8a857aa365bebcf6c29bcad`; fix only verified failures.
-2. Complete the endpoint-by-endpoint authorization audit with negative tests; retain intentional public research routes and keep write/clinical routes protected.
-3. Execute synthetic interoperability and disposable database migration/restore tests; publish reports, not unsupported compliance claims.
-4. Validate offline installation and release artifact signing/verification.
-5. Close clinical-promotion issue #27 only after independent evidence and qualified sign-offs are attached.
+1. Recheck PR #87 workflows at exact head `e2f9b48f5869e12fe0c33764f09d45e079a5e690`; inspect failures, then request/obtain required review before merge.
+2. Complete endpoint-by-endpoint authorization tests; retain intentional public research routes and verify write/clinical routes remain protected.
+3. Recheck PR #86 current-head CI after this tracker update and obtain required review before merge.
+4. Execute synthetic interoperability and disposable database migration/restore tests; publish reports, not unsupported compliance claims.
+5. Validate offline installation and release artifact signing/verification; close clinical-promotion issue #27 only with independent evidence and qualified sign-offs.
 
 ## Safety and evidence rules
 
