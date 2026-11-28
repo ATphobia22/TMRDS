@@ -148,11 +148,13 @@ def test_qrce_orchestrator_appends_safe_metadata_without_patient_context(tmp_pat
 
 def test_verify_rejects_non_finite_json_constants(tmp_path) -> None:
     path = tmp_path / "ledger.jsonl"
-    path.write_text(
-        '{"schema_version":2,"previous_hash":"' + "0" * 64
-        + '","payload":{"value":NaN},"content_hash":"' + "0" * 64 + '"}\\n',
-        encoding="utf-8",
-    )
+    entry = {
+        "schema_version": 2,
+        "previous_hash": "0" * 64,
+        "payload": {"value": float("nan")},
+        "content_hash": "0" * 64,
+    }
+    path.write_text(json.dumps(entry, separators=(",", ":")) + "\n", encoding="utf-8")
 
     with pytest.raises(LedgerIntegrityError, match="JSON is invalid"):
         EvidenceLedger(str(path)).verify()
