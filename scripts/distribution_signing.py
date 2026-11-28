@@ -261,6 +261,8 @@ def _read_key(path: Path, *, private: bool) -> bytes:
     info = key_path.stat(follow_symlinks=False)
     if info.st_size <= 0 or info.st_size > MAX_KEY_BYTES:
         raise DistributionError("key file has an invalid size")
+    if private and info.st_nlink > 1:
+        raise DistributionError("private key file must not have hard links")
     if private and os.name == "posix" and stat.S_IMODE(info.st_mode) & 0o077:
         raise DistributionError("private key file permissions must be owner-only (0600)")
     try:
@@ -307,8 +309,8 @@ def _public_fingerprint(key: Ed25519PublicKey) -> str:
 def sign_manifest(root: Path, private_key_path: Path) -> dict[str, str]:
     """Sign a verified manifest; never generate, store or export a private key."""
     package_root = _safe_root(root)
-    verify_manifest(package_root)
     private_key = _load_private_key(Path(private_key_path), package_root)
+    verify_manifest(package_root)
     manifest = _load_json_file(package_root / MANIFEST_NAME)
     message = _canonical_json(manifest)
     public_fingerprint = _public_fingerprint(private_key.public_key())
