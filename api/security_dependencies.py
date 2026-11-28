@@ -30,15 +30,16 @@ def _validator() -> ServiceTokenValidator | None:
         raise RuntimeError("TMRDS_SERVICE_JWKS_JSON is invalid") from exc
 
 
-async def require_service_identity(
-    authorization: str | None = Header(default=None),
+async def _require_service_identity(
+    authorization: str | None,
+    required_scopes: set[str],
 ) -> dict[str, object] | None:
-    """Validate a bearer service token when service authentication is required."""
+    """Shared fail-closed validator; callers choose the minimum route scope."""
     production = os.getenv("TMRDS_ENV", "development").strip().casefold() in {"production", "prod"}
     configured_required = os.getenv("TMRDS_SERVICE_AUTH_REQUIRED", "false").casefold() == "true"
-    required = production or configured_required
-    if not required:
+    if not (production or configured_required):
         return None
+
     scheme, _, token = (authorization or "").partition(" ")
     if scheme.casefold() != "bearer" or not token.strip():
         raise HTTPException(status_code=401, detail="service bearer token required")
@@ -49,7 +50,21 @@ async def require_service_identity(
     if validator is None:
         raise HTTPException(status_code=503, detail="service authentication is not configured")
     try:
-        claims = validator.validate(token.strip(), required_scopes={"evidence.write"})
+        claims = validator.validate(token.strip(), required_scopes=required_scopes)
     except ValueError as exc:
         raise HTTPException(status_code=401, detail="invalid service identity") from exc
     return {"sub": claims.subject, "scopes": sorted(claims.scopes), "kid": claims.key_id}
+
+
+async def require_service_identity(
+    authorization: str | None = Header(default=None),
+) -> dict[str, object] | None:
+    """Require the write scope for ingestion, sync, and other mutating service routes."""
+    return await _require_service_identity(authorization, {"evidence.write"})
+
+
+async def require_service_read_identity(
+    authorization: str | None = Header(default=None),
+) -> dict[str, object] | None:
+    """Require only the read scope for explicitly protected read-only service routes."""
+    return await _require_service_identity(authorization, {"evidence.read"})
