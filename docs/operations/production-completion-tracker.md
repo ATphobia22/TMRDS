@@ -203,3 +203,22 @@ Configure main branch ruleset in GitHub settings. The current connector cannot r
 3. Integrate the local simulator into a governed QRCE research interface only after the PR is reviewed and merged; keep it separated from biomedical result generation.
 4. Continue synthetic FHIR/OMOP/DICOM round-trip testing and disposable-database migration/restore validation; record each exact fixture/version and outcome.
 5. Verify Linux/macOS/Windows clean-host installation, artifact checksums, SBOM/provenance, signing and signature verification. The existing Windows artifact is a wheelhouse preview, not a signed standalone release.
+
+
+## Latest engineering run — 2026-11-28 17:59 UTC
+
+- PR #87 head `775a34ba03659500fb2f9b14bfadf104fa5fb5e1`: all six required workflows passed. PR #87 remains open with zero submitted reviews.
+- PR #88 head `8cc953b559a669d6a914ad85d443ac7ff504656c`: all six required workflows passed (TMRDS CI, TMRDS Security and Interoperability, TMRDS CodeQL, TMRDS Supply Chain Security, QRCE Offline Workstation Real Integrations, Synthetic Imaging Tools). All 13 job-level checks are successful, including Windows packaging, dependency audits, Python/Actions analysis, synthetic imaging, MONAI metrics, public documents, OHIF build, local workstation policy contract, CodeQL, and full test job.
+- PR #88 full CI test job: 594 passed, 28 skipped, 16 deselected, 58 subtests passed. The same job passed compileall, Docker Compose config, Docker image build, container liveness, and focused IBM quantum adapter/ledger tests. Security scan and workflow permission validation passed. The dedicated QRCE offline workflow passed local workstation adapter/wheelhouse/swarm tests and doctor command. The synthetic imaging workflow passed the DICOMweb archive exercise and OHIF research build.
+- PR #88's local VQE benchmark is implemented, documented and callable offline via `python scripts/run_local_vqe_benchmark.py --grid-points 721`. The CPU statevector run was independently evaluated: theta pi/2, norm 1, VQE energy -2 (floating point), exact diagonalization -2, absolute error 2.22e-16; repeated configurations produce the same SHA-256 digest. This is a synthetic two-qubit mathematical benchmark, not biomedical evidence or physical quantum hardware.
+- PR #88 Windows artifact `tmrds-offline-python311-win-x64-research-preview`, ID `15274521589`, 50,419,049 bytes, expires 2026-12-05. It is a verified portable Python wheelhouse, not a standalone executable or signed public release.
+- PR #86 tracker update head `a0c12bc1c7cbc6d45a57fc10b6a93133c7dbc484`: most checks passed; synthetic-imaging and OHIF research-build checks were still running at this snapshot. PR #86 remains open.
+- PRs #86, #87 and #88 all remain open and have zero submitted reviews. Main remains `47739aa5f66c78b5f8a857aa365bebcf6c29bcad`; repository branch reports `protected=false`, rulesets endpoint returns an empty list, and branch-protection read remains HTTP 403. Issue #28 is open and has the latest administrative blocker recorded. No merge was attempted.
+
+## Next bounded actions
+
+1. Recheck PR #86's two remaining checks on exact head `a0c12bc1c7cbc6d45a57fc10b6a93133c7dbc484`.
+2. Obtain independent maintainer approvals for PRs #86, #87 and #88; repository administrator must establish and demonstrate branch protection/ruleset requirements in issue #28.
+3. After PR #87's security scope change is merged through the protected process, add a governed, read-only QRCE interface for the local VQE benchmark; keep it distinct from biomedical claims and leave physical hardware disabled by default.
+4. Complete explicit OMOP mapping/round-trip tests and synthetic FHIR version/profile conformance; preserve the successful synthetic DICOMweb evidence as a separate validation result.
+5. Validate Linux/macOS clean-host distribution, SBOM/provenance, signing and signature verification. Do not call the Windows wheelhouse a standalone installer or public release.
