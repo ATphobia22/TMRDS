@@ -82,3 +82,24 @@ Configure main branch ruleset in GitHub settings. The current connector cannot r
 3. Expand route-level authorization tests to cover all protected mutation/read routes, including synthetic imaging, public-record preview, evidence ingestion, and data-fabric sync. Preserve intentional public research routes.
 4. Continue synthetic FHIR/OMOP/DICOM contract tests and disposable database migration/restore tests; keep results separate from standards certification.
 5. Verify offline installation and signed artifact verification on clean supported hosts before considering distribution ready.
+
+
+## Latest engineering run — 2026-11-28 16:46 UTC
+
+- Repository default branch is `main`; the latest commit remains `47739aa5f66c78b5f8a857aa365bebcf6c29bcad`. No main-branch write or merge was performed.
+- Open PR #86 (this tracker) and PR #87 (least-privilege service read scope) were confirmed by direct issue/PR fetches. Both have no submitted review records; no merge was attempted.
+- PR #87 head advanced from `70c28014ddb07c5838480a4c078d59faf2446bbb` to `048eef7b1775b2af191da9810d49cd18d8e4f8d8`.
+- CI at the previous PR #87 head `70c2801`: four of six workflows passed; TMRDS CI and Security/Interoperability failed. Full non-integration suite: 590 passed, 2 failed, 28 skipped, 16 deselected, 58 subtests passed. Both failures were the newly added route-audit tests not finding included medical workbench routes.
+- Root cause: dependency lock resolves FastAPI 0.162.0, where `include_router()` stores lazy included-router tree nodes rather than flattening all APIRoutes into `app.routes`. The static route audit's flat `isinstance(route, APIRoute)` loop silently omitted nested endpoints.
+- Corrective commit `048eef7b1775b2af191da9810d49cd18d8e4f8d8` updates `scripts/audit_api_routes.py` to use FastAPI's public `iter_route_contexts()` API and effective route contexts, with a fallback for older versions. PR #87 body records the failure evidence and correction.
+- Six workflows were observed running on the exact new head `048eef7b1775b2af191da9810d49cd18d8e4f8d8`: TMRDS CI, Security and Interoperability, CodeQL, Supply Chain Security, QRCE Offline Workstation Real Integrations, and Synthetic Imaging Tools. At the time of this tracker update they were still in progress. No local test run is claimed.
+- The failed prior CI run uploaded artifact `tmrds-ci-test-results` (artifact ID `15271782122`, SHA-256 `65a662e9caa4d9e7b38ed8eaa27c8fe61ea66feae3d07c64d0da72c9675e76bd`); it documents the failing head only, not a passing result.
+- PR #86 and #87 both still require independent review and confirmation of applicable branch-protection gates. Issue #28 remains the owner action for enabling required branch rules. Issue #27 remains the independent clinical/privacy/safety promotion gate.
+
+## Next bounded actions
+
+1. Recheck all six workflows on PR #87 exact head `048eef7b1775b2af191da9810d49cd18d8e4f8d8`; inspect logs if any fail.
+2. If CI is green, request independent review; do not merge without current-head passing required checks and confirmed approval requirements.
+3. Continue endpoint-by-endpoint runtime authorization tests after the declared-route inventory is corrected; specifically verify `evidence.read` cannot mutate and `evidence.write` remains required for protected mutations.
+4. Audit synthetic imaging, public-record preview, evidence ingestion and synchronization endpoints without changing intended public research routes.
+5. Continue synthetic FHIR/OMOP/DICOM contracts, migration/restore tests, offline installation and signed artifact verification. Keep clinical and release approvals distinct.
