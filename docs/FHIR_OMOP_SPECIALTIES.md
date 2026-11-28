@@ -47,19 +47,20 @@ Module: `engines/omop_cdm_bridge.py`
 | OBSERVATION | Assertions / history | SNOMED / LOINC |
 | VISIT_OCCURRENCE | Encounters | Visit concepts |
 
-### FHIR ↔ OMOP (consensus mapping)
+### Executable FHIR ↔ OMOP research subset
 
-| FHIR | OMOP |
-|------|------|
-| Patient | PERSON |
-| Encounter | VISIT_OCCURRENCE |
-| Condition | CONDITION_OCCURRENCE |
-| MedicationRequest / Statement | DRUG_EXPOSURE |
-| Observation (labs) | MEASUREMENT |
-| Procedure | PROCEDURE_OCCURRENCE |
-| AllergyIntolerance | OBSERVATION |
+The current local in-memory bridge implements a deliberately smaller projection:
 
-Concept IDs resolve via OHDSI Athena (`Maps to` relationships). Without local vocabulary, TMRDS stores `source_value` and sets standard concept_id = 0.
+| FHIR | OMOP | Executable rule |
+|------|------|-----------------|
+| Patient | PERSON | Explicit one-to-one FHIR ID to OMOP person_id mapping required |
+| Condition | CONDITION_OCCURRENCE | Requires onset date; recordedDate is not treated as onset |
+| Observation | MEASUREMENT | Final numeric valueQuantity and effective date only |
+| MedicationStatement | DRUG_EXPOSURE | Active/completed statement with effective date; not proof of dispensing/admin |
+
+MedicationRequest is not converted into an actual exposure because authoredOn is the order-authored date. DiagnosticReport is not converted into a measurement because result references must resolve to child Observations. Other cataloged domain mappings are not yet executable in this bridge.
+
+No OHDSI Athena vocabulary lookup is currently wired into this bridge. Source coding systems/codes are preserved and standard concept IDs remain 0 until a governed vocabulary resolver is implemented and validated. See [the executable subset and limits](integrations/fhir-omop-roundtrip-research.md).
 
 Aligns with Indiana CTSI **INPC-OMOP ATLAS** cohort discovery patterns and Regenstrief research extracts.
 
