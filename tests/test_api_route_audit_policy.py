@@ -47,3 +47,23 @@ def test_synthetic_workbench_mutations_remain_write_scoped() -> None:
 
     assert "require_service_identity" in route["auth_guards"]
     assert route["service_auth_scopes"] == ["write"]
+
+def test_research_compute_and_validation_posts_are_read_scoped() -> None:
+    inventory = build_inventory()
+    expected_paths = {
+        "/api/v1/cube/structure/predict",
+        "/api/v1/cube/quantum/vqe",
+        "/api/v1/governance/ai/validate",
+        "/api/v1/evidence/semantic-search",
+        "/api/v1/interoperability/fhir/validate",
+    }
+
+    for path in sorted(expected_paths):
+        route = next(
+            item for item in inventory["routes"]
+            if item["method"] == "POST" and item["path"] == path
+        )
+        assert "require_service_read_identity" in route["auth_guards"], path
+        assert route["service_auth_scopes"] == ["read"], path
+        assert route["auth_classification"] == "declared-auth-dependency", path
+
