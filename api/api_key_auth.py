@@ -5,13 +5,11 @@ v1 scope, per the October 2026 auth research:
   the secret only), and revocable (delete the line).
 - Keys live in a file (``TMRDS_API_KEYS_FILE``), never as secret values in the
   environment — environment values are visible via ``docker inspect``.
-- If ``TMRDS_API_KEYS_FILE`` is configured but cannot be loaded, the API
-  degrades LOUDLY OPEN (October 19, 2026 resilience directive, reaffirmed
-  November 7, 2026): a CRITICAL log line records the failure, requests keep
-  being served, and GET /api/v1/ops/posture reports ``"auth":
-  "degraded-open"`` with the reason. The API never refuses to start or
-  denies traffic over a bad key file. Leaving the variable unset
-  intentionally permits public research access.
+- If ``TMRDS_API_KEYS_FILE`` is configured but cannot be loaded, authentication
+  fails closed: protected ``/api/*`` routes receive 401, readiness reports 503,
+  and the path-free GET /api/v1/ops/posture diagnostic reports
+  ``"auth": "degraded-closed"``. Leaving the variable unset intentionally
+  permits public research access.
 - Denials are logged with the key_id only. Raw keys/secrets are never logged.
 - 401 vs 403: missing/invalid key -> 401. (Per-key scopes are future work;
   v1 grants the single research scope or nothing.)
@@ -85,12 +83,10 @@ def check_startup_posture() -> dict[str, Any]:
     """Validate auth configuration at startup.
 
     The public research API is deliberately open when no key file is set.
-    A configured but invalid key file is a deployment error that degrades
-    LOUDLY OPEN (October 19, 2026 resilience directive, reaffirmed
-    November 7, 2026): a CRITICAL log line records the failure with full
-    detail, the API keeps serving requests, and GET /api/v1/ops/posture
-    reports ``"auth": "degraded-open"`` with a path-free reason. The API
-    never refuses to start or denies traffic over a bad key file.
+    A configured but invalid key file is a deployment error: log it at
+    CRITICAL, activate an empty key set so every protected API route denies
+    access, and expose only the path-free posture diagnostic. Health and
+    metrics remain available for recovery.
     """
     keys_file = os.environ.get("TMRDS_API_KEYS_FILE", "").strip()
     if not keys_file:
@@ -100,13 +96,13 @@ def check_startup_posture() -> dict[str, Any]:
         keys = load_api_keys(keys_file)
     except RuntimeError as exc:
         logger.critical(
-            "auth posture: DEGRADED-OPEN — configured API-key file invalid; "
-            "API is serving open until repaired: %s",
+            "auth posture: DEGRADED-CLOSED — configured API-key file invalid; "
+            "protected API routes are denied until repaired: %s",
             exc,
         )
         return {
-            "auth": "degraded-open",
-            "keys": None,
+            "auth": "degraded-closed",
+            "keys": {},
             "reason": _classify_key_file_error(str(exc)),
             "warning": "Configured API-key authentication is unavailable; API is serving open until the key file is repaired.",
         }
@@ -134,6 +130,12 @@ class ApiKeyGateMiddleware:
 
     async def __call__(self, scope: dict[str, Any], receive: Callable[..., Any], send: Callable[..., Any]) -> None:
         if scope.get("type") != "http" or not str(scope.get("path", "")).startswith("/api/"):
+            await self.app(scope, receive, send)
+            return
+
+        # When the configured key set is invalid, permit only the non-sensitive
+        # GET posture diagnostic so operators can see the path-free failure class.
+        if not self.keys and scope.get("method") == "GET" and scope.get("path") == "/api/v1/ops/posture":
             await self.app(scope, receive, send)
             return
 
