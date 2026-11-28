@@ -65,3 +65,20 @@ Configure main branch ruleset in GitHub settings. The current connector cannot r
 - Keep hardware submission disabled by default; label mocks and simulator output honestly.
 - Never claim cure, clinical efficacy, quantum advantage, physical hardware execution, regulatory approval or HIPAA compliance without evidence.
 - Record failures and unverified items as blockers; do not convert them to completed checkboxes.
+
+
+## Latest engineering run — 2026-11-28 16:42 UTC
+
+- Main remains at `47739aa5f66c78b5f8a857aa365bebcf6c29bcad`; combined commit status returned no status entries and no PR-triggered workflow runs were returned for this merge commit. This is not evidence that all post-merge checks ran or passed.
+- PR #87 remains open on `security/service-read-scope-20261128`, latest head `70c28014ddb07c5838480a4c078d59faf2446bbb`. Earlier head `e2f9b48f5869e12fe0c33764f09d45e079a5e690` had six successful workflows. Six new workflows were created for the latest head (TMRDS CI, Security and Interoperability, CodeQL, Supply Chain Security, QRCE Offline Workstation Real Integrations, Synthetic Imaging Tools); at last inspection they were queued/pending, so current-head validation remains open.
+- PR #87 was extended with a route-audit correction: `scripts/audit_api_routes.py` now recognizes `require_service_read_identity` and emits `service_auth_scopes` metadata. Regression tests assert that the synthetic FHIR GET is classified as read-scoped and synthetic lab trend POST remains write-scoped. Commits: test `b3c0d8b2082c2e992f637f4cb6dfad15cad62adc`; implementation `70c28014ddb07c5838480a4c078d59faf2446bbb`.
+- PR #87 has no submitted reviews as of this run. No merge was attempted. Its PR body now records the latest SHA and distinguishes earlier green workflow results from pending latest-head checks.
+- PR #86 tracker branch had six successful workflows on head `b7ec55dd45c55d06a31d01135994693b2aad38e1`; no submitted reviews were returned. PR #86 remains open.
+
+## Next bounded actions
+
+1. Recheck all six workflows for PR #87 at exact head `70c28014ddb07c5838480a4c078d59faf2446bbb`; inspect and repair any failing job before requesting review.
+2. Obtain independent review and establish required branch protection before merging PR #87 or documentation PR #86. The connected integration still cannot read/write repository rulesets; owner action in issue #28 remains outstanding.
+3. Expand route-level authorization tests to cover all protected mutation/read routes, including synthetic imaging, public-record preview, evidence ingestion, and data-fabric sync. Preserve intentional public research routes.
+4. Continue synthetic FHIR/OMOP/DICOM contract tests and disposable database migration/restore tests; keep results separate from standards certification.
+5. Verify offline installation and signed artifact verification on clean supported hosts before considering distribution ready.
