@@ -378,6 +378,8 @@ class OMOPCDMBridge:
                 onset = resource.get("onsetDateTime")
                 if onset is None and isinstance(resource.get("onsetPeriod"), dict):
                     onset = resource["onsetPeriod"].get("start")
+                onset_field = "onsetDateTime" if resource.get("onsetDateTime") is not None else "onsetPeriod"
+                onset_period = copy.deepcopy(resource.get("onsetPeriod"))
                 start_date = _fhir_date(onset, "Condition onset date")
                 code = _codeable_concept(resource.get("code"), "Condition.code")
                 row_id = next_row_id("CONDITION_OCCURRENCE")
@@ -400,6 +402,9 @@ class OMOPCDMBridge:
                     "subject_reference": subject_reference,
                     "code": code,
                     "clinical_status": copy.deepcopy(resource.get("clinicalStatus")),
+                    "onset_field": onset_field,
+                    "onset_value": onset,
+                    "onset_period": onset_period,
                 })
                 mapped += 1
                 continue
@@ -415,6 +420,8 @@ class OMOPCDMBridge:
                 effective = resource.get("effectiveDateTime")
                 if effective is None and isinstance(resource.get("effectivePeriod"), dict):
                     effective = resource["effectivePeriod"].get("start")
+                effective_field = "effectiveDateTime" if resource.get("effectiveDateTime") is not None else "effectivePeriod"
+                effective_period = copy.deepcopy(resource.get("effectivePeriod"))
                 measurement_date = _fhir_date(effective, "Observation effective date")
                 code = _codeable_concept(resource.get("code"), "Observation.code")
                 quantity = resource.get("valueQuantity")
@@ -449,6 +456,9 @@ class OMOPCDMBridge:
                     "code": code,
                     "status": "final",
                     "value_quantity": copy.deepcopy(quantity),
+                    "effective_field": effective_field,
+                    "effective_value": effective,
+                    "effective_period": effective_period,
                 })
                 mapped += 1
                 continue
@@ -494,6 +504,7 @@ class OMOPCDMBridge:
                     "medication": medication,
                     "status": status,
                     "effective_field": effective_field,
+                    "effective_value": effective,
                     "effective_period": copy.deepcopy(effective_period),
                     "dosage": copy.deepcopy(resource.get("dosage")),
                 })
@@ -542,8 +553,21 @@ class OMOPCDMBridge:
                 resource.update({
                     "subject": {"reference": metadata["subject_reference"]},
                     "code": _restore_codeable_concept(metadata["code"]),
-                    "onsetDateTime": row["condition_start_date"],
                 })
+                if metadata["onset_field"] == "onsetDateTime":
+                    original = metadata["onset_value"]
+                    resource["onsetDateTime"] = (
+                        original if _fhir_date(original, "Condition onset date") == row["condition_start_date"]
+                        else row["condition_start_date"]
+                    )
+                else:
+                    onset_period = copy.deepcopy(metadata["onset_period"] or {})
+                    original = onset_period.get("start")
+                    onset_period["start"] = (
+                        original if original and _fhir_date(original, "Condition onset date") == row["condition_start_date"]
+                        else row["condition_start_date"]
+                    )
+                    resource["onsetPeriod"] = onset_period
                 if metadata["clinical_status"] is not None:
                     resource["clinicalStatus"] = copy.deepcopy(metadata["clinical_status"])
             elif resource_type == "Observation":
@@ -555,9 +579,22 @@ class OMOPCDMBridge:
                     "status": metadata["status"],
                     "subject": {"reference": metadata["subject_reference"]},
                     "code": _restore_codeable_concept(metadata["code"]),
-                    "effectiveDateTime": row["measurement_date"],
                     "valueQuantity": quantity,
                 })
+                if metadata["effective_field"] == "effectiveDateTime":
+                    original = metadata["effective_value"]
+                    resource["effectiveDateTime"] = (
+                        original if _fhir_date(original, "Observation effective date") == row["measurement_date"]
+                        else row["measurement_date"]
+                    )
+                else:
+                    effective_period = copy.deepcopy(metadata["effective_period"] or {})
+                    original = effective_period.get("start")
+                    effective_period["start"] = (
+                        original if original and _fhir_date(original, "Observation effective date") == row["measurement_date"]
+                        else row["measurement_date"]
+                    )
+                    resource["effectivePeriod"] = effective_period
             elif resource_type == "MedicationStatement":
                 resource.update({
                     "status": metadata["status"],
@@ -565,10 +602,18 @@ class OMOPCDMBridge:
                     "medicationCodeableConcept": _restore_codeable_concept(metadata["medication"]),
                 })
                 if metadata["effective_field"] == "effectiveDateTime":
-                    resource["effectiveDateTime"] = row["drug_exposure_start_date"]
+                    original = metadata["effective_value"]
+                    resource["effectiveDateTime"] = (
+                        original if _fhir_date(original, "MedicationStatement effective date") == row["drug_exposure_start_date"]
+                        else row["drug_exposure_start_date"]
+                    )
                 else:
                     effective_period = copy.deepcopy(metadata["effective_period"] or {})
-                    effective_period["start"] = row["drug_exposure_start_date"]
+                    original = effective_period.get("start")
+                    effective_period["start"] = (
+                        original if original and _fhir_date(original, "MedicationStatement effective date") == row["drug_exposure_start_date"]
+                        else row["drug_exposure_start_date"]
+                    )
                     resource["effectivePeriod"] = effective_period
                 if metadata["dosage"] is not None:
                     resource["dosage"] = copy.deepcopy(metadata["dosage"])
