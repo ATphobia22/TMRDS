@@ -211,7 +211,8 @@ def test_declared_but_unimplemented_resource_types_are_not_fabricated() -> None:
         }
     })
 
-    result = OMOPCDMBridge().from_fhir_bundle(bundle, person_id=41)
+    bridge = OMOPCDMBridge()
+    result = bridge.from_fhir_bundle(bundle, person_id=41)
 
     assert result["mapped_resources"] == 4
     assert result["skipped_resources"] == [{
@@ -219,7 +220,7 @@ def test_declared_but_unimplemented_resource_types_are_not_fabricated() -> None:
         "resource_id": "synthetic-report-1",
         "reason": "unsupported_mapping",
     }]
-    assert len(OMOPCDMBridge().export_tables()) == 0
+    assert len(bridge.export_tables()["MEASUREMENT"]) == 1
 
 
 def test_invalid_bundle_is_rejected() -> None:
