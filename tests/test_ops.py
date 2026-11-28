@@ -136,7 +136,7 @@ def test_api_key_gate_allows_valid_key_and_denies_without_leak(tmp_path: Path) -
     assert resp.status_code == 200
 
 
-def test_startup_posture_open_by_default_and_degraded_open_on_invalid_config(
+def test_startup_posture_open_by_default_and_fail_closed_on_invalid_config(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     """An explicitly configured invalid key file degrades to loud open, never denies traffic."""
@@ -148,13 +148,13 @@ def test_startup_posture_open_by_default_and_degraded_open_on_invalid_config(
     monkeypatch.setenv("TMRDS_API_KEYS_FILE", str(tmp_path / "nope.txt"))
     with caplog.at_level(logging.CRITICAL, logger="tmrds.auth"):
         posture = check_startup_posture()
-    assert posture["auth"] == "degraded-open"
-    assert posture["keys"] is None
+    assert posture["auth"] == "degraded-closed"
+    assert posture["keys"] == {}
     assert posture["reason"] == "unreadable"
     assert "warning" in posture
     assert str(tmp_path) not in posture["warning"]
     assert any(
-        "DEGRADED-OPEN" in record.getMessage()
+        "DEGRADED-CLOSED" in record.getMessage()
         for record in caplog.records
         if record.name == "tmrds.auth" and record.levelno >= logging.CRITICAL
     )
@@ -163,7 +163,8 @@ def test_startup_posture_open_by_default_and_degraded_open_on_invalid_config(
     bad.write_text("garbage\n", encoding="utf-8")
     monkeypatch.setenv("TMRDS_API_KEYS_FILE", str(bad))
     posture = check_startup_posture()
-    assert posture["auth"] == "degraded-open"
+    assert posture["auth"] == "degraded-closed"
+    assert posture["keys"] == {}
     assert posture["reason"] == "malformed"
     assert "warning" in posture
 
@@ -173,10 +174,10 @@ def test_startup_posture_open_by_default_and_degraded_open_on_invalid_config(
     assert posture["keys"] == {"doc001": hashlib.sha256(b"s3cret-value_123").hexdigest()}
 
 
-def test_degraded_open_serves_api_and_reports_posture(
+def test_degraded_closed_denies_api_and_reports_posture(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Misconfigured key file: the API still serves and posture reports degraded-open.
+    """Misconfigured key file denies protected routes but exposes safe posture.
 
     Reloads api.main so the module-level startup wiring runs with the bad key
     file set, then restores the open posture.
@@ -189,20 +190,21 @@ def test_degraded_open_serves_api_and_reports_posture(
     with caplog.at_level(logging.CRITICAL, logger="tmrds.auth"):
         importlib.reload(main_module)
     try:
-        assert main_module.app.state.ops_posture["auth"] == "degraded-open"
+        assert main_module.app.state.ops_posture["auth"] == "degraded-closed"
         assert main_module.app.state.ops_posture.get("auth_reason") == "unreadable"
         assert any(
-            "DEGRADED-OPEN" in record.getMessage()
+            "DEGRADED-CLOSED" in record.getMessage()
             for record in caplog.records
             if record.name == "tmrds.auth" and record.levelno >= logging.CRITICAL
         )
         client = TestClient(main_module.app)
         resp = client.get("/api/v1/research/health")
-        assert resp.status_code == 200
+        assert resp.status_code == 401
         posture = client.get("/api/v1/ops/posture")
         assert posture.status_code == 200
-        assert posture.json()["data"]["auth"] == "degraded-open"
+        assert posture.json()["data"]["auth"] == "degraded-closed"
         assert posture.json()["data"]["auth_reason"] == "unreadable"
+        assert client.get("/health/ready").status_code == 503
     finally:
         monkeypatch.delenv("TMRDS_API_KEYS_FILE", raising=False)
         importlib.reload(main_module)
@@ -215,7 +217,7 @@ def test_main_app_wires_ops_without_import_side_effects() -> None:
 
     assert isinstance(ops.metrics_enabled(), bool)
     assert isinstance(ops.rate_limiting_enabled(), bool)
-    assert main_module.app.state.ops_posture["auth"] in {"open", "key-gated", "degraded-open"}
+    assert main_module.app.state.ops_posture["auth"] in {"open", "key-gated", "degraded-closed"}
 
 
 def test_retry_after_parsing() -> None:
