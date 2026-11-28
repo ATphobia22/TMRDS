@@ -97,9 +97,9 @@ async def liveness() -> dict[str, str]:
 
 
 @app.get("/health/ready")
-async def readiness(request: Request) -> dict[str, str]:
+async def readiness() -> dict[str, str]:
     """Readiness requires valid configured authentication and evidence schema."""
-    posture = getattr(request.app.state, "ops_posture", {})
+    posture = getattr(app.state, "ops_posture", {})
     if posture.get("auth") == "degraded-closed":
         raise HTTPException(status_code=503, detail="API-key authentication configuration is invalid")
     try:
