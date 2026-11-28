@@ -65,7 +65,10 @@ def test_service_dependencies_request_least_privilege_scope(monkeypatch, depende
             captured["scopes"] = required_scopes
             return SimpleNamespace(subject="service-test", scopes=frozenset(required_scopes), key_id="test-kid")
 
-    monkeypatch.setattr(auth, "_validator", lambda: Validator())
+    def fake_validator():
+        return Validator()
+    fake_validator.cache_clear = lambda: None
+    monkeypatch.setattr(auth, "_validator", fake_validator)
     dependency = getattr(auth, dependency_name)
     claims = asyncio.run(dependency("Bearer test.token.value"))
     assert captured["token"] == "test.token.value"
@@ -79,7 +82,10 @@ def test_read_scope_denial_returns_401(monkeypatch):
             assert required_scopes == {"evidence.read"}
             raise ValueError("missing required scope")
 
-    monkeypatch.setattr(auth, "_validator", lambda: Validator())
+    def fake_validator():
+        return Validator()
+    fake_validator.cache_clear = lambda: None
+    monkeypatch.setattr(auth, "_validator", fake_validator)
     with pytest.raises(HTTPException) as exc:
         asyncio.run(auth.require_service_read_identity("Bearer test.token.value"))
     assert exc.value.status_code == 401
