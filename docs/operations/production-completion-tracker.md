@@ -149,3 +149,21 @@ Configure main branch ruleset in GitHub settings. The current connector cannot r
 3. Recheck the latest PR #86 tracker commit workflows and obtain review.
 4. Continue runtime scope denial tests and audit any further endpoints revealed by route inventory; preserve public GET research routes intentionally.
 5. Move to synthetic FHIR/OMOP/DICOM conformance and database migration/restore testing only after this security PR is resolved.
+
+
+## Latest engineering run — 2026-11-28 16:51 UTC
+
+- PR #87 advanced to exact head `f9386dc78c14af6d324b141d07a21978deb134c2` (16 commits, 10 changed files). The service read-scope change now covers the synthetic FHIR GET route plus the five research/validation POST routes enumerated in the PR description. The deterministic route audit recognizes read scopes and expands FastAPI >=0.137 lazy included-router contexts through the public `iter_route_contexts()` API.
+- FHIR validation now requires a `synthetic-*` fixture ID and exact `meta.tag` classification `urn:tmrds:data-classification=synthetic`. Response metadata explicitly states that the tag is an unverified caller attestation, that no persistence is enabled, and that no external transmission occurs. Regression tests cover accepted synthetic fixture, missing classification, and non-synthetic ID. This is not proof of de-identification; real patient data must not be submitted to this endpoint.
+- Six fresh workflows were queued/pending on exact head `f9386dc78c14af6d324b141d07a21978deb134c2`: TMRDS CI, Security and Interoperability, CodeQL, Supply Chain Security, Synthetic Imaging Tools, and QRCE Offline Workstation Real Integrations. Prior-head successes do not validate this latest FHIR boundary change.
+- PR #87 has no submitted independent review. No merge attempted.
+- PR #86 tracker branch head `5b1e405776c76a2775c1f9e5d9cbc33f10b5df0d` workflow snapshot: Supply Chain Security success; QRCE Offline Workstation Real Integrations success; Synthetic Imaging Tools in progress; TMRDS CI, Security/Interoperability, and CodeQL canceled after subsequent documentation pushes. PR #86 has no submitted review and remains open.
+- Main remains `47739aa5f66c78b5f8a857aa365bebcf6c29bcad`. Issue #28 still records `main.protected=false` (last verified 2026-10-25); no ruleset administration is available through the connected GitHub integration. Owner must establish and verify required PR, review, and check enforcement before merge.
+
+## Next bounded actions
+
+1. Recheck all six workflows for exact PR #87 head `f9386dc78c14af6d324b141d07a21978deb134c2`; repair any failure before review.
+2. Verify route-audit output contains all expected read/write scopes and zero unguarded state-changing routes.
+3. Confirm FHIR synthetic marker tests pass and keep the response wording explicit that a marker is an unverified attestation, not de-identification.
+4. Obtain independent review and owner-confirmed branch protection before merging either open PR.
+5. After this security gate, continue synthetic FHIR/OMOP/DICOM contract and migration/restore tests, then clean-host offline install and signed-artifact verification.
