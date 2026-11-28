@@ -35,9 +35,8 @@ PRESENTED_RE = re.compile(r"tmrds_([a-z0-9]{4,32})_([A-Za-z0-9._-]{16,128})\Z")
 def load_api_keys(path: str) -> dict[str, str]:
     """Load ``key_id -> sha256(secret)`` from a key file.
 
-    Strict loader: raises RuntimeError on any problem. Callers degrade to
-    loud open (see check_startup_posture); the loader itself never decides
-    availability policy.
+    Strict loader: raises RuntimeError on any problem. The startup posture
+    handler converts configured failures into an empty, fail-closed key set.
     """
     keys: dict[str, str] = {}
     try:
@@ -104,7 +103,7 @@ def check_startup_posture() -> dict[str, Any]:
             "auth": "degraded-closed",
             "keys": {},
             "reason": _classify_key_file_error(str(exc)),
-            "warning": "Configured API-key authentication is unavailable; API is serving open until the key file is repaired.",
+            "warning": "Configured API-key authentication is unavailable; protected API routes are blocked until the key file is repaired.",
         }
     logger.info("auth posture: key-gated (%d key(s) loaded; file=%s)", len(keys), keys_file)
     return {"auth": "key-gated", "keys": keys}
