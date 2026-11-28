@@ -21,3 +21,12 @@
 ## Operational requirement
 
 Set `POSTGRES_PASSWORD` and `NEO4J_PASSWORD` before starting Docker Compose. Never use a development password in a production deployment.
+
+
+## Local EvidenceLedger boundary
+
+The local JSONL ledger uses versioned SHA-256 hash chaining for new records and verifies legacy v1 record hashes before extending them. Corrupt or truncated files fail closed; see [the format and integrity contract](EVIDENCE_LEDGER_FORMAT.md).
+
+The hash chain detects record edits, reordering, and interior deletion, but is not a digital signature, trusted timestamp, WORM store, or protection against a privileged attacker rewriting the entire file. Independently anchor and sign the latest hash if stronger audit evidence is required.
+
+The QRCE orchestrator writes operational counts only. It must not copy patient identifiers, free-text problem descriptions, clinical notes, genomic values, FHIR resources, or patient-linked packet hashes into this generic ledger. Host encryption, file access, retention, backups, and deletion remain operator responsibilities.
