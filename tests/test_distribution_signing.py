@@ -29,6 +29,7 @@ def _package(tmp_path: Path) -> Path:
 
 
 def _keypair(tmp_path: Path, *, ed25519: bool = True):
+    tmp_path.mkdir(parents=True, exist_ok=True)
     private = Ed25519PrivateKey.generate() if ed25519 else generate_private_key(
         public_exponent=65537, key_size=2048
     )
